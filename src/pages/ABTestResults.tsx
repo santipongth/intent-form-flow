@@ -7,9 +7,11 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Cart
 import { motion } from "framer-motion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ABTestResults() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { data: tests } = useABTests();
   const { data: allVotes } = useAllABTestVotes();
 
@@ -29,8 +31,8 @@ export default function ABTestResults() {
     if (a === 0 && b === 0 && tie === 0) return "-";
     if (a > b && a > tie) return "Agent A";
     if (b > a && b > tie) return "Agent B";
-    if (tie > a && tie > b) return "Tie";
-    return "Draw";
+    if (tie > a && tie > b) return t("abtest.results.tie");
+    return t("abtest.results.draw");
   };
 
   return (
@@ -41,9 +43,9 @@ export default function ABTestResults() {
         </Button>
         <div>
           <h1 className="font-display text-2xl font-bold flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-primary" /> A/B Test Results
+            <BarChart3 className="h-6 w-6 text-primary" /> {t("abtest.results.title")}
           </h1>
-          <p className="text-muted-foreground text-sm">ภาพรวมผลโหวตทุก test</p>
+          <p className="text-muted-foreground text-sm">{t("abtest.results.subtitle")}</p>
         </div>
       </div>
 
@@ -76,13 +78,13 @@ export default function ABTestResults() {
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Test Name</TableHead>
+                     <TableRow>
+                      <TableHead>{t("abtest.results.testName")}</TableHead>
                       <TableHead className="text-center">Agent A</TableHead>
                       <TableHead className="text-center">Agent B</TableHead>
-                      <TableHead className="text-center">Tie</TableHead>
-                      <TableHead className="text-center">Total</TableHead>
-                      <TableHead className="text-center">Winner</TableHead>
+                      <TableHead className="text-center">{t("abtest.results.tie")}</TableHead>
+                      <TableHead className="text-center">{t("abtest.results.total")}</TableHead>
+                      <TableHead className="text-center">{t("abtest.results.winner")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -98,12 +100,12 @@ export default function ABTestResults() {
                           <TableCell className="text-center">{total}</TableCell>
                           <TableCell className="text-center">
                             {winner !== "-" ? (
-                              <Badge variant={winner === "Draw" ? "secondary" : "default"} className="rounded-full gap-1">
-                                {winner !== "Draw" && winner !== "Tie" && <Trophy className="h-3 w-3" />}
+                              <Badge variant={winner === t("abtest.results.draw") ? "secondary" : "default"} className="rounded-full gap-1">
+                                {winner !== t("abtest.results.draw") && winner !== t("abtest.results.tie") && <Trophy className="h-3 w-3" />}
                                 {winner}
                               </Badge>
                             ) : (
-                              <span className="text-muted-foreground text-xs">No votes</span>
+                              <span className="text-muted-foreground text-xs">{t("abtest.results.noVotes")}</span>
                             )}
                           </TableCell>
                         </TableRow>
@@ -119,7 +121,7 @@ export default function ABTestResults() {
         <Card className="rounded-2xl">
           <CardContent className="p-10 text-center">
             <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-            <p className="text-muted-foreground">No tests found</p>
+            <p className="text-muted-foreground">{t("abtest.results.noTests")}</p>
           </CardContent>
         </Card>
       )}
