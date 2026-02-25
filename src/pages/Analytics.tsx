@@ -6,79 +6,40 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { MOCK_ANALYTICS_DAILY, MOCK_AGENT_ANALYTICS } from "@/data/mockData";
 import { BarChart3, Activity, Users, CheckCircle, TrendingUp, TrendingDown } from "lucide-react";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 
-const timeRanges = ["7 วัน", "30 วัน", "90 วัน"] as const;
-
-const stats = [
-  {
-    label: "Total API Calls",
-    value: "12,450",
-    change: "+18.2%",
-    trending: "up" as const,
-    icon: BarChart3,
-    color: "text-primary",
-    bg: "bg-secondary",
-  },
-  {
-    label: "Avg Response Time",
-    value: "288ms",
-    change: "-12.5%",
-    trending: "down" as const,
-    icon: Activity,
-    color: "text-brand-green",
-    bg: "bg-brand-green/10",
-  },
-  {
-    label: "Active Sessions",
-    value: "92",
-    change: "+24.3%",
-    trending: "up" as const,
-    icon: Users,
-    color: "text-brand-orange",
-    bg: "bg-brand-orange/10",
-  },
-  {
-    label: "Success Rate",
-    value: "97.8%",
-    change: "+0.5%",
-    trending: "up" as const,
-    icon: CheckCircle,
-    color: "text-brand-cyan",
-    bg: "bg-brand-cyan/10",
-  },
-];
-
 export default function Analytics() {
-  const [timeRange, setTimeRange] = useState<string>("7 วัน");
+  const { t } = useLanguage();
+  const timeRanges = [t("analytics.7days"), t("analytics.30days"), t("analytics.90days")];
+  const [timeRange, setTimeRange] = useState(timeRanges[0]);
+
+  const stats = [
+    { label: "Total API Calls", value: "12,450", change: "+18.2%", trending: "up" as const, icon: BarChart3, color: "text-primary", bg: "bg-secondary" },
+    { label: "Avg Response Time", value: "288ms", change: "-12.5%", trending: "down" as const, icon: Activity, color: "text-brand-green", bg: "bg-brand-green/10" },
+    { label: "Active Sessions", value: "92", change: "+24.3%", trending: "up" as const, icon: Users, color: "text-brand-orange", bg: "bg-brand-orange/10" },
+    { label: "Success Rate", value: "97.8%", change: "+0.5%", trending: "up" as const, icon: CheckCircle, color: "text-brand-cyan", bg: "bg-brand-cyan/10" },
+  ];
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold">Analytics</h1>
-          <p className="text-muted-foreground text-sm">สถิติการใช้งาน Agent ทั้งหมด</p>
+          <h1 className="font-display text-2xl font-bold">{t("analytics.title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("analytics.subtitle")}</p>
         </div>
         <div className="flex gap-1 bg-muted rounded-xl p-1">
           {timeRanges.map((r) => (
-            <Button
-              key={r}
-              size="sm"
-              variant={timeRange === r ? "default" : "ghost"}
-              className="rounded-lg text-xs"
-              onClick={() => setTimeRange(r)}
-            >
+            <Button key={r} size="sm" variant={timeRange === r ? "default" : "ghost"} className="rounded-lg text-xs" onClick={() => setTimeRange(r)}>
               {r}
             </Button>
           ))}
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
@@ -101,14 +62,10 @@ export default function Analytics() {
         ))}
       </div>
 
-      {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Line Chart - API Calls */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <Card className="rounded-2xl">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">API Calls per Day</CardTitle>
-            </CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-base">API Calls per Day</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={MOCK_ANALYTICS_DAILY}>
@@ -123,12 +80,9 @@ export default function Analytics() {
           </Card>
         </motion.div>
 
-        {/* Bar Chart - Response Time */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
           <Card className="rounded-2xl">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Response Time (ms)</CardTitle>
-            </CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-base">Response Time (ms)</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={MOCK_ANALYTICS_DAILY}>
@@ -144,12 +98,9 @@ export default function Analytics() {
         </motion.div>
       </div>
 
-      {/* Area Chart - Token Usage (full width) */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
         <Card className="rounded-2xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Token Usage Trend</CardTitle>
-          </CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-base">Token Usage Trend</CardTitle></CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
               <AreaChart data={MOCK_ANALYTICS_DAILY}>
@@ -170,12 +121,9 @@ export default function Analytics() {
         </Card>
       </motion.div>
 
-      {/* Agent Performance Table */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
         <Card className="rounded-2xl">
-          <CardHeader>
-            <CardTitle className="text-base">Agent Performance</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-base">Agent Performance</CardTitle></CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
@@ -194,9 +142,7 @@ export default function Analytics() {
                     <TableCell className="text-right">{agent.totalCalls.toLocaleString()}</TableCell>
                     <TableCell className="text-right">{agent.avgResponseTime}ms</TableCell>
                     <TableCell className="text-right">
-                      <Badge variant={agent.errorRate > 2 ? "destructive" : "secondary"} className="rounded-full text-xs">
-                        {agent.errorRate}%
-                      </Badge>
+                      <Badge variant={agent.errorRate > 2 ? "destructive" : "secondary"} className="rounded-full text-xs">{agent.errorRate}%</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="text-brand-green font-medium">{agent.successRate}%</span>

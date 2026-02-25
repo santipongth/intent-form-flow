@@ -13,6 +13,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAgents, useDeleteAgent } from "@/hooks/useAgents";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
 
 const activityIcons: Record<string, string> = {
   created: "🆕",
@@ -25,13 +28,17 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { data: agents, isLoading } = useAgents();
   const deleteAgent = useDeleteAgent();
+  const { t } = useLanguage();
+  const { user } = useAuth();
+  const { data: profile } = useProfile();
 
+  const displayName = profile?.display_name || user?.email?.split("@")[0] || "";
   const agentCount = agents?.length ?? 0;
 
   const stats = [
-    { label: "Agents ทั้งหมด", value: String(agentCount), icon: Bot, color: "text-primary", bg: "bg-secondary" },
-    { label: "ข้อความวันนี้", value: "0", icon: MessageCircle, color: "text-brand-green", bg: "bg-brand-green/10" },
-    { label: "Tokens ใช้ไป", value: "0", icon: Zap, color: "text-brand-orange", bg: "bg-brand-orange/10" },
+    { label: t("dashboard.totalAgents"), value: String(agentCount), icon: Bot, color: "text-primary", bg: "bg-secondary" },
+    { label: t("dashboard.messagestoday"), value: "0", icon: MessageCircle, color: "text-brand-green", bg: "bg-brand-green/10" },
+    { label: t("dashboard.tokensUsed"), value: "0", icon: Zap, color: "text-brand-orange", bg: "bg-brand-orange/10" },
   ];
 
   return (
@@ -39,12 +46,12 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground text-sm">ศูนย์บัญชาการ AI Agents ของคุณ</p>
+          <h1 className="font-display text-2xl font-bold">{t("dashboard.title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("dashboard.subtitle")}</p>
         </div>
         <Button className="gradient-primary text-primary-foreground rounded-xl gap-2" onClick={() => navigate("/agents/new")}>
           <Plus className="h-4 w-4" />
-          สร้าง Agent ใหม่
+          {t("dashboard.createNew")}
         </Button>
       </div>
 
@@ -52,7 +59,7 @@ export default function Dashboard() {
       <div className="grid sm:grid-cols-3 gap-4">
         {stats.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-            <Card className="rounded-2xl">
+            <Card className="rounded-2xl hover:shadow-md transition-shadow">
               <CardContent className="p-5 flex items-center gap-4">
                 <div className={`w-12 h-12 rounded-xl ${s.bg} flex items-center justify-center`}>
                   <s.icon className={`h-6 w-6 ${s.color}`} />
@@ -70,7 +77,7 @@ export default function Dashboard() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Agent Grid */}
         <div className="lg:col-span-2 space-y-4">
-          <h2 className="font-display font-semibold text-lg">🤖 Agents ของคุณ</h2>
+          <h2 className="font-display font-semibold text-lg">{t("dashboard.yourAgents")}</h2>
           {isLoading ? (
             <div className="grid sm:grid-cols-2 gap-4">
               {[1, 2].map((i) => (
@@ -87,7 +94,7 @@ export default function Dashboard() {
             <div className="grid sm:grid-cols-2 gap-4">
               {agents.map((agent, i) => (
                 <motion.div key={agent.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.08 }}>
-                  <Card className="rounded-2xl hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/agents/${agent.id}`)}>
+                  <Card className="rounded-2xl hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer" onClick={() => navigate(`/agents/${agent.id}`)}>
                     <CardContent className="p-5">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
@@ -107,25 +114,25 @@ export default function Dashboard() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/agents/${agent.id}`); }}>
-                              <Eye className="h-4 w-4 mr-2" /> ดูรายละเอียด
+                              <Eye className="h-4 w-4 mr-2" /> {t("dashboard.viewDetail")}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/agents/${agent.id}?tab=edit`); }}>
+                              <Pencil className="h-4 w-4 mr-2" /> {t("dashboard.editAgent")}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/agents/${agent.id}?tab=deploy`); }}>
-                              <Rocket className="h-4 w-4 mr-2" /> Deploy
+                              <Rocket className="h-4 w-4 mr-2" /> {t("dashboard.deploy")}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate("/chat"); }}>
-                              <MessageCircle className="h-4 w-4 mr-2" /> Chat
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); }}>
-                              <Pencil className="h-4 w-4 mr-2" /> แก้ไข
+                              <MessageCircle className="h-4 w-4 mr-2" /> {t("dashboard.chat")}
                             </DropdownMenuItem>
                             <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteAgent.mutate(agent.id); }}>
-                              <Trash2 className="h-4 w-4 mr-2" /> ลบ
+                              <Trash2 className="h-4 w-4 mr-2" /> {t("dashboard.deleteAgent")}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-                        <span>{agent.model || "ไม่ระบุ"}</span>
+                        <span>{agent.model || t("dashboard.notSpecified")}</span>
                         <span>·</span>
                         <span>{agent.provider || ""}</span>
                       </div>
@@ -144,9 +151,9 @@ export default function Dashboard() {
             <Card className="rounded-2xl">
               <CardContent className="p-10 text-center">
                 <Bot className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-muted-foreground">ยังไม่มี Agent — สร้างตัวแรกเลย!</p>
+                <p className="text-muted-foreground">{t("dashboard.noAgents")}</p>
                 <Button className="mt-4 gradient-primary text-primary-foreground rounded-xl gap-2" onClick={() => navigate("/agents/new")}>
-                  <Plus className="h-4 w-4" /> สร้าง Agent
+                  <Plus className="h-4 w-4" /> {t("dashboard.createAgent")}
                 </Button>
               </CardContent>
             </Card>
@@ -155,7 +162,7 @@ export default function Dashboard() {
 
         {/* Activity Feed */}
         <div className="space-y-4">
-          <h2 className="font-display font-semibold text-lg">📋 กิจกรรมล่าสุด</h2>
+          <h2 className="font-display font-semibold text-lg">{t("dashboard.recentActivity")}</h2>
           <Card className="rounded-2xl">
             <CardContent className="p-4 space-y-3">
               {MOCK_ACTIVITY.map((a) => (
