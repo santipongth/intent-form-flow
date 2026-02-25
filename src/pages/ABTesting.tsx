@@ -6,11 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, FlaskConical, ArrowRight, BarChart3 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Plus, FlaskConical, ArrowRight, BarChart3, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAgents } from "@/hooks/useAgents";
-import { useABTests, useCreateABTest } from "@/hooks/useABTesting";
+import { useABTests, useCreateABTest, useDeleteABTest } from "@/hooks/useABTesting";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ABTesting() {
@@ -19,6 +21,7 @@ export default function ABTesting() {
   const { data: agents } = useAgents();
   const { data: tests } = useABTests();
   const createTest = useCreateABTest();
+  const deleteTest = useDeleteABTest();
 
   const [open, setOpen] = useState(false);
   const [testName, setTestName] = useState("");
@@ -105,9 +108,41 @@ export default function ABTesting() {
                       <FlaskConical className="h-5 w-5 text-primary" />
                       <h3 className="font-semibold">{test.name}</h3>
                     </div>
-                    <Badge variant={test.status === "active" ? "default" : "secondary"} className="rounded-full text-xs">
-                      {test.status}
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                      <Badge variant={test.status === "active" ? "default" : "secondary"} className="rounded-full text-xs">
+                        {test.status}
+                      </Badge>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-2xl" onClick={(e) => e.stopPropagation()}>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{t("abtest.deleteConfirmTitle")}</AlertDialogTitle>
+                            <AlertDialogDescription>{t("abtest.deleteConfirmDesc")}</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>{t("abtest.cancel")}</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              onClick={() => {
+                                deleteTest.mutate(test.id);
+                                toast.success(t("abtest.deleteSuccess"));
+                              }}
+                            >
+                              {t("abtest.delete")}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>Agent A</span>
