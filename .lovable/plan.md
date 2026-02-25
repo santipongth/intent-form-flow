@@ -1,53 +1,71 @@
 
-# Message Feedback (Thumbs Up/Down) for Chat Console
 
-## Overview
-Add thumbs up/down buttons on assistant messages so users can rate AI response quality. Feedback is stored in the database for analytics.
+# Clean Code & Database สำหรับ Production
 
-## 1. Database Migration
+## สรุปสิ่งที่จะทำ
 
-Create a `message_feedback` table:
+ทำความสะอาดโค้ดและฐานข้อมูลทั้งหมดเพื่อให้พร้อมสำหรับการใช้งานจริง ครอบคลุม 4 ด้าน:
 
-```text
-message_feedback
-+--------------+-----------+----------------------------------+
-| Column       | Type      | Notes                            |
-+--------------+-----------+----------------------------------+
-| id           | uuid      | PK, gen_random_uuid()            |
-| message_id   | uuid      | FK -> chat_messages.id           |
-| user_id      | uuid      | The rater                        |
-| rating       | text      | 'up' or 'down'                   |
-| created_at   | timestamptz | default now()                  |
-+--------------+-----------+----------------------------------+
-```
+---
 
-- Unique constraint on `(message_id, user_id)` for upsert behavior
-- RLS: users can only manage their own feedback (via `auth.uid() = user_id`)
+## 1. ลบไฟล์และโค้ดที่ไม่ใช้งาน
 
-## 2. New Hook: `src/hooks/useMessageFeedback.ts`
+- **ลบ `src/pages/Index.tsx`** -- หน้า placeholder "Welcome to Your Blank App" ที่ไม่ได้ใช้ (ไม่มี route ชี้ไป)
+- **ลบ `src/App.css`** -- ไม่มีการ import ใช้งานจริง (ใช้ Tailwind ทั้งหมด)
+- **ลบ `src/test/example.test.ts`** -- test ตัวอย่างที่ไม่ได้ใช้จริง
 
-- **`useMessageFeedback(conversationId)`** -- query feedback for all messages in the active conversation, keyed by `message_id`
-- **`useSaveMessageFeedback()`** -- mutation to upsert rating; clicking the same rating again deletes it (toggle off)
-- Invalidates query cache on success
+## 2. ทำความสะอาด Mock Data
 
-## 3. Update `src/pages/ChatConsole.tsx`
+- **Refactor `src/data/mockData.ts`** -- แยกข้อมูลที่ยังใช้งานจริง (TEMPLATES, LLM_MODELS, TOOLS_LIST, MARKETPLACE_TEMPLATES) ออกจาก mock data ที่ไม่ใช้แล้ว
+- **ลบ mock data ที่ไม่ถูก import** ทุกที่: `MOCK_AGENTS`, `MOCK_LOGS`, `MOCK_CHAT`, `MOCK_ANALYTICS_DAILY`, `MOCK_AGENT_ANALYTICS`, `MOCK_USAGE_BY_AGENT`, `MOCK_DAILY_USAGE`, `MOCK_BILLING_INFO` และ interfaces ที่เกี่ยวข้อง (`Agent`, `LogEntry`, `ChatMessage`, `AnalyticsDaily`, `AgentAnalytics`, `UsageByAgent`, `DailyUsage`, `BillingInfo`)
+- เปลี่ยนชื่อไฟล์เป็น `src/data/constants.ts` เพื่อสะท้อนว่าเป็นข้อมูลคงที่ ไม่ใช่ mock
 
-- Import `ThumbsUp`, `ThumbsDown` from lucide-react
-- Track `dbId` on `LocalMessage` so we can link feedback to actual DB message IDs
-- When loading from DB: set `dbId` from `m.id`
-- When saving new messages: update local state with returned DB id
-- On each assistant message (non-streaming), render two small icon buttons next to existing Copy button:
+## 3. แก้ไข Hook ที่อ้างอิงตารางไม่มีอยู่
 
-```text
-12:34  [ThumbsUp] [ThumbsDown] [Copy]
-```
+- **แก้ `src/hooks/useDeployment.ts`** -- อ้างอิงตาราง `agent_deployments` ที่ไม่มีอยู่ในฐานข้อมูล ต้องลบไฟล์นี้ออก หรือสร้างตารางรองรับ (จะลบออกเพราะไม่มีหน้าไหนใช้งานจริง)
 
-- Active up: green highlight
-- Active down: red highlight  
-- Click same button again: removes feedback (toggle)
+## 4. ปรับปรุงคุณภาพโค้ด
 
-## Technical Notes
+- **ลบ `(supabase as any)` pattern** -- ตาราง `message_feedback`, `chat_messages`, `conversations`, `knowledge_files`, `user_api_keys`, `ab_test_votes`, `agent_ab_tests` ทั้งหมดมีอยู่ใน types แล้ว จึงไม่ต้อง cast เป็น `any` อีกต่อไป จะแก้ไขในทุกไฟล์ที่มีปัญหา:
+  - `src/hooks/useConversations.ts`
+  - `src/hooks/useMessageFeedback.ts`
+  - `src/hooks/useKnowledge.ts`
+  - `src/hooks/useABTesting.ts`
+  - `src/hooks/useFeedbackAnalytics.ts`
+  - `src/pages/SettingsPage.tsx`
+  - `src/pages/Dashboard.tsx`
 
-- Uses `(supabase as any)` pattern consistent with existing hooks
-- Foreign key to `chat_messages(id)` with `ON DELETE CASCADE` so deleting a conversation cleans up feedback automatically
-- No changes to existing tables needed
+- **อัปเดต imports** ในไฟล์ที่อ้างอิง mockData ให้ชี้ไปที่ `constants.ts`:
+  - `src/pages/AgentBuilder.tsx`
+  - `src/pages/Landing.tsx`
+  - `src/pages/Marketplace.tsx`
+  - `src/pages/SettingsPage.tsx`
+
+---
+
+## Technical Details
+
+### ไฟล์ที่จะลบ
+- `src/pages/Index.tsx`
+- `src/App.css`
+- `src/test/example.test.ts`
+- `src/hooks/useDeployment.ts`
+
+### ไฟล์ที่จะแก้ไข
+| ไฟล์ | การเปลี่ยนแปลง |
+|------|----------------|
+| `src/data/mockData.ts` | ลบ mock data + interfaces ที่ไม่ใช้, เปลี่ยนชื่อเป็น constants.ts |
+| `src/hooks/useConversations.ts` | ลบ `(supabase as any)` ใช้ `supabase` ตรง |
+| `src/hooks/useMessageFeedback.ts` | ลบ `(supabase as any)` |
+| `src/hooks/useKnowledge.ts` | ลบ `(supabase as any)` |
+| `src/hooks/useABTesting.ts` | ลบ `(supabase as any)` |
+| `src/hooks/useFeedbackAnalytics.ts` | ลบ `(supabase as any)` |
+| `src/pages/SettingsPage.tsx` | ลบ `(supabase as any)`, อัปเดต import path |
+| `src/pages/Dashboard.tsx` | ลบ `(supabase as any)` |
+| `src/pages/AgentBuilder.tsx` | อัปเดต import path |
+| `src/pages/Landing.tsx` | อัปเดต import path |
+| `src/pages/Marketplace.tsx` | อัปเดต import path |
+
+### ไม่มีการเปลี่ยนแปลง Database Schema
+ฐานข้อมูลปัจจุบันสะอาดดีอยู่แล้ว -- ตารางทั้งหมดมี RLS policies ครบถ้วน ไม่มีตารางที่ไม่ใช้งาน
+
