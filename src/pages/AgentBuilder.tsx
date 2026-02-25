@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { useCreateAgent } from "@/hooks/useAgents";
 import { useUploadKnowledgeFile } from "@/hooks/useKnowledge";
 import { useLanguage } from "@/contexts/LanguageContext";
+import KnowledgeStep from "@/components/agent-builder/KnowledgeStep";
 
 const STEPS_KEYS = ["Intent & Type", "Identity & Model", "Knowledge", "Tools & Memory", "Review & Create"];
 
@@ -208,52 +209,15 @@ export default function AgentBuilder() {
           )}
 
           {step === 2 && (
-            <div className="space-y-5">
-              <h2 className="font-display text-lg font-semibold">{t("builder.knowledge")}</h2>
-              <Card className="rounded-2xl border-dashed border-2 border-primary/30 hover:border-primary/50 transition-colors">
-                <CardContent className="p-8 text-center">
-                  <Upload className="h-10 w-10 mx-auto mb-3 text-primary/50" />
-                  <p className="font-medium mb-1">{t("builder.dragDrop")}</p>
-                  <p className="text-sm text-muted-foreground mb-3">{t("builder.fileTypes")}</p>
-                  <label>
-                    <input
-                      type="file"
-                      accept=".pdf,.txt,.md,.csv,.json,.docx"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) setFiles([...files, file]);
-                        e.target.value = "";
-                      }}
-                    />
-                    <Button variant="outline" className="rounded-xl" asChild><span>{t("builder.selectFile")}</span></Button>
-                  </label>
-                </CardContent>
-              </Card>
-              {files.length > 0 && (
-                <div className="space-y-2">
-                  {files.map((f, i) => (
-                    <div key={i} className="flex items-center justify-between bg-secondary rounded-xl px-4 py-2">
-                      <span className="text-sm">📄 {f.name} ({(f.size / 1024).toFixed(1)} KB)</span>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setFiles(files.filter((_, idx) => idx !== i))}><X className="h-3 w-3" /></Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div>
-                <Label>{t("builder.addUrl")}</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input placeholder="https://example.com" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} className="rounded-xl" onKeyDown={(e) => e.key === "Enter" && handleAddUrl()} />
-                  <Button variant="outline" className="rounded-xl" onClick={handleAddUrl}><Link className="h-4 w-4" /></Button>
-                </div>
-                {urls.map((u, i) => (
-                  <div key={i} className="flex items-center justify-between bg-secondary rounded-xl px-4 py-2 mt-2">
-                    <span className="text-sm truncate">🔗 {u}</span>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setUrls(urls.filter((_, idx) => idx !== i))}><X className="h-3 w-3" /></Button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <KnowledgeStep
+              files={files}
+              setFiles={setFiles}
+              urls={urls}
+              setUrls={setUrls}
+              urlInput={urlInput}
+              setUrlInput={setUrlInput}
+              onAddUrl={handleAddUrl}
+            />
           )}
 
           {step === 3 && (
