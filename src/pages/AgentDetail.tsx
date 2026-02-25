@@ -66,7 +66,12 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
             <CardTitle className="text-lg">{t("knowledge.title")}</CardTitle>
             <CardDescription>{t("knowledge.subtitle")}</CardDescription>
           </div>
-          <div>
+          <div className="flex gap-2">
+            {files.some(f => f.status === "processing") && (
+              <Button variant="outline" className="rounded-xl gap-2" onClick={() => refetch()}>
+                <RefreshCw className="h-4 w-4" /> {t("knowledge.refresh")}
+              </Button>
+            )}
             <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md,.csv,.json,.docx" className="hidden" onChange={handleFileSelect} />
             <Button className="rounded-xl gap-2" onClick={() => fileInputRef.current?.click()} disabled={uploadFile.isPending}>
               {uploadFile.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
