@@ -43,9 +43,8 @@ export default function Dashboard() {
 
   // Fetch today's messages count and total tokens from analytics events
   const todayStart = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d.toISOString();
+    const now = new Date();
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
   }, []);
 
   const { data: analyticsStats } = useQuery({
