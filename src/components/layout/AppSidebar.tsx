@@ -1,4 +1,4 @@
-import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, CreditCard, Settings, Plus, LogOut, FlaskConical } from "lucide-react";
+import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, CreditCard, Settings, Plus, LogOut, FlaskConical, ChevronUp } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -91,40 +91,49 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-3 space-y-2">
-        {/* User info */}
-        {!collapsed && (
-          <div className="flex items-center gap-2 px-2 py-1.5">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={profile?.avatar_url || ""} />
-              <AvatarFallback className="text-xs bg-secondary">{initials}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{displayName}</p>
-              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-2">
+        {/* Create Agent CTA */}
+        <div className="px-1">
           {!collapsed ? (
-            <>
-              <Button className="flex-1 gradient-primary text-primary-foreground rounded-xl gap-2" asChild>
-                <NavLink to="/agents/new">
-                  <Plus className="h-4 w-4" />
-                  {t("sidebar.createAgent")}
-                </NavLink>
-              </Button>
-              <Button variant="ghost" size="icon" className="rounded-xl shrink-0" onClick={handleSignOut} title={t("sidebar.signOut")}>
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </>
+            <Button className="w-full gradient-primary text-primary-foreground rounded-xl gap-2 h-10 shadow-md hover:shadow-lg transition-shadow" asChild>
+              <NavLink to="/agents/new">
+                <Plus className="h-4 w-4" />
+                {t("sidebar.createAgent")}
+              </NavLink>
+            </Button>
           ) : (
-            <Button size="icon" className="gradient-primary text-primary-foreground rounded-xl" asChild>
+            <Button size="icon" className="w-full gradient-primary text-primary-foreground rounded-xl shadow-md hover:shadow-lg transition-shadow" asChild>
               <NavLink to="/agents/new">
                 <Plus className="h-4 w-4" />
               </NavLink>
             </Button>
           )}
+        </div>
+
+        {/* User card */}
+        <div className={`rounded-xl border border-sidebar-border bg-sidebar-accent/40 backdrop-blur-sm transition-all ${collapsed ? "p-2 flex flex-col items-center gap-2" : "p-3"}`}>
+          <div className={`flex items-center ${collapsed ? "flex-col gap-2" : "gap-3"}`}>
+            <Avatar className={`${collapsed ? "h-8 w-8" : "h-10 w-10"} ring-2 ring-primary/20 shrink-0`}>
+              <AvatarImage src={profile?.avatar_url || ""} />
+              <AvatarFallback className="text-xs font-semibold gradient-primary text-primary-foreground">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate text-sidebar-foreground">{displayName}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{user?.email}</p>
+              </div>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors ${collapsed ? "h-7 w-7" : "h-8 w-8 shrink-0"}`}
+              onClick={handleSignOut}
+              title={t("sidebar.signOut")}
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </SidebarFooter>
     </Sidebar>
