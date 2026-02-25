@@ -1,28 +1,38 @@
 
 
-# Agent Performance Comparison Charts (Side-by-Side)
+# Add Custom Welcome Message to Widget Embed Settings
 
 ## Overview
-Add a new section to the Analytics page with bar charts that compare agents side-by-side across three key metrics: Total Calls, Avg Response Time, and Success Rate. This uses the existing `agentPerf` data already computed on the page.
+Allow users to customize the welcome message that appears when the chat widget opens, instead of the hardcoded Thai greeting. This involves adding an input field in the embed settings, passing it as a URL parameter to the widget, and using it in the widget's JavaScript.
 
 ## Changes
 
-### File: `src/pages/Analytics.tsx`
+### 1. `src/pages/AgentDetail.tsx`
+- Add state: `const [welcomeMessage, setWelcomeMessage] = useState("")`
+- Add a new input field in the embed customization grid (the `bg-muted/50` section around line 346) with label "💬 ข้อความต้อนรับ" and placeholder like "สวัสดีค่ะ! มีอะไรให้ช่วยไหมคะ?"
+- Include `welcome_message` param (URL-encoded) in `scriptEmbedCode`, `iframeEmbedCode`, and the preview iframe `src`
+- Only append the param when the value is non-empty
 
-Add a new chart section between the Token Usage Trend chart and the Agent Performance Table. This section will contain three side-by-side horizontal bar charts in a 3-column grid:
+### 2. `supabase/functions/widget/index.ts`
+- Read `welcome_message` query param: `const welcomeMessage = url.searchParams.get("welcome_message") || ""`
+- Pass it through in bubble mode's iframe src
+- In fullpage mode, use it in the `toggleChat()` function: replace the hardcoded `"สวัสดีค่ะ! 👋 มีอะไรให้ช่วยไหมคะ?"` with the custom message (falling back to the default if empty)
+- Escape the message properly for embedding in JS string
 
-1. **Total Calls by Agent** - Horizontal `BarChart` comparing call volume per agent
-2. **Avg Response Time by Agent** - Horizontal `BarChart` comparing response times
-3. **Success Rate by Agent** - Horizontal `BarChart` comparing success rates (0-100%)
+## Technical Details
 
-Each chart uses `agentPerf` data (already available) with `layout="vertical"` for horizontal bars, making agent names readable on the Y-axis.
+### Files to Modify
 
-### Technical Details
+| File | Changes |
+|------|---------|
+| `src/pages/AgentDetail.tsx` | Add `welcomeMessage` state, input field in embed settings, include param in all embed URLs |
+| `supabase/functions/widget/index.ts` | Read `welcome_message` param, pass through in bubble mode, use in greeting logic |
 
-- Use Recharts `BarChart` with `layout="vertical"` so agent names appear on the left axis
-- Three charts in a `grid lg:grid-cols-3` layout
-- Color-code each metric differently (primary for calls, orange for response time, green for success rate)
-- Only show this section when there are 2+ agents in `agentPerf` (comparison makes no sense with 1 agent)
-- Wrapped in `motion.div` with stagger animation matching existing pattern
-- No new dependencies or files needed -- purely a UI addition using existing data and recharts components
+### URL Parameter
+- Name: `welcome_message`
+- Encoding: `encodeURIComponent()` on the client, `decodeURIComponent()` in the edge function (automatic from URL parsing)
+- Default fallback: `"สวัสดีค่ะ! 👋 มีอะไรให้ช่วยไหมคะ?"` when empty
+
+### Security
+- The welcome message is escaped via the existing `escapeHtml()` function in the widget before rendering, preventing XSS
 
