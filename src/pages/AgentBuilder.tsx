@@ -218,7 +218,7 @@ export default function AgentBuilder() {
                   <label>
                     <input
                       type="file"
-                      accept=".pdf,.txt,.md,.csv"
+                      accept=".pdf,.txt,.md,.csv,.json,.docx"
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
