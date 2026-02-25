@@ -43,7 +43,7 @@ export default function Landing() {
 
         <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
           <div className="flex items-center gap-2">
-            <img src={tmLogo} alt="ThoughtMind" className="w-14 h-14 object-contain rounded-2xl" />
+            <img src={tmLogo} alt="ThoughtMind" className="w-20 h-20 object-contain rounded-2xl" />
             <span className="font-display font-bold text-xl gradient-text text-inherit">ThoughtMind</span>
           </div>
           <div className="flex items-center gap-2">
