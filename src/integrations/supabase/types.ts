@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_ab_tests: {
+        Row: {
+          agent_a_id: string
+          agent_b_id: string
+          created_at: string | null
+          id: string
+          name: string
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          agent_a_id: string
+          agent_b_id: string
+          created_at?: string | null
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          agent_a_id?: string
+          agent_b_id?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_ab_tests_agent_a_id_fkey"
+            columns: ["agent_a_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_ab_tests_agent_b_id_fkey"
+            columns: ["agent_b_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_analytics_events: {
         Row: {
           agent_id: string | null
