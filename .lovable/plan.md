@@ -1,94 +1,52 @@
 
 
-# Embed Widget System
+# Widget Customization: Primary Color and Brand Name
 
 ## Overview
-Create a standalone, embeddable chat widget that external websites can integrate via a simple `<script>` tag or `<iframe>`. The widget will be a floating chat bubble that opens a chat window, connecting directly to your existing chat Edge Function.
+Add customization options (primary color and brand name) to the widget embed system so users can match the widget to their website's branding.
 
-## Architecture
+## Changes
 
-```text
-External Website
-  |
-  +-- <script src="widget.js">  (or <iframe>)
-  |
-  +-- Floating Chat Bubble (bottom-right)
-        |
-        +-- Opens Chat Window
-              |
-              +-- POST /functions/v1/chat  (streaming)
-```
+### 1. AgentDetail.tsx - Add Customization UI
+Add two new state variables and input fields in the Embed tab:
+- **Primary Color** - a color picker input (type="color") with hex value display, default `#6366f1`
+- **Brand Name** - a text input for custom brand name shown in the widget header and "Powered by" footer, default to agent name
 
-## What Will Be Built
+Pass these values as query parameters in the generated embed codes:
+- `&color=%236366f1` (URL-encoded hex)
+- `&brand=MyBrand`
 
-### 1. Widget Edge Function (`supabase/functions/widget/index.ts`)
-A new backend function that serves the embeddable widget HTML/JS. When called with an agent ID, it returns a self-contained HTML page with:
-- A floating chat bubble (bottom-right corner)
-- A chat window with the agent's name and streaming responses
-- Light/dark theme support
-- Responsive design
-- Direct calls to the existing `/functions/v1/chat` endpoint for AI responses
+Update `scriptEmbedCode` and `iframeEmbedCode` to include these params. Also pass them to the Preview iframe.
 
-### 2. Updated Agent Detail Deploy Tab (`src/pages/AgentDetail.tsx`)
-Enhance the existing Embed tab with:
-- **Script embed code** -- a one-liner `<script>` tag users can paste into any website
-- **iframe embed code** -- already partially exists, will be updated with the real widget URL
-- Copy buttons for both options
-- Live preview using the actual widget
+### 2. Widget Edge Function - Accept and Apply Customization
+Update `supabase/functions/widget/index.ts` to:
+- Read `color` and `brand` query parameters
+- Use `color` value for `--primary` CSS variable and all gradient references (bubble background, user message bubble, send button, focus ring)
+- Compute a secondary shade from the primary color for gradients
+- Use `brand` value in the header name and "Powered by" footer (falling back to agent name)
 
-### 3. Widget Preview Page (`src/pages/WidgetPreview.tsx`)
-A simple full-page wrapper that loads the widget in an iframe for in-app testing from the Agent Detail page.
+### 3. Preview Tab - Pass Customization
+Update the preview iframe URL in AgentDetail to include the color and brand params so the live preview reflects customizations in real-time.
 
 ## Technical Details
 
-### Files to Create
-| File | Purpose |
-|------|---------|
-| `supabase/functions/widget/index.ts` | Serves the embeddable chat widget HTML/JS |
-| `src/pages/WidgetPreview.tsx` | In-app preview page for testing the widget |
-
 ### Files to Modify
-| File | Change |
-|------|--------|
-| `src/pages/AgentDetail.tsx` | Update embed tab with real widget URLs and script tag code |
-| `src/App.tsx` | Add route for `/widget-preview/:agentId` |
 
-### Widget Edge Function Design
-- Accepts `GET /widget?agent_id=xxx&theme=light` 
-- Returns a complete HTML page with inline CSS and JS
-- The JS handles:
-  - Rendering a chat UI (message bubbles, input box)
-  - Calling the existing `/functions/v1/chat` endpoint with streaming
-  - Session management via `sessionStorage`
-  - Theme switching (light/dark)
-- No authentication required for end-users (widget visitors)
-- `verify_jwt = false` in config
+| File | Changes |
+|------|---------|
+| `src/pages/AgentDetail.tsx` | Add `primaryColor` and `brandName` state; add color picker + text input in Embed tab; update embed code strings and preview URL |
+| `supabase/functions/widget/index.ts` | Read `color` and `brand` params; apply to CSS `--primary`, gradients, header name, and footer text |
 
-### Script Embed Code (for external sites)
-```html
-<script 
-  src="https://hiyzlaiqeygxvpgveadq.supabase.co/functions/v1/widget?agent_id=AGENT_ID&theme=light"
-  defer>
-</script>
-```
-This script will inject an iframe with the chat widget into the host page.
+### New UI in Embed Tab (between theme toggle and Script Tag section)
+- Color picker with hex input showing live swatch
+- Brand name text input
+- Both update the embed codes and preview in real-time
 
-### iframe Embed Code (alternative)
-```html
-<iframe
-  src="https://hiyzlaiqeygxvpgveadq.supabase.co/functions/v1/widget?agent_id=AGENT_ID&mode=fullpage&theme=light"
-  width="400" height="600"
-  style="border:none; border-radius:12px;"
-></iframe>
-```
-
-### Widget Features
-- Floating bubble button (customizable position)
-- Expand/collapse animation
-- Chat history within session
-- Streaming responses with typing indicator
-- Agent name and avatar in header
-- Send on Enter key
-- Mobile responsive
-- Light and dark theme
+### Widget Edge Function Changes
+- Line 17: Read `color` param (default `#6366f1`), `brand` param (default agent name)
+- Line 70: Replace hardcoded `--primary:#6366f1` with `--primary:${color}`
+- Lines 77, 83, 94, 107: Replace hardcoded `#8b5cf6` gradient stops with a computed lighter shade
+- Line 119: Use `brand` in header name
+- Line 131: Use `brand` in "Powered by" text
+- Bubble mode (line 43): Pass `color` and `brand` params through to the fullpage iframe URL
 
