@@ -134,3 +134,10 @@
     @apply bg-card/80 backdrop-blur-lg border border-border/50 shadow-lg;
   }
 }
+
+@media print {
+  body { background: white !important; }
+  nav, header, aside, [data-sidebar], .no-print { display: none !important; }
+  main { margin: 0 !important; padding: 0 !important; }
+  .recharts-responsive-container { page-break-inside: avoid; }
+}
