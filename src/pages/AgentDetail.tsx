@@ -27,6 +27,9 @@ function generateApiKey() {
   return `sk-tm-${rand(8)}-${rand(8)}-${rand(8)}-${rand(8)}`;
 }
 
+const MAX_FILES = 10;
+const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB
+
 function KnowledgeTab({ agentId }: { agentId: string }) {
   const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -37,6 +40,12 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [uploadQueue, setUploadQueue] = useState<{ name: string; progress: number }[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+
+  const totalSize = files.reduce((sum, f) => sum + (f.file_size || 0), 0);
+  const fileCount = files.length;
+  const sizePercent = Math.min((totalSize / MAX_TOTAL_SIZE) * 100, 100);
+  const isAtFileLimit = fileCount >= MAX_FILES;
+  const isAtSizeLimit = totalSize >= MAX_TOTAL_SIZE;
 
   // Auto-refresh every 5s when files are processing
   useEffect(() => {
@@ -72,12 +81,38 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
   const ALLOWED_EXTS = ["pdf", "txt", "md", "csv", "json", "docx"];
 
   const startMultiUpload = (fileList: FileList) => {
-    Array.from(fileList).forEach(file => {
+    const filesToUpload = Array.from(fileList);
+    const remainingSlots = MAX_FILES - fileCount;
+    const remainingSize = MAX_TOTAL_SIZE - totalSize;
+
+    if (remainingSlots <= 0) {
+      toast.error(t("knowledge.limitFiles"));
+      return;
+    }
+    if (remainingSize <= 0) {
+      toast.error(t("knowledge.limitSize"));
+      return;
+    }
+
+    let usedSlots = 0;
+    let usedSize = 0;
+
+    filesToUpload.forEach(file => {
+      if (usedSlots >= remainingSlots) {
+        toast.error(`${file.name}: ${t("knowledge.limitFiles")}`);
+        return;
+      }
+      if (usedSize + file.size > remainingSize) {
+        toast.error(`${file.name}: ${t("knowledge.limitSize")}`);
+        return;
+      }
       const ext = file.name.split(".").pop()?.toLowerCase();
       if (!ALLOWED_EXTS.includes(ext || "")) {
         toast.error(`${file.name}: ${t("knowledge.supportedTypes")}`);
         return;
       }
+      usedSlots++;
+      usedSize += file.size;
       startUpload(file);
     });
   };
@@ -128,13 +163,25 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
               </Button>
             )}
             <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md,.csv,.json,.docx" multiple className="hidden" onChange={handleFileSelect} />
-            <Button className="rounded-xl gap-2" onClick={() => fileInputRef.current?.click()} disabled={uploadFile.isPending}>
+            <Button className="rounded-xl gap-2" onClick={() => fileInputRef.current?.click()} disabled={uploadFile.isPending || isAtFileLimit || isAtSizeLimit}>
               {uploadFile.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               {uploadFile.isPending ? t("knowledge.uploading") : t("knowledge.upload")}
             </Button>
           </div>
         </div>
         <p className="text-xs text-muted-foreground">{t("knowledge.supportedTypes")}</p>
+        {/* Usage indicators */}
+        <div className="space-y-2 pt-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{t("knowledge.storageUsed")}</span>
+            <span>{formatSize(totalSize)} / {formatSize(MAX_TOTAL_SIZE)}</span>
+          </div>
+          <Progress value={sizePercent} className={`h-2 rounded-full ${sizePercent > 80 ? "[&>div]:bg-destructive" : ""}`} />
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{t("knowledge.fileCount")}</span>
+            <span>{fileCount} / {MAX_FILES}</span>
+          </div>
+        </div>
         {uploadQueue.length > 0 && (
           <div className="space-y-2">
             {uploadQueue.map((item) => (
