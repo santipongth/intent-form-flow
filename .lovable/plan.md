@@ -1,98 +1,94 @@
 
 
-# Real AI Chat System - Complete Setup
+# Embed Widget System
 
-## Problem
-The chat system code exists (ChatConsole, streamChat, useConversations, edge function) but won't work because:
-1. **Database tables missing** - `conversations`, `chat_messages`, `agent_analytics_events` tables don't exist yet
-2. **Edge function not configured** - `supabase/config.toml` doesn't have `[functions.chat]` with `verify_jwt = false`
-3. These two gaps mean the streaming chat will fail on both the API call and the data persistence side
+## Overview
+Create a standalone, embeddable chat widget that external websites can integrate via a simple `<script>` tag or `<iframe>`. The widget will be a floating chat bubble that opens a chat window, connecting directly to your existing chat Edge Function.
 
-## Plan
+## Architecture
 
-### Step 1: Create Database Tables
-Run a migration to create the 3 core tables needed for chat:
-
-- **conversations** (id, user_id, agent_id, title, created_at, updated_at) with RLS by user_id
-- **chat_messages** (id, conversation_id, role, content, tokens_used, response_time_ms, created_at) with RLS via conversation ownership
-- **agent_analytics_events** (id, agent_id, user_id, event_type, tokens_used, response_time_ms, status, metadata, created_at) with RLS by user_id
-
-Enable Realtime on `chat_messages`.
-
-### Step 2: Configure Edge Function
-Update `supabase/config.toml` to add:
-```toml
-[functions.chat]
-verify_jwt = false
+```text
+External Website
+  |
+  +-- <script src="widget.js">  (or <iframe>)
+  |
+  +-- Floating Chat Bubble (bottom-right)
+        |
+        +-- Opens Chat Window
+              |
+              +-- POST /functions/v1/chat  (streaming)
 ```
 
-### Step 3: Deploy Edge Function
-Deploy the existing `supabase/functions/chat/index.ts` so it's live and callable.
+## What Will Be Built
 
-### Step 4: Test
-Use the curl tool to send a test message to the chat edge function and verify streaming works.
+### 1. Widget Edge Function (`supabase/functions/widget/index.ts`)
+A new backend function that serves the embeddable widget HTML/JS. When called with an agent ID, it returns a self-contained HTML page with:
+- A floating chat bubble (bottom-right corner)
+- A chat window with the agent's name and streaming responses
+- Light/dark theme support
+- Responsive design
+- Direct calls to the existing `/functions/v1/chat` endpoint for AI responses
+
+### 2. Updated Agent Detail Deploy Tab (`src/pages/AgentDetail.tsx`)
+Enhance the existing Embed tab with:
+- **Script embed code** -- a one-liner `<script>` tag users can paste into any website
+- **iframe embed code** -- already partially exists, will be updated with the real widget URL
+- Copy buttons for both options
+- Live preview using the actual widget
+
+### 3. Widget Preview Page (`src/pages/WidgetPreview.tsx`)
+A simple full-page wrapper that loads the widget in an iframe for in-app testing from the Agent Detail page.
 
 ## Technical Details
 
-### Database Migration SQL
-```sql
--- conversations table
-CREATE TABLE public.conversations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  agent_id uuid REFERENCES public.agents(id) ON DELETE SET NULL,
-  title text DEFAULT 'New Chat',
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
+### Files to Create
+| File | Purpose |
+|------|---------|
+| `supabase/functions/widget/index.ts` | Serves the embeddable chat widget HTML/JS |
+| `src/pages/WidgetPreview.tsx` | In-app preview page for testing the widget |
 
-ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own conversations" ON public.conversations FOR ALL USING (auth.uid() = user_id);
-
--- chat_messages table
-CREATE TABLE public.chat_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  conversation_id uuid NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
-  role text NOT NULL,
-  content text NOT NULL,
-  tokens_used int DEFAULT 0,
-  response_time_ms int DEFAULT 0,
-  created_at timestamptz DEFAULT now()
-);
-
-ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own chat messages" ON public.chat_messages FOR ALL
-  USING (EXISTS (SELECT 1 FROM public.conversations c WHERE c.id = chat_messages.conversation_id AND c.user_id = auth.uid()));
-
--- agent_analytics_events table
-CREATE TABLE public.agent_analytics_events (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  agent_id uuid REFERENCES public.agents(id) ON DELETE CASCADE,
-  user_id uuid,
-  event_type text NOT NULL,
-  tokens_used int DEFAULT 0,
-  response_time_ms int DEFAULT 0,
-  status text DEFAULT 'success',
-  metadata jsonb DEFAULT '{}',
-  created_at timestamptz DEFAULT now()
-);
-
-ALTER TABLE public.agent_analytics_events ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own analytics" ON public.agent_analytics_events FOR ALL USING (auth.uid() = user_id);
-
--- updated_at trigger for conversations
-CREATE TRIGGER update_conversations_updated_at
-  BEFORE UPDATE ON public.conversations
-  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
--- Enable realtime for chat_messages
-ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;
-```
-
-### Files Changed
+### Files to Modify
 | File | Change |
 |------|--------|
-| `supabase/config.toml` | Add `[functions.chat]` config |
-| Database migration | Create 3 tables + RLS + trigger |
+| `src/pages/AgentDetail.tsx` | Update embed tab with real widget URLs and script tag code |
+| `src/App.tsx` | Add route for `/widget-preview/:agentId` |
 
-No code file changes needed - the existing ChatConsole.tsx, streamChat.ts, useConversations.ts, and chat edge function are already correctly implemented.
+### Widget Edge Function Design
+- Accepts `GET /widget?agent_id=xxx&theme=light` 
+- Returns a complete HTML page with inline CSS and JS
+- The JS handles:
+  - Rendering a chat UI (message bubbles, input box)
+  - Calling the existing `/functions/v1/chat` endpoint with streaming
+  - Session management via `sessionStorage`
+  - Theme switching (light/dark)
+- No authentication required for end-users (widget visitors)
+- `verify_jwt = false` in config
+
+### Script Embed Code (for external sites)
+```html
+<script 
+  src="https://hiyzlaiqeygxvpgveadq.supabase.co/functions/v1/widget?agent_id=AGENT_ID&theme=light"
+  defer>
+</script>
+```
+This script will inject an iframe with the chat widget into the host page.
+
+### iframe Embed Code (alternative)
+```html
+<iframe
+  src="https://hiyzlaiqeygxvpgveadq.supabase.co/functions/v1/widget?agent_id=AGENT_ID&mode=fullpage&theme=light"
+  width="400" height="600"
+  style="border:none; border-radius:12px;"
+></iframe>
+```
+
+### Widget Features
+- Floating bubble button (customizable position)
+- Expand/collapse animation
+- Chat history within session
+- Streaming responses with typing indicator
+- Agent name and avatar in header
+- Send on Enter key
+- Mobile responsive
+- Light and dark theme
+
