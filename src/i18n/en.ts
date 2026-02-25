@@ -103,7 +103,7 @@ export const en: Record<string, string> = {
   "builder.selectModel": "Select Model",
   "builder.knowledge": "Add Knowledge Base",
   "builder.dragDrop": "Drag and drop files here",
-  "builder.fileTypes": "Supports PDF, Word, TXT (max 20MB)",
+  "builder.fileTypes": "Supports PDF, DOCX, TXT, JSON (max 20MB)",
   "builder.selectFile": "Select File",
   "builder.addUrl": "Add Website URL",
   "builder.toolsMemory": "Select Tools & Memory",
@@ -300,5 +300,5 @@ export const en: Record<string, string> = {
   "knowledge.statusError": "Error",
   "knowledge.deleteConfirm": "Delete this file?",
   "knowledge.deleteConfirmDesc": "This will permanently remove this file from the knowledge base.",
-  "knowledge.supportedTypes": "Supports PDF, TXT (max 20MB)",
+  "knowledge.supportedTypes": "Supports PDF, TXT, DOCX, JSON (max 20MB)",
 };

@@ -66,7 +66,7 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
             <CardDescription>{t("knowledge.subtitle")}</CardDescription>
           </div>
           <div>
-            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md,.csv" className="hidden" onChange={handleFileSelect} />
+            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md,.csv,.json,.docx" className="hidden" onChange={handleFileSelect} />
             <Button className="rounded-xl gap-2" onClick={() => fileInputRef.current?.click()} disabled={uploadFile.isPending}>
               {uploadFile.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               {uploadFile.isPending ? t("knowledge.uploading") : t("knowledge.upload")}

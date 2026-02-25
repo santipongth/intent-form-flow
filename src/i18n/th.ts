@@ -103,7 +103,7 @@ export const th: Record<string, string> = {
   "builder.selectModel": "เลือก Model",
   "builder.knowledge": "เพิ่มคลังความรู้",
   "builder.dragDrop": "ลากไฟล์มาวางที่นี่",
-  "builder.fileTypes": "รองรับ PDF, Word, TXT (สูงสุด 20MB)",
+  "builder.fileTypes": "รองรับ PDF, DOCX, TXT, JSON (สูงสุด 20MB)",
   "builder.selectFile": "เลือกไฟล์",
   "builder.addUrl": "เพิ่ม URL เว็บไซต์",
   "builder.toolsMemory": "เลือกเครื่องมือและความจำ",
@@ -300,5 +300,5 @@ export const th: Record<string, string> = {
   "knowledge.statusError": "ผิดพลาด",
   "knowledge.deleteConfirm": "ลบไฟล์นี้?",
   "knowledge.deleteConfirmDesc": "การลบจะลบไฟล์นี้ออกจากคลังความรู้อย่างถาวร",
-  "knowledge.supportedTypes": "รองรับ PDF, TXT (สูงสุด 20MB)",
+  "knowledge.supportedTypes": "รองรับ PDF, TXT, DOCX, JSON (สูงสุด 20MB)",
 };

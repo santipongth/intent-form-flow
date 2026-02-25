@@ -38,6 +38,16 @@ serve(async (req) => {
 
     if (fileName.endsWith(".txt") || fileName.endsWith(".md") || fileName.endsWith(".csv")) {
       textContent = await fileData.text();
+    } else if (fileName.endsWith(".json")) {
+      const raw = await fileData.text();
+      try {
+        const parsed = JSON.parse(raw);
+        textContent = JSON.stringify(parsed, null, 2);
+      } catch {
+        textContent = raw;
+      }
+    } else if (fileName.endsWith(".docx")) {
+      textContent = await extractTextFromDocx(fileData);
     } else if (fileName.endsWith(".pdf")) {
       // Basic PDF text extraction - extract readable text from PDF binary
       const bytes = new Uint8Array(await fileData.arrayBuffer());
@@ -103,4 +113,27 @@ function extractTextFromPdf(bytes: Uint8Array): string {
   
   const result = text.join(" ").replace(/\\n/g, "\n").replace(/\\r/g, "").trim();
   return result || "[Could not extract text from this PDF. Please try uploading a TXT file instead.]";
+}
+
+async function extractTextFromDocx(blob: Blob): Promise<string> {
+  // DOCX is a ZIP containing XML files. We extract text from word/document.xml
+  const arrayBuffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  
+  // Find word/document.xml in the ZIP
+  const zipStr = new TextDecoder("latin1").decode(bytes);
+  
+  // Look for XML content between <w:t> tags
+  // First, find the document.xml content in the zip
+  const xmlParts: string[] = [];
+  const wtRegex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
+  let match;
+  
+  while ((match = wtRegex.exec(zipStr)) !== null) {
+    xmlParts.push(match[1]);
+  }
+  
+  // Also handle paragraph breaks
+  const result = xmlParts.join("").replace(/<\/w:p>/g, "\n");
+  return result || "[Could not extract text from this DOCX. Please try uploading a TXT file instead.]";
 }
