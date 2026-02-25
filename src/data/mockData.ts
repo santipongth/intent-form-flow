@@ -203,6 +203,52 @@ export const MOCK_AGENT_ANALYTICS: AgentAnalytics[] = [
   { agentId: "4", agentName: "Code Helper", totalCalls: 1340, avgResponseTime: 310, errorRate: 1.8, successRate: 98.2 },
 ];
 
+export interface UsageByAgent {
+  agentName: string;
+  tokensUsed: number;
+  cost: number;
+  percentage: number;
+}
+
+export interface DailyUsage {
+  date: string;
+  promptTokens: number;
+  completionTokens: number;
+}
+
+export interface BillingInfo {
+  planName: string;
+  tokenLimit: number;
+  tokensUsed: number;
+  billingPeriod: string;
+  costPerThousandTokens: number;
+}
+
+export const MOCK_USAGE_BY_AGENT: UsageByAgent[] = [
+  { agentName: "Nong Support", tokensUsed: 450000, cost: 9.0, percentage: 42.3 },
+  { agentName: "News Bot", tokensUsed: 280000, cost: 5.6, percentage: 26.3 },
+  { agentName: "Code Helper", tokensUsed: 195000, cost: 3.9, percentage: 18.3 },
+  { agentName: "Doc Reader", tokensUsed: 140000, cost: 2.8, percentage: 13.1 },
+];
+
+export const MOCK_DAILY_USAGE: DailyUsage[] = [
+  { date: "19 ก.พ.", promptTokens: 52000, completionTokens: 37000 },
+  { date: "20 ก.พ.", promptTokens: 65000, completionTokens: 47000 },
+  { date: "21 ก.พ.", promptTokens: 58000, completionTokens: 37000 },
+  { date: "22 ก.พ.", promptTokens: 78000, completionTokens: 56000 },
+  { date: "23 ก.พ.", promptTokens: 92000, completionTokens: 64000 },
+  { date: "24 ก.พ.", promptTokens: 85000, completionTokens: 57000 },
+  { date: "25 ก.พ.", promptTokens: 98000, completionTokens: 70000 },
+];
+
+export const MOCK_BILLING_INFO: BillingInfo = {
+  planName: "Pro",
+  tokenLimit: 2000000,
+  tokensUsed: 1065000,
+  billingPeriod: "1 ก.พ. - 28 ก.พ. 2026",
+  costPerThousandTokens: 0.02,
+};
+
 export const TOOLS_LIST = [
   { id: "web-search", name: "🌐 ค้นหาเว็บ", description: "ค้นหาข้อมูลจากอินเทอร์เน็ต" },
   { id: "read-excel", name: "📊 อ่าน Excel/CSV", description: "อ่านและวิเคราะห์ไฟล์ตาราง" },
