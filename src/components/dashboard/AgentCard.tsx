@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { MoreVertical, Pencil, Trash2, Rocket, Eye, MessageCircle, FileText, HardDrive } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -13,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useUpdateAgent } from "@/hooks/useUpdateAgent";
 import type { AgentRow } from "@/hooks/useAgents";
 
 const MAX_FILES = 10;
@@ -34,6 +36,7 @@ interface AgentCardProps {
 function AgentCard({ agent, index, knowledgeStats, onDelete }: AgentCardProps) {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const updateAgent = useUpdateAgent();
 
   const ks = knowledgeStats;
   const pct = ks ? Math.min((ks.totalSize / MAX_TOTAL_SIZE) * 100, 100) : 0;
@@ -95,9 +98,18 @@ function AgentCard({ agent, index, knowledgeStats, onDelete }: AgentCardProps) {
             </div>
           )}
           <div className="flex items-center justify-between">
-            <Badge variant={agent.status === "published" ? "default" : "secondary"} className="rounded-full text-xs">
-              {agent.status === "published" ? "🟢 Published" : "📝 Draft"}
-            </Badge>
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              <Switch
+                checked={agent.status === "published"}
+                onCheckedChange={(checked) => {
+                  updateAgent.mutate({ id: agent.id, status: checked ? "published" : "draft" });
+                }}
+                className="scale-90"
+              />
+              <Badge variant={agent.status === "published" ? "default" : "secondary"} className="rounded-full text-xs">
+                {agent.status === "published" ? "🟢 Published" : "📝 Draft"}
+              </Badge>
+            </div>
             <span className="text-xs text-muted-foreground">{new Date(agent.created_at).toLocaleDateString("th-TH")}</span>
           </div>
         </CardContent>
