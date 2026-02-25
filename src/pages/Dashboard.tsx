@@ -1,8 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { MOCK_ACTIVITY } from "@/data/mockData";
-import { Plus, Bot, MessageCircle, Zap, MoreVertical, Pencil, Trash2, Rocket, Eye } from "lucide-react";
+import { Plus, Bot, MessageCircle, Zap, MoreVertical, Pencil, Trash2, Rocket, Eye, FileText, HardDrive } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -16,6 +17,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+const MAX_FILES = 10;
+const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB
+
+function formatSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 const activityIcons: Record<string, string> = {
   created: "🆕",
@@ -31,6 +43,25 @@ export default function Dashboard() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { data: profile } = useProfile();
+
+  // Fetch knowledge stats per agent
+  const { data: knowledgeStats } = useQuery({
+    queryKey: ["knowledge_stats"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("knowledge_files")
+        .select("agent_id, file_size");
+      if (error) throw error;
+      const stats: Record<string, { count: number; totalSize: number }> = {};
+      (data || []).forEach((row: { agent_id: string; file_size: number }) => {
+        if (!stats[row.agent_id]) stats[row.agent_id] = { count: 0, totalSize: 0 };
+        stats[row.agent_id].count++;
+        stats[row.agent_id].totalSize += row.file_size || 0;
+      });
+      return stats;
+    },
+    enabled: !!user,
+  });
 
   const displayName = profile?.display_name || user?.email?.split("@")[0] || "";
   const agentCount = agents?.length ?? 0;
@@ -136,6 +167,24 @@ export default function Dashboard() {
                         <span>·</span>
                         <span>{agent.provider || ""}</span>
                       </div>
+                      {/* Knowledge storage info */}
+                      {(() => {
+                        const ks = knowledgeStats?.[agent.id];
+                        if (!ks || ks.count === 0) return null;
+                        const pct = Math.min((ks.totalSize / MAX_TOTAL_SIZE) * 100, 100);
+                        return (
+                          <div className="mb-3 space-y-1">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <FileText className="h-3 w-3" />
+                              <span>{ks.count}/{MAX_FILES} {t("knowledge.fileCount")}</span>
+                              <span>·</span>
+                              <HardDrive className="h-3 w-3" />
+                              <span>{formatSize(ks.totalSize)}</span>
+                            </div>
+                            <Progress value={pct} className={`h-1 rounded-full ${pct > 80 ? "[&>div]:bg-destructive" : ""}`} />
+                          </div>
+                        );
+                      })()}
                       <div className="flex items-center justify-between">
                         <Badge variant={agent.status === "published" ? "default" : "secondary"} className="rounded-full text-xs">
                           {agent.status === "published" ? "🟢 Published" : "📝 Draft"}
