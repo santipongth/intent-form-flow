@@ -11,6 +11,7 @@ import { useABTest, useABTestVotes, useCastVote } from "@/hooks/useABTesting";
 import { useAgents } from "@/hooks/useAgents";
 import { streamChat } from "@/lib/streamChat";
 import ReactMarkdown from "react-markdown";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SideMessage {
   id: string;
@@ -21,6 +22,7 @@ interface SideMessage {
 export default function ABTestDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { data: test } = useABTest(id);
   const { data: agents } = useAgents();
 
@@ -108,7 +110,7 @@ export default function ABTestDetail() {
   if (!test) {
     return (
       <div className="p-6 text-center">
-        <p className="text-muted-foreground">Loading test...</p>
+        <p className="text-muted-foreground">{t("abtest.detail.loading")}</p>
       </div>
     );
   }
@@ -151,7 +153,7 @@ export default function ABTestDetail() {
           disabled={streamingA || streamingB}
           onClick={() => { setMessagesA([]); setMessagesB([]); }}
         >
-          <Trash2 className="h-4 w-4" /> Clear Chat
+          <Trash2 className="h-4 w-4" /> {t("abtest.clearChat")}
         </Button>
       </div>
 
@@ -159,10 +161,10 @@ export default function ABTestDetail() {
       {total > 0 && (
         <Card className="rounded-2xl">
           <CardContent className="p-4 flex items-center gap-6">
-            <span className="text-sm font-medium">Results ({total} votes):</span>
+            <span className="text-sm font-medium">{t("abtest.detail.results")} ({total} {t("abtest.results.votes")}):</span>
             <span className="text-sm">A: <strong>{votes.a}</strong> ({total > 0 ? Math.round((votes.a / total) * 100) : 0}%)</span>
             <span className="text-sm">B: <strong>{votes.b}</strong> ({total > 0 ? Math.round((votes.b / total) * 100) : 0}%)</span>
-            <span className="text-sm">Tie: <strong>{votes.tie}</strong></span>
+            <span className="text-sm">{t("abtest.detail.tie")}: <strong>{votes.tie}</strong></span>
           </CardContent>
         </Card>
       )}
@@ -195,20 +197,20 @@ export default function ABTestDetail() {
       {/* Vote buttons */}
       <div className="flex justify-center gap-3">
         <Button variant="outline" className="rounded-xl gap-2" onClick={() => handleVote("a")} disabled={streamingA || streamingB}>
-          <ThumbsUp className="h-4 w-4" /> A wins
+          <ThumbsUp className="h-4 w-4" /> {t("abtest.detail.aWins")}
         </Button>
         <Button variant="outline" className="rounded-xl" onClick={() => handleVote("tie")} disabled={streamingA || streamingB}>
-          Tie
+          {t("abtest.detail.tie")}
         </Button>
         <Button variant="outline" className="rounded-xl gap-2" onClick={() => handleVote("b")} disabled={streamingA || streamingB}>
-          B wins <ThumbsUp className="h-4 w-4" />
+          {t("abtest.detail.bWins")} <ThumbsUp className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Input */}
       <div className="flex gap-2 max-w-3xl mx-auto">
         <Input
-          placeholder="Type a message to send to both agents..."
+          placeholder={t("abtest.detail.sendBoth")}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}

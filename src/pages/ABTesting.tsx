@@ -44,7 +44,7 @@ export default function ABTesting() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="rounded-xl gap-2" onClick={() => navigate("/ab-testing/results")}>
-            <BarChart3 className="h-4 w-4" /> View Results
+            <BarChart3 className="h-4 w-4" /> {t("abtest.viewResults")}
           </Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
