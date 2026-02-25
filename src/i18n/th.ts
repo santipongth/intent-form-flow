@@ -264,6 +264,9 @@ export const th: Record<string, string> = {
   "landing.feature3Desc": "API Key ของคุณถูกเก็บรักษาอย่างปลอดภัย",
   "landing.templateTitle": "เริ่มจาก Template สำเร็จรูป",
   "landing.templateDesc": "เลือก Template แล้วปรับแต่งให้ตรงใจ ไม่ต้องเริ่มจากศูนย์",
+  "landing.statsAgents": "Agents สร้างแล้ว",
+  "landing.statsMessages": "ข้อความทั้งหมด",
+  "landing.statsConversations": "บทสนทนา",
   "landing.footer": "© 2026 ThoughtMind. All rights reserved.",
 
   // Protected Route
