@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +31,7 @@ interface AgentCardProps {
   onDelete: (id: string) => void;
 }
 
-export default function AgentCard({ agent, index, knowledgeStats, onDelete }: AgentCardProps) {
+const AgentCard = React.forwardRef<HTMLDivElement, AgentCardProps>(({ agent, index, knowledgeStats, onDelete }, ref) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -103,4 +104,8 @@ export default function AgentCard({ agent, index, knowledgeStats, onDelete }: Ag
       </Card>
     </motion.div>
   );
-}
+});
+
+AgentCard.displayName = "AgentCard";
+
+export default AgentCard;
