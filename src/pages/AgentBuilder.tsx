@@ -107,22 +107,28 @@ export default function AgentBuilder() {
   const currentProvider = LLM_MODELS.find((m) => m.id === selectedProvider);
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="px-4 py-5 sm:p-6 max-w-5xl mx-auto space-y-5 sm:space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold">{t("builder.title")}</h1>
-        <p className="text-muted-foreground text-sm">{t("builder.subtitle")}</p>
+        <h1 className="font-display text-xl sm:text-2xl font-bold">{t("builder.title")}</h1>
+        <p className="text-muted-foreground text-xs sm:text-sm">{t("builder.subtitle")}</p>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
+        {/* Step indicators - dots on mobile, full text on desktop */}
         <div className="flex items-center justify-between text-sm">
           {STEPS_KEYS.map((s, i) => (
             <span key={s} className={`hidden sm:inline ${i === step ? "text-primary font-semibold" : i < step ? "text-brand-green" : "text-muted-foreground"}`}>
               {i < step ? "✅" : i === step ? "👉" : `${i + 1}.`} {s}
             </span>
           ))}
-          <span className="sm:hidden text-primary font-semibold">{t("builder.step")} {step + 1}{t("builder.of")}{STEPS_KEYS.length}: {STEPS_KEYS[step]}</span>
+          <div className="flex sm:hidden items-center gap-1.5 w-full">
+            {STEPS_KEYS.map((_, i) => (
+              <div key={i} className={`h-2 flex-1 rounded-full transition-colors ${i <= step ? "bg-primary" : "bg-muted"}`} />
+            ))}
+          </div>
         </div>
-        <Progress value={progress} className="h-2 rounded-full" />
+        <p className="sm:hidden text-xs text-primary font-semibold">{t("builder.step")} {step + 1}{t("builder.of")}{STEPS_KEYS.length}: {STEPS_KEYS[step]}</p>
+        <Progress value={progress} className="h-2 rounded-full hidden sm:block" />
       </div>
 
       <AnimatePresence mode="wait">
@@ -136,9 +142,9 @@ export default function AgentBuilder() {
                   <span>{t("builder.usingTemplate")} <strong>{templateFromMarketplace}</strong> {t("builder.fromMarketplace")} {t("builder.canChange")}</span>
                 </div>
               )}
-              <div className="grid sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <Card className={`rounded-2xl cursor-pointer transition-all border-2 ${selectedTemplate === "custom" ? "border-primary shadow-md" : "border-transparent hover:border-border"}`} onClick={() => setSelectedTemplate("custom")}>
-                  <CardContent className="p-5 text-center">
+                  <CardContent className="p-4 sm:p-5 text-center">
                     <div className="text-3xl mb-2">🎨</div>
                     <h3 className="font-semibold">{t("builder.custom")}</h3>
                     <p className="text-xs text-muted-foreground">{t("builder.customDesc")}</p>
@@ -146,7 +152,7 @@ export default function AgentBuilder() {
                 </Card>
                 {TEMPLATES.map((tp) => (
                   <Card key={tp.id} className={`rounded-2xl cursor-pointer transition-all border-2 ${selectedTemplate === tp.id ? "border-primary shadow-md" : "border-transparent hover:border-border"}`} onClick={() => { setSelectedTemplate(tp.id); setObjective(tp.description); }}>
-                    <CardContent className="p-5">
+                    <CardContent className="p-4 sm:p-5">
                       <div className={`h-1.5 w-12 rounded-full bg-gradient-to-r ${tp.color} mb-3`} />
                       <h3 className="font-semibold text-sm">{tp.name}</h3>
                       <p className="text-xs text-muted-foreground">{tp.description}</p>
@@ -182,12 +188,12 @@ export default function AgentBuilder() {
                 </div>
                 <div>
                   <Label>{t("builder.selectProvider")}</Label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
                     {LLM_MODELS.map((m) => (
                       <Card key={m.id} className={`rounded-xl cursor-pointer transition-all border-2 ${selectedProvider === m.id ? "border-primary" : "border-transparent hover:border-border"}`} onClick={() => { setSelectedProvider(m.id); setSelectedModel(m.models[0]); }}>
-                        <CardContent className="p-3 text-center">
-                          <div className="text-2xl mb-1">{m.icon}</div>
-                          <p className="text-xs font-medium">{m.name}</p>
+                        <CardContent className="p-2.5 sm:p-3 text-center">
+                          <div className="text-xl sm:text-2xl mb-1">{m.icon}</div>
+                          <p className="text-[10px] sm:text-xs font-medium truncate">{m.name}</p>
                         </CardContent>
                       </Card>
                     ))}
@@ -227,12 +233,12 @@ export default function AgentBuilder() {
                 <CardContent className="p-5 space-y-4">
                   <h3 className="font-semibold text-sm">{t("builder.tools")}</h3>
                   {TOOLS_LIST.map((tl) => (
-                    <div key={tl.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                      <div>
+                    <div key={tl.id} className="flex items-center justify-between gap-3 py-2 border-b border-border/50 last:border-0">
+                      <div className="min-w-0">
                         <p className="text-sm font-medium">{tl.name}</p>
-                        <p className="text-xs text-muted-foreground">{tl.description}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{tl.description}</p>
                       </div>
-                      <Switch checked={!!tools[tl.id]} onCheckedChange={(checked) => setTools({ ...tools, [tl.id]: checked })} />
+                      <Switch className="shrink-0" checked={!!tools[tl.id]} onCheckedChange={(checked) => setTools({ ...tools, [tl.id]: checked })} />
                     </div>
                   ))}
                 </CardContent>
@@ -280,7 +286,7 @@ export default function AgentBuilder() {
               <Card className="rounded-2xl bg-secondary/50">
                 <CardContent className="p-5 space-y-3">
                   <h3 className="font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> {t("builder.summary")}</h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-sm">
                     <div><span className="text-muted-foreground">Template:</span> <span className="font-medium">{selectedTemplate || "Custom"}</span></div>
                     <div><span className="text-muted-foreground">{t("detail.name")}:</span> <span className="font-medium">{name || "-"}</span></div>
                     <div><span className="text-muted-foreground">Model:</span> <span className="font-medium">{selectedModel}</span></div>
@@ -297,18 +303,19 @@ export default function AgentBuilder() {
         </motion.div>
       </AnimatePresence>
 
-      <div className="flex justify-between pt-4">
-        <Button variant="outline" className="rounded-xl gap-2" onClick={() => step > 0 ? setStep(step - 1) : navigate("/dashboard")}>
+      <div className="flex justify-between pt-4 pb-2 sticky bottom-0 bg-background/80 backdrop-blur-sm -mx-4 px-4 sm:-mx-6 sm:px-6">
+        <Button variant="outline" className="rounded-xl gap-1.5 sm:gap-2 text-sm" onClick={() => step > 0 ? setStep(step - 1) : navigate("/dashboard")}>
           <ArrowLeft className="h-4 w-4" />
-          {step > 0 ? t("builder.back") : "Dashboard"}
+          <span className="hidden sm:inline">{step > 0 ? t("builder.back") : "Dashboard"}</span>
+          <span className="sm:hidden">{step > 0 ? t("builder.back") : "Back"}</span>
         </Button>
         {step < STEPS_KEYS.length - 1 ? (
-          <Button className="gradient-primary text-primary-foreground rounded-xl gap-2" onClick={() => setStep(step + 1)}>
+          <Button className="gradient-primary text-primary-foreground rounded-xl gap-1.5 sm:gap-2 text-sm" onClick={() => setStep(step + 1)}>
             {t("builder.next")}
             <ArrowRight className="h-4 w-4" />
           </Button>
         ) : (
-          <Button className="gradient-primary text-primary-foreground rounded-xl gap-2 text-base px-8" onClick={handleCreate}>
+          <Button className="gradient-primary text-primary-foreground rounded-xl gap-2 text-sm sm:text-base px-6 sm:px-8" onClick={handleCreate}>
             {t("builder.create")}
           </Button>
         )}
