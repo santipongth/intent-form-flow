@@ -72,10 +72,10 @@ export default function Landing() {
 
         <section className="relative z-10 max-w-4xl mx-auto text-center px-6 pt-20 pb-24">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <div className="inline-flex items-center gap-2 rounded-full bg-secondary px-4 py-1.5 text-sm text-secondary-foreground mb-6">
-              <Sparkles className="h-4 w-4" />
-              {t("landing.tagline")}
-            </div>
+            
+
+
+
             <h1 className="font-display text-5xl md:text-6xl font-bold mb-6 leading-tight">
               {t("landing.heroTitle1")} <span className="gradient-text">{t("landing.heroTitle2")}</span><br />
               {t("landing.heroTitle3")}
