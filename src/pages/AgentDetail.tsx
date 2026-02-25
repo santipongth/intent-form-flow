@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { Copy, Eye, EyeOff, RefreshCw, Globe, Code, Monitor, Key, AlertTriangle, Send, Bot, User, ArrowLeft, Info, Pencil, Upload, Trash2, FileText, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
@@ -29,18 +30,41 @@ function generateApiKey() {
 function KnowledgeTab({ agentId }: { agentId: string }) {
   const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasProcessing = useRef(false);
   const { data: files = [], isLoading, refetch } = useKnowledgeFiles(agentId);
   const uploadFile = useUploadKnowledgeFile();
   const deleteFile = useDeleteKnowledgeFile();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+
+  // Auto-refresh every 5s when files are processing
+  useEffect(() => {
+    hasProcessing.current = files.some(f => f.status === "processing");
+    if (!hasProcessing.current) return;
+    const interval = setInterval(() => refetch(), 5000);
+    return () => clearInterval(interval);
+  }, [files, refetch]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Simulate upload progress
+    setUploadProgress(0);
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev === null || prev >= 90) { clearInterval(progressInterval); return 90; }
+        return prev + Math.random() * 20;
+      });
+    }, 200);
     uploadFile.mutate({ file, agentId }, {
       onSuccess: () => {
-        setTimeout(() => refetch(), 3000);
-        setTimeout(() => refetch(), 6000);
+        clearInterval(progressInterval);
+        setUploadProgress(100);
+        setTimeout(() => setUploadProgress(null), 800);
+      },
+      onError: () => {
+        clearInterval(progressInterval);
+        setUploadProgress(null);
       },
     });
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -80,6 +104,12 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
           </div>
         </div>
         <p className="text-xs text-muted-foreground">{t("knowledge.supportedTypes")}</p>
+        {uploadProgress !== null && (
+          <div className="space-y-1">
+            <Progress value={Math.min(uploadProgress, 100)} className="h-2 rounded-full" />
+            <p className="text-xs text-muted-foreground">{uploadProgress >= 100 ? t("knowledge.statusProcessing") : `${t("knowledge.uploading")} ${Math.round(uploadProgress)}%`}</p>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
