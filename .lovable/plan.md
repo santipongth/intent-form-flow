@@ -1,47 +1,49 @@
 
 
-# บันทึกผล Vote ของ A/B Test ลงฐานข้อมูล
+# เพิ่มปุ่ม Clear Chat + หน้าสรุปผล A/B Test พร้อมกราฟ
 
 ## Overview
-สร้างตาราง `ab_test_votes` เพื่อเก็บผลโหวตแต่ละครั้ง และแก้ไข frontend ให้บันทึกลงฐานข้อมูลแทนการเก็บใน state อย่างเดียว พร้อมโหลดผลโหวตเดิมเมื่อเปิดหน้า
+เพิ่ม 2 ฟีเจอร์หลัก: (1) ปุ่ม Clear Chat ในหน้า ABTestDetail และ (2) หน้าสรุปผล A/B Test ทั้งหมดพร้อมกราฟเปรียบเทียบ
 
 ## Changes
 
-### 1. สร้างตาราง `ab_test_votes` (Database Migration)
+### 1. เพิ่มปุ่ม Clear Chat ในหน้า ABTestDetail (`src/pages/ABTestDetail.tsx`)
+- เพิ่มปุ่ม "Clear Chat" ข้างหัวข้อ test (บริเวณ header) พร้อมไอคอน Trash2
+- เมื่อกดจะล้าง `messagesA` และ `messagesB` ทั้งหมด เพื่อเริ่มทดสอบรอบใหม่
+- ปุ่มจะ disabled ระหว่างที่กำลัง streaming อยู่
 
-```sql
-CREATE TABLE public.ab_test_votes (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  test_id uuid NOT NULL REFERENCES public.agent_ab_tests(id) ON DELETE CASCADE,
-  user_id uuid NOT NULL,
-  winner text NOT NULL,  -- 'a', 'b', or 'tie'
-  created_at timestamptz DEFAULT now()
-);
+### 2. สร้างหน้าสรุปผล A/B Test (`src/pages/ABTestResults.tsx`)
+- หน้าใหม่แสดงภาพรวมผลโหวตของทุก test
+- ใช้ BarChart จาก recharts แสดงกราฟแท่งเปรียบเทียบ votes ของ Agent A vs Agent B vs Tie สำหรับแต่ละ test
+- แสดงตารางสรุปด้วย: ชื่อ test, จำนวน vote แต่ละฝ่าย, เปอร์เซ็นต์, ผู้ชนะ
+- ดึงข้อมูลจาก `agent_ab_tests` + `ab_test_votes` ผ่าน hook ใหม่
 
-ALTER TABLE public.ab_test_votes ENABLE ROW LEVEL SECURITY;
+### 3. เพิ่ม hook สำหรับดึงผลรวม (`src/hooks/useABTesting.ts`)
+- เพิ่ม `useAllABTestVotes()` -- ดึง votes ทั้งหมดแล้ว group ตาม test_id
 
-CREATE POLICY "Users manage own votes"
-  ON public.ab_test_votes
-  FOR ALL
-  USING (auth.uid() = user_id);
-```
+### 4. เพิ่ม route และ navigation
+- เพิ่ม route `/ab-testing/results` ใน `src/App.tsx`
+- เพิ่มปุ่ม "View Results" ในหน้า ABTesting list เพื่อลิงก์ไปหน้าสรุป
 
-### 2. เพิ่ม hooks ใน `src/hooks/useABTesting.ts`
+### 5. ไม่ต้องแก้ database
+ข้อมูลทั้งหมดอยู่ในตาราง `ab_test_votes` และ `agent_ab_tests` แล้ว
 
-- `useABTestVotes(testId)` -- query ดึงจำนวน vote แยกตาม winner สำหรับ test นั้น
-- `useCastVote()` -- mutation สำหรับ insert vote ใหม่ พร้อม invalidate query
+## Technical Details
 
-### 3. แก้ไข `src/pages/ABTestDetail.tsx`
-
-- ลบ local `votes` state
-- ใช้ `useABTestVotes(id)` เพื่อโหลดผลโหวตจากฐานข้อมูล
-- แก้ `handleVote` ให้เรียก `useCastVote` mutation แทนการ setState
-- ผลโหวตจะคงอยู่เมื่อรีเฟรชหน้าหรือกลับมาดูทีหลัง
+### Files to Create
+| File | Description |
+|------|-------------|
+| `src/pages/ABTestResults.tsx` | หน้าสรุปผลพร้อม BarChart จาก recharts |
 
 ### Files to Modify
-
 | File | Changes |
 |------|---------|
-| Database | สร้างตาราง `ab_test_votes` พร้อม RLS |
-| `src/hooks/useABTesting.ts` | เพิ่ม `useABTestVotes` query และ `useCastVote` mutation |
-| `src/pages/ABTestDetail.tsx` | ใช้ hooks แทน local state สำหรับ votes |
+| `src/pages/ABTestDetail.tsx` | เพิ่มปุ่ม Clear Chat ที่ header |
+| `src/hooks/useABTesting.ts` | เพิ่ม `useAllABTestVotes` hook |
+| `src/App.tsx` | เพิ่ม route `/ab-testing/results` |
+| `src/pages/ABTesting.tsx` | เพิ่มปุ่ม "View Results" |
+
+### กราฟที่จะแสดง
+- BarChart แนวตั้ง: แกน X = ชื่อ test, แกน Y = จำนวน votes
+- 3 แท่งต่อ test: Agent A (สีฟ้า), Agent B (สีม่วง), Tie (สีเทา)
+- ใช้ recharts ที่ติดตั้งอยู่แล้ว + ChartContainer จาก `@/components/ui/chart`
