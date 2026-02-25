@@ -162,7 +162,7 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
                 <RefreshCw className="h-4 w-4" /> {t("knowledge.refresh")}
               </Button>
             )}
-            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md,.csv,.json,.docx" multiple className="hidden" onChange={handleFileSelect} />
+            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md,.csv,.json,.docx,.xlsx,.xls" multiple className="hidden" onChange={handleFileSelect} />
             <Button className="rounded-xl gap-2" onClick={() => fileInputRef.current?.click()} disabled={uploadFile.isPending || isAtFileLimit || isAtSizeLimit}>
               {uploadFile.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               {uploadFile.isPending ? t("knowledge.uploading") : t("knowledge.upload")}
