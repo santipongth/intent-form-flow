@@ -46,6 +46,49 @@ export function useABTest(id?: string) {
   });
 }
 
+export function useABTestVotes(testId?: string) {
+  return useQuery({
+    queryKey: ["ab_test_votes", testId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("ab_test_votes")
+        .select("winner")
+        .eq("test_id", testId!);
+      if (error) throw error;
+      const votes = { a: 0, b: 0, tie: 0 };
+      for (const row of data || []) {
+        if (row.winner === "a") votes.a++;
+        else if (row.winner === "b") votes.b++;
+        else if (row.winner === "tie") votes.tie++;
+      }
+      return votes;
+    },
+    enabled: !!testId,
+  });
+}
+
+export function useCastVote() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ testId, winner }: { testId: string; winner: "a" | "b" | "tie" }) => {
+      if (!user) throw new Error("Not authenticated");
+      const { error } = await (supabase as any)
+        .from("ab_test_votes")
+        .insert({ test_id: testId, user_id: user.id, winner });
+      if (error) throw error;
+    },
+    onSuccess: (_: unknown, vars: { testId: string; winner: string }) => {
+      qc.invalidateQueries({ queryKey: ["ab_test_votes", vars.testId] });
+      toast.success("Vote recorded!");
+    },
+    onError: (err: Error) => {
+      toast.error("Failed to record vote", { description: err.message });
+    },
+  });
+}
+
 export function useCreateABTest() {
   const qc = useQueryClient();
   const { user } = useAuth();

@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      ab_test_votes: {
+        Row: {
+          created_at: string | null
+          id: string
+          test_id: string
+          user_id: string
+          winner: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          test_id: string
+          user_id: string
+          winner: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          test_id?: string
+          user_id?: string
+          winner?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ab_test_votes_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "agent_ab_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_ab_tests: {
         Row: {
           agent_a_id: string
