@@ -301,4 +301,5 @@ export const en: Record<string, string> = {
   "knowledge.deleteConfirm": "Delete this file?",
   "knowledge.deleteConfirmDesc": "This will permanently remove this file from the knowledge base.",
   "knowledge.supportedTypes": "Supports PDF, TXT, DOCX, JSON (max 20MB)",
+  "knowledge.characters": "characters extracted",
 };
