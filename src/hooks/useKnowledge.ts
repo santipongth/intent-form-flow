@@ -41,7 +41,9 @@ export function useUploadKnowledgeFile() {
     mutationFn: async ({ file, agentId }: { file: File; agentId: string }) => {
       if (!user) throw new Error("Not authenticated");
 
-      const filePath = `${user.id}/${agentId}/${Date.now()}_${file.name}`;
+      // Sanitize file name to ASCII-safe for Supabase Storage
+      const safeName = encodeURIComponent(file.name).replace(/%/g, "_");
+      const filePath = `${user.id}/${agentId}/${Date.now()}_${safeName}`;
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
