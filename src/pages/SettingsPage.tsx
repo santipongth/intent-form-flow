@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LLM_MODELS } from "@/data/mockData";
+import { LLM_MODELS } from "@/data/constants";
 import { Eye, EyeOff, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -20,7 +20,7 @@ function useApiKeys() {
   return useQuery({
     queryKey: ["user_api_keys", user?.id],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("user_api_keys")
         .select("provider, api_key_encrypted");
       if (error) throw error;
@@ -40,7 +40,7 @@ function useSaveApiKeys() {
       if (!user) throw new Error("Not authenticated");
       const entries = Object.entries(keys).filter(([, v]) => v.trim());
       for (const [provider, key] of entries) {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from("user_api_keys")
           .upsert(
             { user_id: user.id, provider, api_key_encrypted: key, updated_at: new Date().toISOString() },

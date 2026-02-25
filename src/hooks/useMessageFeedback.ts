@@ -15,16 +15,15 @@ export function useMessageFeedback(conversationId?: string) {
   return useQuery({
     queryKey: ["message_feedback", conversationId],
     queryFn: async () => {
-      // Get all message IDs for this conversation, then fetch feedback
-      const { data: messages } = await (supabase as any)
+      const { data: messages } = await supabase
         .from("chat_messages")
         .select("id")
         .eq("conversation_id", conversationId!);
 
       if (!messages || messages.length === 0) return {} as Record<string, "up" | "down">;
 
-      const messageIds = messages.map((m: any) => m.id);
-      const { data, error } = await (supabase as any)
+      const messageIds = messages.map((m) => m.id);
+      const { data, error } = await supabase
         .from("message_feedback")
         .select("*")
         .in("message_id", messageIds)
@@ -34,7 +33,7 @@ export function useMessageFeedback(conversationId?: string) {
 
       const map: Record<string, "up" | "down"> = {};
       for (const fb of data || []) {
-        map[fb.message_id] = fb.rating;
+        map[fb.message_id] = fb.rating as "up" | "down";
       }
       return map;
     },
@@ -59,16 +58,14 @@ export function useSaveMessageFeedback() {
       if (!user) throw new Error("Not authenticated");
 
       if (currentRating === rating) {
-        // Toggle off - delete
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from("message_feedback")
           .delete()
           .eq("message_id", messageId)
           .eq("user_id", user.id);
         if (error) throw error;
       } else {
-        // Upsert
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from("message_feedback")
           .upsert(
             { message_id: messageId, user_id: user.id, rating },

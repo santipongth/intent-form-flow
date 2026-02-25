@@ -26,7 +26,7 @@ export default function Dashboard() {
   const { data: knowledgeStats } = useQuery({
     queryKey: ["knowledge_stats"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("knowledge_files")
         .select("agent_id, file_size");
       if (error) throw error;

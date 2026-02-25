@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { TEMPLATES } from "@/data/mockData";
+import { TEMPLATES } from "@/data/constants";
 import { ArrowRight, Sparkles, Zap, Shield, Globe, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";

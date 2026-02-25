@@ -19,24 +19,17 @@ export function useFeedbackAnalytics(days = 7) {
       const since = new Date();
       since.setDate(since.getDate() - days);
 
-      // Get feedback with message -> conversation -> agent chain
-      const { data: feedback, error } = await (supabase as any)
+      const { data: feedback, error } = await supabase
         .from("message_feedback")
-        .select(`
-          id,
-          rating,
-          created_at,
-          message_id
-        `)
+        .select(`id, rating, created_at, message_id`)
         .gte("created_at", since.toISOString())
         .eq("user_id", user!.id);
 
       if (error) throw error;
       if (!feedback || feedback.length === 0) return { byAgent: [], totals: { up: 0, down: 0, total: 0, rate: 0 } };
 
-      // Get message IDs to find their conversations
-      const messageIds = [...new Set(feedback.map((f: any) => f.message_id))];
-      const { data: messages } = await (supabase as any)
+      const messageIds = [...new Set(feedback.map((f) => f.message_id))];
+      const { data: messages } = await supabase
         .from("chat_messages")
         .select("id, conversation_id")
         .in("id", messageIds);
@@ -46,9 +39,8 @@ export function useFeedbackAnalytics(days = 7) {
         msgToConv[m.id] = m.conversation_id;
       }
 
-      // Get conversation -> agent mapping
       const convIds = [...new Set(Object.values(msgToConv))];
-      const { data: conversations } = await (supabase as any)
+      const { data: conversations } = await supabase
         .from("conversations")
         .select("id, agent_id")
         .in("id", convIds);
@@ -58,7 +50,6 @@ export function useFeedbackAnalytics(days = 7) {
         convToAgent[c.id] = c.agent_id || "unknown";
       }
 
-      // Aggregate by agent
       const agentStats: Record<string, { up: number; down: number }> = {};
       const dailyStats: Record<string, { up: number; down: number }> = {};
       let totalUp = 0, totalDown = 0;
@@ -84,7 +75,7 @@ export function useFeedbackAnalytics(days = 7) {
       const daily = Object.entries(dailyStats)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([date, v]) => ({
-          date: date.slice(5), // MM-DD
+          date: date.slice(5),
           thumbsUp: v.up,
           thumbsDown: v.down,
         }));
