@@ -1,47 +1,54 @@
 
 
-# Widget Language Support (Thai / English)
+# สร้างตาราง agent_ab_tests เพื่อให้ฟีเจอร์ A/B Testing ใช้งานได้
 
-## Overview
-Add a language selector in the embed settings so widget text (placeholder, error messages, status) adapts to Thai or English. A new `lang` URL parameter controls the widget's UI language.
+## สาเหตุของปัญหา
+ตาราง `agent_ab_tests` ยังไม่ได้สร้างในฐานข้อมูล ทำให้หน้า A/B Testing แสดง error 404 ทุกครั้งที่โหลด
 
-## Changes
+## สิ่งที่ต้องทำ
 
-### 1. `src/pages/AgentDetail.tsx`
-- Add state: `const [widgetLang, setWidgetLang] = useState<"th" | "en">("th")`
-- Add a language toggle (two buttons like the position selector) in the embed customization grid with label "🌐 ภาษา Widget"
-- Append `&lang=${widgetLang}` to `scriptEmbedCode`, `iframeEmbedCode`, and the preview iframe `src`
+### 1. สร้างตาราง `agent_ab_tests` ในฐานข้อมูล
+สร้างตารางด้วยคอลัมน์ตามที่โค้ดฝั่ง frontend ใช้งานอยู่แล้ว:
+- `id` (uuid, primary key)
+- `user_id` (uuid, not null)
+- `agent_a_id` (uuid, not null)
+- `agent_b_id` (uuid, not null)
+- `name` (text, not null)
+- `status` (text, default 'active')
+- `created_at`, `updated_at` (timestamptz)
 
-### 2. `supabase/functions/widget/index.ts`
-- Read `lang` param: `const lang = url.searchParams.get("lang") || "th"`
-- Define a translations map:
+### 2. เพิ่ม RLS Policy
+- เปิด RLS บนตาราง
+- เพิ่ม policy ให้ผู้ใช้จัดการได้เฉพาะ test ของตัวเอง (`auth.uid() = user_id`)
 
-```text
-th:
-  placeholder: "พิมพ์ข้อความ..."
-  online: "● ออนไลน์"
-  defaultWelcome: "สวัสดีค่ะ! 👋 มีอะไรให้ช่วยไหมคะ?"
-  errorGeneric: "เกิดข้อผิดพลาด"
-  errorConnection: "เกิดข้อผิดพลาดในการเชื่อมต่อ"
-  noResponse: "ไม่ได้รับคำตอบ กรุณาลองใหม่อีกครั้ง"
+### 3. ไม่ต้องแก้ไขโค้ด frontend
+โค้ดในไฟล์ `src/pages/ABTesting.tsx`, `src/pages/ABTestDetail.tsx`, และ `src/hooks/useABTesting.ts` พร้อมใช้งานอยู่แล้ว -- แค่สร้างตารางก็จะทำงานได้ทันที
 
-en:
-  placeholder: "Type a message..."
-  online: "● Online"
-  defaultWelcome: "Hello! 👋 How can I help you?"
-  errorGeneric: "An error occurred"
-  errorConnection: "Connection error"
-  noResponse: "No response received. Please try again."
+## Technical Details
+
+### SQL Migration
+
+```sql
+CREATE TABLE public.agent_ab_tests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  agent_a_id uuid NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
+  agent_b_id uuid NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  status text NOT NULL DEFAULT 'active',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+ALTER TABLE public.agent_ab_tests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users manage own ab tests"
+  ON public.agent_ab_tests
+  FOR ALL
+  USING (auth.uid() = user_id);
 ```
 
-- Pass `lang` through in bubble mode iframe src
-- Replace all hardcoded Thai strings in the HTML template with the corresponding translation variable
-- The `welcome_message` custom field still takes priority over the default welcome text
-
-### Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/pages/AgentDetail.tsx` | Add `widgetLang` state, language toggle UI, append `lang` param to all embed URLs |
-| `supabase/functions/widget/index.ts` | Read `lang` param, define i18n map, replace all hardcoded strings with translated values |
+### ผลลัพธ์หลังทำเสร็จ
+- หน้า A/B Testing จะโหลดได้โดยไม่ error
+- สามารถสร้าง test ใหม่ เลือก Agent 2 ตัวเปรียบเทียบ แล้วส่งข้อความทดสอบได้
 
