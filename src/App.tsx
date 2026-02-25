@@ -11,6 +11,7 @@ import ChatConsole from "./pages/ChatConsole";
 import Monitor from "./pages/Monitor";
 import Marketplace from "./pages/Marketplace";
 import SettingsPage from "./pages/SettingsPage";
+import DeployPanel from "./pages/DeployPanel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/marketplace" element={<AppLayout><Marketplace /></AppLayout>} />
           <Route path="/chat" element={<AppLayout><ChatConsole /></AppLayout>} />
           <Route path="/monitor" element={<AppLayout><Monitor /></AppLayout>} />
+          <Route path="/deploy" element={<AppLayout><DeployPanel /></AppLayout>} />
           <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
