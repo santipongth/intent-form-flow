@@ -261,6 +261,72 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
   );
 }
 
+function WidgetPreviewPanel({
+  agentId, agentName, previewTheme, setPreviewTheme, primaryColor, brandName,
+  widgetPosition, bubbleSize, widgetLang, welcomeParam, widgetWidth, widgetHeight,
+}: {
+  agentId: string; agentName: string; previewTheme: "light" | "dark";
+  setPreviewTheme: (v: "light" | "dark") => void; primaryColor: string;
+  brandName: string; widgetPosition: string; bubbleSize: number;
+  widgetLang: string; welcomeParam: string; widgetWidth: string; widgetHeight: string;
+}) {
+  const { t } = useLanguage();
+  const [htmlContent, setHtmlContent] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const widgetUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${encodeURIComponent(primaryColor)}&brand=${encodeURIComponent(brandName || agentName)}&position=${widgetPosition}&bubble_size=${bubbleSize}&lang=${widgetLang}${welcomeParam}`;
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    fetch(widgetUrl)
+      .then(res => res.text())
+      .then(html => { if (!cancelled) { setHtmlContent(html); setLoading(false); } })
+      .catch(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [widgetUrl]);
+
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">{t("detail.widgetPreview")}</CardTitle>
+            <CardDescription>{t("detail.widgetPreviewDesc")}</CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs">Dark</Label>
+            <Switch checked={previewTheme === "dark"} onCheckedChange={(v) => setPreviewTheme(v ? "dark" : "light")} />
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="flex justify-center">
+        <div
+          className="rounded-2xl border-2 border-border overflow-hidden shadow-lg"
+          style={{ width: Math.min(Number(widgetWidth) || 400, 420), height: Math.min(Number(widgetHeight) || 600, 620) }}
+        >
+          {loading ? (
+            <div className="w-full h-full flex items-center justify-center bg-muted">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : htmlContent ? (
+            <iframe
+              srcDoc={htmlContent}
+              className="w-full h-full border-none"
+              title="Widget Preview"
+              sandbox="allow-scripts allow-same-origin"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-sm">
+              ไม่สามารถโหลด Widget Preview ได้
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function AgentDetail() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -727,32 +793,20 @@ export default function AgentDetail() {
             </TabsContent>
 
             <TabsContent value="preview">
-              <Card className="rounded-2xl">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{t("detail.widgetPreview")}</CardTitle>
-                      <CardDescription>{t("detail.widgetPreviewDesc")}</CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs">Dark</Label>
-                      <Switch checked={previewTheme === "dark"} onCheckedChange={(v) => setPreviewTheme(v ? "dark" : "light")} />
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex justify-center">
-                  <div
-                    className="rounded-2xl border-2 border-border overflow-hidden shadow-lg"
-                    style={{ width: Math.min(Number(widgetWidth) || 400, 420), height: Math.min(Number(widgetHeight) || 600, 620) }}
-                  >
-                    <iframe
-                      src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${encodeURIComponent(primaryColor)}&brand=${encodeURIComponent(brandName || agent?.name || "")}&position=${widgetPosition}&bubble_size=${bubbleSize[0]}&lang=${widgetLang}${welcomeParam}`}
-                      className="w-full h-full border-none"
-                      title="Widget Preview"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+              <WidgetPreviewPanel
+                agentId={agentId}
+                agentName={agent?.name || ""}
+                previewTheme={previewTheme}
+                setPreviewTheme={setPreviewTheme}
+                primaryColor={primaryColor}
+                brandName={brandName}
+                widgetPosition={widgetPosition}
+                bubbleSize={bubbleSize[0]}
+                widgetLang={widgetLang}
+                welcomeParam={welcomeParam}
+                widgetWidth={widgetWidth}
+                widgetHeight={widgetHeight}
+              />
             </TabsContent>
 
             <TabsContent value="apikey">
