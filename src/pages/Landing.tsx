@@ -1,16 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TEMPLATES } from "@/data/mockData";
-import { ArrowRight, Sparkles, Zap, Shield } from "lucide-react";
+import { ArrowRight, Sparkles, Zap, Shield, Globe, Sun, Moon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Landing() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, locale, setLocale } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
   const dashTarget = user ? "/dashboard" : "/auth";
 
   const features = [
@@ -43,9 +45,28 @@ export default function Landing() {
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-xl">🧠</div>
             <span className="font-display font-bold text-xl gradient-text">ThoughtMind</span>
           </div>
-          <Button onClick={() => navigate(dashTarget)} variant="outline" className="rounded-xl">
-            {user ? t("landing.enterDashboard") : t("landing.signIn")}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-xl gap-1.5 text-xs font-medium"
+              onClick={() => setLocale(locale === "th" ? "en" : "th")}
+            >
+              <Globe className="h-4 w-4" />
+              {locale === "th" ? "TH" : "EN"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-xl"
+              onClick={toggleTheme}
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+            <Button onClick={() => navigate(dashTarget)} variant="outline" className="rounded-xl">
+              {user ? t("landing.enterDashboard") : t("landing.signIn")}
+            </Button>
+          </div>
         </nav>
 
         <section className="relative z-10 max-w-4xl mx-auto text-center px-6 pt-20 pb-24">
