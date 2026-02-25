@@ -22,6 +22,7 @@ export const th: Record<string, string> = {
   "sidebar.monitor": "Monitor",
   "sidebar.analytics": "Analytics",
   "sidebar.usage": "Usage & Billing",
+  "sidebar.abTesting": "A/B Testing",
   "sidebar.settings": "Settings",
   "sidebar.createAgent": "สร้าง Agent",
   "sidebar.signOut": "ออกจากระบบ",
@@ -258,4 +259,10 @@ export const th: Record<string, string> = {
   // Theme
   "theme.light": "Light",
   "theme.dark": "Dark",
+
+  // A/B Testing
+  "abtest.title": "A/B Testing",
+  "abtest.subtitle": "เปรียบเทียบ 2 agents แบบ side-by-side",
+  "abtest.create": "สร้าง Test ใหม่",
+  "abtest.createNew": "สร้าง A/B Test",
 };
