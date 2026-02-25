@@ -11,14 +11,6 @@ export interface Agent {
   template: string;
 }
 
-export interface ActivityItem {
-  id: string;
-  type: "created" | "edited" | "message" | "published";
-  agentName: string;
-  description: string;
-  timestamp: string;
-}
-
 export interface LogEntry {
   id: string;
   agentId: string;
@@ -52,14 +44,6 @@ export const MOCK_AGENTS: Agent[] = [
   { id: "2", name: "News Bot", avatar: "📰", objective: "สรุปข่าวประจำวัน", status: "published", model: "Claude 3.5", createdAt: "2026-02-18", messagesCount: 523, tokensUsed: 180000, template: "news-summary" },
   { id: "3", name: "Doc Reader", avatar: "📄", objective: "อ่านและตอบจาก PDF", status: "draft", model: "Gemini Pro", createdAt: "2026-02-22", messagesCount: 89, tokensUsed: 35000, template: "pdf-qa" },
   { id: "4", name: "Code Helper", avatar: "🔍", objective: "Review โค้ดและแนะนำ", status: "draft", model: "GPT-4o", createdAt: "2026-02-24", messagesCount: 34, tokensUsed: 12000, template: "code-reviewer" },
-];
-
-export const MOCK_ACTIVITY: ActivityItem[] = [
-  { id: "1", type: "message", agentName: "Nong Support", description: "ตอบลูกค้าไป 12 ข้อความ", timestamp: "5 นาทีที่แล้ว" },
-  { id: "2", type: "edited", agentName: "News Bot", description: "อัปเดต System Prompt", timestamp: "1 ชั่วโมงที่แล้ว" },
-  { id: "3", type: "created", agentName: "Code Helper", description: "สร้าง Agent ใหม่", timestamp: "2 ชั่วโมงที่แล้ว" },
-  { id: "4", type: "published", agentName: "Doc Reader", description: "เผยแพร่เป็น API", timestamp: "เมื่อวาน" },
-  { id: "5", type: "message", agentName: "News Bot", description: "สรุปข่าว 5 บทความ", timestamp: "เมื่อวาน" },
 ];
 
 export const MOCK_LOGS: LogEntry[] = [

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MOCK_ACTIVITY } from "@/data/mockData";
+
 import { Plus, Bot, MessageCircle, Zap, MoreVertical, Pencil, Trash2, Rocket, Eye, FileText, HardDrive, Search, X, ArrowUpDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -32,12 +32,6 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const activityIcons: Record<string, string> = {
-  created: "🆕",
-  edited: "✏️",
-  message: "💬",
-  published: "🚀",
-};
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -143,9 +137,8 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Agent Grid */}
-        <div className="lg:col-span-2 space-y-4">
+      <div>
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-display font-semibold text-lg">{t("dashboard.yourAgents")}</h2>
             {hasActiveFilters && (
@@ -312,26 +305,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Activity Feed */}
-        <div className="space-y-4">
-          <h2 className="font-display font-semibold text-lg">{t("dashboard.recentActivity")}</h2>
-          <Card className="rounded-2xl">
-            <CardContent className="p-4 space-y-3">
-              {MOCK_ACTIVITY.map((a) => (
-                <div key={a.id} className="flex items-start gap-3 py-2 border-b border-border/50 last:border-0">
-                  <span className="text-lg mt-0.5">{activityIcons[a.type]}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm">
-                      <span className="font-medium">{a.agentName}</span>{" "}
-                      <span className="text-muted-foreground">{a.description}</span>
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{a.timestamp}</p>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );
