@@ -1,83 +1,74 @@
 
 
-# ThoughtMind — "LangFlow สำหรับคนปกติ" 🧠✨
+# Agent Templates Marketplace
 
-## Design Direction
-- **Friendly & Colorful** — สีสันสดใส, มุมโค้ง, ไอคอนน่ารัก, แบบ Notion/Canva
-- **Gradient accents** สีม่วง-ฟ้า-ชมพู เป็น brand color หลัก
-- **Light mode** เป็นค่าเริ่มต้น พร้อม dark mode support
-- **Emoji & illustration** เสริมความเป็นมิตร
+## Overview
+เพิ่มหน้า Marketplace สำหรับ browse, ให้คะแนน, และ clone template ได้ในคลิกเดียว พร้อม gallery view, category filter, search, และ rating system
 
 ---
 
-## Phase 1: Frontend UI ทั้งหมด (Mock Data)
+## Changes
 
-### 1. Layout & Navigation
-- **Sidebar** พร้อมโลโก้ ThoughtMind, เมนู Dashboard / Agents / Chat / Monitor / Settings
-- ไอคอนสีสันสดใส, active state ชัดเจน
-- Responsive — mobile hamburger menu
+### 1. Mock Data - เพิ่ม Marketplace Templates
+**File:** `src/data/mockData.ts`
 
-### 2. Landing / Onboarding Page
-- Hero section อธิบาย ThoughtMind แบบสั้นกระชับ
-- ปุ่ม "เริ่มสร้าง AI Agent ตัวแรก" เด่นชัด
-- Template gallery preview — การ์ด 4-6 แบบ (ตอบคำถาม PDF, สรุปข่าว, Customer Support ฯลฯ)
+เพิ่ม interface `MarketplaceTemplate` และ mock data array `MARKETPLACE_TEMPLATES` ขยายจาก TEMPLATES เดิม โดยเพิ่มฟิลด์:
+- `author` - ชื่อผู้สร้าง
+- `rating` - คะแนน (1-5)
+- `reviewCount` - จำนวนรีวิว
+- `usageCount` - จำนวนคนที่ใช้
+- `tags` - แท็กเช่น "RAG", "Chatbot", "Automation"
+- `featured` - boolean สำหรับ template แนะนำ
+- `previewDescription` - คำอธิบายยาวขึ้น
 
-### 3. Dashboard (ศูนย์บัญชาการ)
-- **Stats Cards**: จำนวน Agents, Messages Today, Token Usage (mock data)
-- **Agent Grid**: การ์ดแสดง Agent แต่ละตัว พร้อม avatar, ชื่อ, สถานะ (Draft/Published), วันที่สร้าง, ปุ่ม Edit/Chat/Delete
-- **Activity Feed**: Timeline ของกิจกรรมล่าสุด (สร้าง Agent, แก้ไข, ตอบข้อความ)
-- **Quick Action**: ปุ่ม "+ สร้าง Agent ใหม่" โดดเด่น
+Mock data 8-10 templates ครอบคลุมหลาย category
 
-### 4. Agent Builder — Wizard 5 ขั้นตอน
-- **Stepper UI** แสดง progress (Step 1-5) ด้วย visual progress bar สีสัน
+### 2. Marketplace Page
+**File:** `src/pages/Marketplace.tsx`
 
-- **Step 1: Intent & Type** — เลือก Template จากการ์ดสวยๆ หรือ "Custom" (เริ่มจากศูนย์)
-- **Step 2: Identity & Model** — ฟอร์มตั้งชื่อ, Objective, Output Style dropdown (สุภาพ/เป็นกันเอง/มืออาชีพ), เลือก LLM (OpenAI/Anthropic/Gemini/Groq) พร้อมไอคอน
-- **Step 3: Knowledge** — Drag & drop zone สำหรับอัปโหลดไฟล์ + ช่องใส่ URL, แสดงรายการไฟล์ที่อัป
-- **Step 4: Tools & Memory** — Toggle switches สวยๆ (ค้นเว็บ, อ่าน Excel, คำนวณ, จำบริบท)
-- **Step 5: Advanced & Review** — System Prompt textarea, Temperature slider, Max Tokens input + สรุปการตั้งค่าทั้งหมดในการ์ดสวยๆ พร้อมปุ่ม "🚀 Create Agent"
+Layout ประกอบด้วย:
+- **Header** - ชื่อ "Template Marketplace" + คำอธิบาย
+- **Search bar** - ค้นหา template ตามชื่อ/คำอธิบาย
+- **Category filter** - ปุ่ม pill สำหรับกรอง (All, Knowledge, Research, Support, Dev, Content, Analytics)
+- **Featured section** - แถว template แนะนำ (1-2 การ์ดใหญ่)
+- **Template Grid** - การ์ดแสดง template ทั้งหมดในรูปแบบ grid
 
-- ทุก Step มี **Basic/Advanced toggle** (Progressive Disclosure)
+**Template Card แต่ละใบ:**
+- Gradient header ตาม category color
+- ชื่อ + emoji icon
+- คำอธิบายสั้น
+- Star rating (แสดงดาวสี + คะแนน)
+- จำนวนผู้ใช้ (เช่น "2.3K ใช้งาน")
+- ชื่อผู้สร้าง
+- Tags
+- ปุ่ม "ใช้ Template นี้" (One-click clone) -> navigate ไป `/agents/new?template={id}`
 
-### 5. Chat Console (Playground)
-- **Split-screen layout**: ซ้าย = Agent config panel (แก้ไขชื่อ, โทน, model ได้ทันที), ขวา = Chat interface
-- **Chat bubbles** สีสันแยกระหว่าง user กับ bot
-- **Typing animation** จำลอง streaming effect (SSE mock)
-- แสดงเวลาตอบ, ปุ่ม copy, ปุ่ม regenerate
-- Input area พร้อมปุ่มส่ง + แนบไฟล์
+**Interactions:**
+- Search filter แบบ real-time
+- Category filter toggle
+- คลิก card เปิด detail dialog
+- ปุ่ม clone navigate ไป Agent Builder พร้อม pre-fill template
 
-### 6. Monitor (Developer Console ฉบับเข้าใจง่าย)
-- **Thought Process Timeline**: แสดง step-by-step ว่า Agent คิดอะไร (mock) เช่น "🔍 กำลังค้นหา..." → "📄 พบ 5 ผลลัพธ์" → "✍️ กำลังสรุป..."
-- **Log entries** แสดงเป็น card/timeline สวยๆ ไม่ใช่ raw log
-- Filter ตาม Agent, วันที่, ประเภท action
+### 3. Template Detail Dialog
+อยู่ใน Marketplace page เป็น Dialog/Sheet:
+- รายละเอียดเต็มของ template
+- Preview description ยาว
+- Tools ที่ใช้
+- Model ที่แนะนำ
+- ปุ่ม "ใช้ Template นี้" ขนาดใหญ่
 
-### 7. Settings Page
-- **API Keys Management**: ฟอร์มบันทึก API Key ของ OpenAI, Anthropic, Gemini, Groq (mock save)
-- **Profile**: ชื่อ, email, avatar
-- **Preferences**: ภาษา, theme (light/dark)
+### 4. Route & Navigation
+**File:** `src/App.tsx` - เพิ่ม route `/marketplace`
 
----
-
-## ฟีเจอร์เสริมสำหรับ Production 🚀
-
-### 8. Agent Templates Marketplace
-- หน้า Gallery ของ Template พร้อม preview, rating, จำนวนผู้ใช้
-- กดใช้ Template ได้ทันที (One-click clone)
-
-### 9. Deploy / Publish Panel
-- เมื่อ Agent พร้อม กดปุ่ม "Publish" ได้ Embed code, API endpoint, Widget preview
-- แสดง iframe preview ของ chat widget
-
-### 10. Usage & Billing Dashboard
-- กราฟแสดง token usage ตาม Agent, ตามวัน (Recharts)
-- แจ้งเตือนเมื่อใกล้ถึง limit
+**File:** `src/components/layout/AppSidebar.tsx` - เพิ่มเมนู "Marketplace" ด้วยไอคอน `Store` จาก lucide-react ระหว่าง Agents กับ Chat
 
 ---
 
-## Technical Notes
-- ทุกข้อมูลใช้ **mock data** ในเฟสนี้ เตรียมโครงสร้างให้ต่อ Supabase ได้ง่าย
-- ใช้ **React Router** สำหรับ navigation ทุกหน้า
-- ใช้ **Shadcn/ui** components + Tailwind สำหรับ UI ทั้งหมด
-- ใช้ **Recharts** สำหรับกราฟ stats
-- State management ด้วย React Context/hooks
+## Technical Details
 
+- ใช้ `framer-motion` สำหรับ card entrance animations (ตาม pattern ใน Dashboard)
+- ใช้ Shadcn Dialog สำหรับ template detail popup
+- Star rating ใช้ lucide `Star` icon render ตามคะแนน
+- Category filter ใช้ state toggle ธรรมดา
+- Search ใช้ `useMemo` filter จาก mock data
+- ปุ่ม clone ใช้ `useNavigate` ส่ง query param `?template=xxx` ไปหน้า Agent Builder
