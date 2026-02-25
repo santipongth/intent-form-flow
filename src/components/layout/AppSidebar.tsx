@@ -1,4 +1,4 @@
-import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, CreditCard, Settings, Plus, LogOut, Sun, Moon, FlaskConical } from "lucide-react";
+import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, CreditCard, Settings, Plus, LogOut, FlaskConical } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useTheme } from "@/contexts/ThemeContext";
+
 import { useProfile } from "@/hooks/useProfile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
@@ -40,7 +40,7 @@ export function AppSidebar() {
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
   const { t } = useLanguage();
-  const { theme, toggleTheme } = useTheme();
+  
 
   const handleSignOut = async () => {
     await signOut();
@@ -91,18 +91,6 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-3 space-y-2">
-        {/* Dark mode toggle */}
-        {!collapsed ? (
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 rounded-xl text-xs" onClick={toggleTheme}>
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            {theme === "dark" ? t("theme.light") : t("theme.dark")}
-          </Button>
-        ) : (
-          <Button variant="ghost" size="icon" className="rounded-xl mx-auto" onClick={toggleTheme}>
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-        )}
-
         {/* User info */}
         {!collapsed && (
           <div className="flex items-center gap-2 px-2 py-1.5">
