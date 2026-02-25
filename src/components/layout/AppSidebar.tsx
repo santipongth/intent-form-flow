@@ -53,10 +53,8 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <div className="p-4 flex items-center gap-3">
-        <div className="shrink-0">
-          <img alt="ThoughtMind" className="w-20 h-20 rounded-2xl object-contain" src="/lovable-uploads/d1798342-d432-4714-bef6-57e1d84e6ac8.png" />
-        </div>
+      <div className={`flex items-center gap-3 ${collapsed ? "p-3 justify-center" : "px-4 py-5"}`}>
+        <img alt="ThoughtMind" className={`${collapsed ? "w-10 h-10" : "w-12 h-12"} rounded-xl object-contain shrink-0`} src="/lovable-uploads/d1798342-d432-4714-bef6-57e1d84e6ac8.png" />
         {!collapsed &&
         <div className="flex flex-col">
             <span className="font-display font-bold text-lg leading-tight gradient-text text-black">
