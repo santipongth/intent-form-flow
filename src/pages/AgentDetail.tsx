@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,16 +12,113 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, Eye, EyeOff, RefreshCw, Globe, Code, Monitor, Key, AlertTriangle, Send, Bot, User, ArrowLeft, Info, Pencil } from "lucide-react";
+import { Copy, Eye, EyeOff, RefreshCw, Globe, Code, Monitor, Key, AlertTriangle, Send, Bot, User, ArrowLeft, Info, Pencil, Upload, Trash2, FileText, Loader2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUpdateAgent } from "@/hooks/useUpdateAgent";
+import { useKnowledgeFiles, useUploadKnowledgeFile, useDeleteKnowledgeFile } from "@/hooks/useKnowledge";
 import type { AgentRow } from "@/hooks/useAgents";
 
 function generateApiKey() {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
   const rand = (n: number) => Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
   return `sk-tm-${rand(8)}-${rand(8)}-${rand(8)}-${rand(8)}`;
+}
+
+function KnowledgeTab({ agentId }: { agentId: string }) {
+  const { t } = useLanguage();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { data: files = [], isLoading, refetch } = useKnowledgeFiles(agentId);
+  const uploadFile = useUploadKnowledgeFile();
+  const deleteFile = useDeleteKnowledgeFile();
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    uploadFile.mutate({ file, agentId }, {
+      onSuccess: () => {
+        setTimeout(() => refetch(), 3000);
+        setTimeout(() => refetch(), 6000);
+      },
+    });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const statusBadge = (status: string) => {
+    if (status === "ready") return <Badge className="bg-green-500/10 text-green-600 border-green-500/20">{t("knowledge.statusReady")}</Badge>;
+    if (status === "processing") return <Badge variant="secondary" className="gap-1"><Loader2 className="h-3 w-3 animate-spin" />{t("knowledge.statusProcessing")}</Badge>;
+    return <Badge variant="destructive">{t("knowledge.statusError")}</Badge>;
+  };
+
+  return (
+    <Card className="rounded-2xl">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">{t("knowledge.title")}</CardTitle>
+            <CardDescription>{t("knowledge.subtitle")}</CardDescription>
+          </div>
+          <div>
+            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md,.csv" className="hidden" onChange={handleFileSelect} />
+            <Button className="rounded-xl gap-2" onClick={() => fileInputRef.current?.click()} disabled={uploadFile.isPending}>
+              {uploadFile.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              {uploadFile.isPending ? t("knowledge.uploading") : t("knowledge.upload")}
+            </Button>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">{t("knowledge.supportedTypes")}</p>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-2">{[1, 2].map(i => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
+        ) : files.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />
+            <p>{t("knowledge.noFiles")}</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {files.map((f) => (
+              <div key={f.id} className="flex items-center justify-between bg-secondary/50 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <FileText className="h-5 w-5 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{f.file_name}</p>
+                    <p className="text-xs text-muted-foreground">{formatSize(f.file_size)} · {new Date(f.created_at).toLocaleDateString("th-TH")}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {statusBadge(f.status)}
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{t("knowledge.deleteConfirm")}</AlertDialogTitle>
+                        <AlertDialogDescription>{t("knowledge.deleteConfirmDesc")}</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                        <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteFile.mutate({ id: f.id, filePath: f.file_path })}>{t("common.delete")}</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function AgentDetail() {
@@ -220,9 +317,12 @@ export default function AgentDetail() {
 
       {/* Main Tabs */}
       <Tabs defaultValue={defaultTab === "edit" ? "overview" : defaultTab} className="space-y-4">
-        <TabsList className="grid grid-cols-2 rounded-xl h-11 w-fit">
+        <TabsList className="grid grid-cols-3 rounded-xl h-11 w-fit">
           <TabsTrigger value="overview" className="rounded-lg gap-1.5">
             <Info className="h-4 w-4" /> {t("detail.overview")}
+          </TabsTrigger>
+          <TabsTrigger value="knowledge" className="rounded-lg gap-1.5">
+            <FileText className="h-4 w-4" /> {t("knowledge.title")}
           </TabsTrigger>
           <TabsTrigger value="deploy" className="rounded-lg gap-1.5">
             <Globe className="h-4 w-4" /> {t("detail.deploy")}
@@ -275,6 +375,11 @@ export default function AgentDetail() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Knowledge Tab */}
+        <TabsContent value="knowledge">
+          <KnowledgeTab agentId={agent.id} />
         </TabsContent>
 
         {/* Deploy Tab */}

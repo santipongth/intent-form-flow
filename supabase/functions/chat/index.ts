@@ -40,6 +40,30 @@ serve(async (req) => {
         }
         if (agent.temperature != null) temperature = agent.temperature;
       }
+
+      // Inject knowledge base content
+      const { data: knowledgeFiles } = await supabase
+        .from("knowledge_files")
+        .select("file_name, content")
+        .eq("agent_id", agent_id)
+        .eq("status", "ready");
+
+      if (knowledgeFiles && knowledgeFiles.length > 0) {
+        let knowledgeContext = "\n\n---\nReference Documents:\n";
+        let totalChars = 0;
+        const MAX_CHARS = 50000;
+
+        for (const kf of knowledgeFiles) {
+          if (!kf.content) continue;
+          const chunk = kf.content.substring(0, MAX_CHARS - totalChars);
+          knowledgeContext += `[Document: ${kf.file_name}]\n${chunk}\n\n`;
+          totalChars += chunk.length;
+          if (totalChars >= MAX_CHARS) break;
+        }
+
+        knowledgeContext += "---\n\nUse the above documents as reference to answer questions accurately.";
+        systemPrompt += knowledgeContext;
+      }
     }
 
     const startTime = Date.now();

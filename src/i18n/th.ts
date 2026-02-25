@@ -288,4 +288,17 @@ export const th: Record<string, string> = {
   "abtest.deleteConfirmDesc": "การลบจะลบ test นี้และโหวตทั้งหมดอย่างถาวร ไม่สามารถกู้คืนได้",
   "abtest.deleteSuccess": "ลบ A/B Test สำเร็จ",
   "abtest.cancel": "ยกเลิก",
+
+  // Knowledge Base
+  "knowledge.title": "คลังความรู้",
+  "knowledge.subtitle": "อัปโหลดเอกสารให้ Agent ใช้เป็นข้อมูลอ้างอิง",
+  "knowledge.upload": "อัปโหลดไฟล์",
+  "knowledge.uploading": "กำลังอัปโหลด...",
+  "knowledge.noFiles": "ยังไม่มีไฟล์",
+  "knowledge.statusProcessing": "กำลังประมวลผล",
+  "knowledge.statusReady": "พร้อมใช้งาน",
+  "knowledge.statusError": "ผิดพลาด",
+  "knowledge.deleteConfirm": "ลบไฟล์นี้?",
+  "knowledge.deleteConfirmDesc": "การลบจะลบไฟล์นี้ออกจากคลังความรู้อย่างถาวร",
+  "knowledge.supportedTypes": "รองรับ PDF, TXT (สูงสุด 20MB)",
 };

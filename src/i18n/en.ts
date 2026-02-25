@@ -288,4 +288,17 @@ export const en: Record<string, string> = {
   "abtest.deleteConfirmDesc": "This will permanently delete this test and all its votes. This action cannot be undone.",
   "abtest.deleteSuccess": "A/B Test deleted successfully",
   "abtest.cancel": "Cancel",
+
+  // Knowledge Base
+  "knowledge.title": "Knowledge Base",
+  "knowledge.subtitle": "Upload documents for your agent to reference",
+  "knowledge.upload": "Upload File",
+  "knowledge.uploading": "Uploading...",
+  "knowledge.noFiles": "No files uploaded yet",
+  "knowledge.statusProcessing": "Processing",
+  "knowledge.statusReady": "Ready",
+  "knowledge.statusError": "Error",
+  "knowledge.deleteConfirm": "Delete this file?",
+  "knowledge.deleteConfirmDesc": "This will permanently remove this file from the knowledge base.",
+  "knowledge.supportedTypes": "Supports PDF, TXT (max 20MB)",
 };
