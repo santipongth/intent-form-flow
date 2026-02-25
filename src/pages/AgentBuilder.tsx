@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,9 +9,9 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { TEMPLATES, LLM_MODELS, TOOLS_LIST } from "@/data/mockData";
-import { ArrowLeft, ArrowRight, Upload, Link, X, Sparkles } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { TEMPLATES, LLM_MODELS, TOOLS_LIST, MARKETPLACE_TEMPLATES } from "@/data/mockData";
+import { ArrowLeft, ArrowRight, Upload, Link, X, Sparkles, Store } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
@@ -19,6 +19,7 @@ const STEPS = ["Intent & Type", "Identity & Model", "Knowledge", "Tools & Memory
 
 export default function AgentBuilder() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(0);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -38,7 +39,40 @@ export default function AgentBuilder() {
   const [temperature, setTemperature] = useState([0.7]);
   const [maxTokens, setMaxTokens] = useState("2048");
 
+  const [templateFromMarketplace, setTemplateFromMarketplace] = useState<string | null>(null);
+
   const progress = ((step + 1) / STEPS.length) * 100;
+
+  // Pre-fill from ?template=xxx query param
+  useEffect(() => {
+    const templateId = searchParams.get("template");
+    if (!templateId) return;
+
+    const tmpl = MARKETPLACE_TEMPLATES.find((t) => t.id === templateId);
+    if (!tmpl) return;
+
+    setSelectedTemplate(tmpl.id);
+    setName(tmpl.name.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/u, "").trim());
+    setObjective(tmpl.description);
+
+    // Enable tools from template
+    const newTools: Record<string, boolean> = {};
+    tmpl.tools.forEach((t) => { newTools[t] = true; });
+    setTools(newTools);
+
+    // Match recommended model to provider
+    for (const provider of LLM_MODELS) {
+      if (provider.models.includes(tmpl.recommendedModel)) {
+        setSelectedProvider(provider.id);
+        setSelectedModel(tmpl.recommendedModel);
+        break;
+      }
+    }
+
+    setTemplateFromMarketplace(tmpl.name);
+    setStep(1); // Skip to Step 2
+    toast.success("โหลด Template สำเร็จ!", { description: `กำลังใช้ "${tmpl.name}" จาก Marketplace` });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddUrl = () => {
     if (urlInput.trim()) {
@@ -82,6 +116,12 @@ export default function AgentBuilder() {
           {step === 0 && (
             <div className="space-y-4">
               <h2 className="font-display text-lg font-semibold">เลือก Template หรือเริ่มจากศูนย์</h2>
+              {templateFromMarketplace && (
+                <div className="flex items-center gap-2 bg-primary/10 text-primary rounded-xl px-4 py-2.5 text-sm">
+                  <Store className="h-4 w-4 shrink-0" />
+                  <span>ใช้ Template <strong>{templateFromMarketplace}</strong> จาก Marketplace แล้ว — คุณสามารถเปลี่ยนได้ที่นี่</span>
+                </div>
+              )}
               <div className="grid sm:grid-cols-2 gap-3">
                 <Card
                   className={`rounded-2xl cursor-pointer transition-all border-2 ${selectedTemplate === "custom" ? "border-primary shadow-md" : "border-transparent hover:border-border"}`}
