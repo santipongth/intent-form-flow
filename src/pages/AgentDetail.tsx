@@ -79,6 +79,7 @@ export default function AgentDetail() {
   const [brandName, setBrandName] = useState("");
   const [widgetPosition, setWidgetPosition] = useState<"bottom-right" | "bottom-left">("bottom-right");
   const [bubbleSize, setBubbleSize] = useState([60]);
+  const [welcomeMessage, setWelcomeMessage] = useState("");
 
   const agentName = agent?.name || "Agent";
   const agentId = agent?.id || "unknown";
@@ -96,10 +97,12 @@ export default function AgentDetail() {
   const positionParam = widgetPosition;
   const bubbleSizeParam = bubbleSize[0];
 
-  const scriptEmbedCode = `<script src="${widgetBaseUrl}?agent_id=${agentId}&theme=${previewTheme}&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}" defer><\/script>`;
+  const welcomeParam = welcomeMessage ? `&welcome_message=${encodeURIComponent(welcomeMessage)}` : "";
+
+  const scriptEmbedCode = `<script src="${widgetBaseUrl}?agent_id=${agentId}&theme=${previewTheme}&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}${welcomeParam}" defer><\/script>`;
 
   const iframeEmbedCode = `<iframe
-  src="${widgetBaseUrl}?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}"
+  src="${widgetBaseUrl}?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}${welcomeParam}"
   width="${widgetWidth}"
   height="${widgetHeight}"
   frameborder="0"
@@ -409,6 +412,16 @@ export default function AgentDetail() {
                         </div>
                       </div>
                     </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <Label className="text-xs font-medium">💬 ข้อความต้อนรับ</Label>
+                      <Input
+                        value={welcomeMessage}
+                        onChange={(e) => setWelcomeMessage(e.target.value)}
+                        className="rounded-xl"
+                        placeholder="สวัสดีค่ะ! 👋 มีอะไรให้ช่วยไหมคะ?"
+                      />
+                      <p className="text-xs text-muted-foreground">ข้อความที่แสดงเมื่อเปิด widget (เว้นว่างเพื่อใช้ค่าเริ่มต้น)</p>
+                    </div>
                   </div>
                   {/* Script embed */}
                   <div className="space-y-2">
@@ -466,7 +479,7 @@ export default function AgentDetail() {
                     style={{ width: Math.min(Number(widgetWidth) || 400, 420), height: Math.min(Number(widgetHeight) || 600, 620) }}
                   >
                     <iframe
-                      src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${encodeURIComponent(primaryColor)}&brand=${encodeURIComponent(brandName || agent?.name || "")}&position=${widgetPosition}&bubble_size=${bubbleSize[0]}`}
+                      src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${encodeURIComponent(primaryColor)}&brand=${encodeURIComponent(brandName || agent?.name || "")}&position=${widgetPosition}&bubble_size=${bubbleSize[0]}${welcomeParam}`}
                       className="w-full h-full border-none"
                       title="Widget Preview"
                     />
