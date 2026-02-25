@@ -43,9 +43,8 @@ export default function Landing() {
 
         <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/25 to-accent/25 blur-lg scale-110" />
-              <img src={tmLogo} alt="ThoughtMind" className="relative w-16 h-16 object-contain rounded-2xl ring-2 ring-primary/10 shadow-lg" />
+            <div>
+              <img src={tmLogo} alt="ThoughtMind" className="w-20 h-20 object-contain rounded-2xl" />
             </div>
             <span className="font-display font-bold text-xl gradient-text text-inherit">ThoughtMind</span>
           </div>
