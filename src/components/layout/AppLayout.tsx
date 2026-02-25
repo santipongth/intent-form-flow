@@ -3,17 +3,14 @@ import { AppSidebar } from "./AppSidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useProfile } from "@/hooks/useProfile";
+
 import { Button } from "@/components/ui/button";
 import { Sun, Moon, Globe } from "lucide-react";
 
 export function AppLayout({ children }: {children: React.ReactNode;}) {
   const { user } = useAuth();
-  const { data: profile } = useProfile();
   const { locale, setLocale } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const displayName = profile?.display_name || user?.email?.split("@")[0] || "";
 
   return (
     <SidebarProvider>
@@ -42,13 +39,6 @@ export function AppLayout({ children }: {children: React.ReactNode;}) {
 
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
-              
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={profile?.avatar_url || ""} />
-                <AvatarFallback className="text-xs bg-secondary">
-                  {displayName.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
             </div>
           </header>
           <div className="flex-1">

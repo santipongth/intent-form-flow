@@ -52,14 +52,19 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
-      <div className="p-4 flex items-center gap-2">
-        <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-lg shrink-0">
+      <div className="p-4 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-2xl gradient-primary flex items-center justify-center text-lg shrink-0 shadow-md ring-2 ring-primary/20">
           🧠
         </div>
         {!collapsed && (
-          <span className="font-display font-bold text-lg gradient-text">
-            ThoughtMind
-          </span>
+          <div className="flex flex-col">
+            <span className="font-display font-bold text-lg leading-tight gradient-text">
+              ThoughtMind
+            </span>
+            <span className="text-[10px] font-medium text-muted-foreground tracking-wider uppercase">
+              AI Platform
+            </span>
+          </div>
         )}
       </div>
 
