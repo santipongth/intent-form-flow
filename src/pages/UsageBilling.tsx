@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { CreditCard, Zap, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,26 +7,81 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import { MOCK_USAGE_BY_AGENT, MOCK_DAILY_USAGE, MOCK_BILLING_INFO } from "@/data/mockData";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAnalyticsEvents } from "@/hooks/useAnalytics";
+import { useAgents } from "@/hooks/useAgents";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format, subDays, startOfDay } from "date-fns";
 
 const PIE_COLORS = ["hsl(262 83% 58%)", "hsl(220 90% 56%)", "hsl(160 70% 45%)", "hsl(30 90% 55%)"];
 const fadeUp = { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 } };
-const usagePercent = Math.round((MOCK_BILLING_INFO.tokensUsed / MOCK_BILLING_INFO.tokenLimit) * 100);
-const estimatedCost = ((MOCK_BILLING_INFO.tokensUsed / 1000) * MOCK_BILLING_INFO.costPerThousandTokens).toFixed(2);
-const totalCost = MOCK_USAGE_BY_AGENT.reduce((s, a) => s + a.cost, 0);
+const COST_PER_1K = 0.002;
+const TOKEN_LIMIT = 1_000_000;
 
 export default function UsageBilling() {
   const { t } = useLanguage();
+  const { data: events, isLoading } = useAnalyticsEvents(undefined, 30);
+  const { data: agents } = useAgents();
+
+  const agentMap = useMemo(() => new Map(agents?.map(a => [a.id, a]) || []), [agents]);
+
+  const { totalTokens, usageByAgent, dailyUsage } = useMemo(() => {
+    if (!events) return { totalTokens: 0, usageByAgent: [], dailyUsage: [] };
+
+    let totalTokens = 0;
+    const byAgent: Record<string, number> = {};
+    const byDay: Record<string, number> = {};
+
+    for (const e of events) {
+      const tokens = e.tokens_used || 0;
+      totalTokens += tokens;
+      const aid = e.agent_id || "unknown";
+      byAgent[aid] = (byAgent[aid] || 0) + tokens;
+      const day = e.created_at ? format(new Date(e.created_at), "MM/dd") : "unknown";
+      byDay[day] = (byDay[day] || 0) + tokens;
+    }
+
+    const usageByAgent = Object.entries(byAgent).map(([agentId, tokensUsed]) => {
+      const agent = agentMap.get(agentId);
+      return {
+        agentName: agent ? `${agent.avatar} ${agent.name}` : "Unknown",
+        tokensUsed,
+        percentage: totalTokens > 0 ? Math.round((tokensUsed / totalTokens) * 100) : 0,
+        cost: (tokensUsed / 1000) * COST_PER_1K,
+      };
+    }).sort((a, b) => b.tokensUsed - a.tokensUsed);
+
+    const dailyUsage = Object.entries(byDay).map(([date, tokens]) => ({
+      date,
+      tokens,
+    }));
+
+    return { totalTokens, usageByAgent, dailyUsage };
+  }, [events, agentMap]);
+
+  const usagePercent = Math.round((totalTokens / TOKEN_LIMIT) * 100);
+  const estimatedCost = ((totalTokens / 1000) * COST_PER_1K).toFixed(2);
+  const totalCost = usageByAgent.reduce((s, a) => s + a.cost, 0);
+
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-6 max-w-7xl mx-auto">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <motion.div {...fadeUp} className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold font-display">{t("usage.title")}</h1>
-          <p className="text-muted-foreground mt-1">{MOCK_BILLING_INFO.billingPeriod}</p>
+          <p className="text-muted-foreground mt-1">Last 30 days</p>
         </div>
-        <Badge variant="secondary" className="text-sm px-4 py-1">{MOCK_BILLING_INFO.planName} Plan</Badge>
+        <Badge variant="secondary" className="text-sm px-4 py-1">Free Plan</Badge>
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -36,7 +92,7 @@ export default function UsageBilling() {
               <Zap className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{(MOCK_BILLING_INFO.tokensUsed / 1000).toFixed(0)}K <span className="text-sm font-normal text-muted-foreground">/ {(MOCK_BILLING_INFO.tokenLimit / 1000000).toFixed(0)}M</span></div>
+              <div className="text-2xl font-bold">{(totalTokens / 1000).toFixed(0)}K <span className="text-sm font-normal text-muted-foreground">/ {(TOKEN_LIMIT / 1000000).toFixed(0)}M</span></div>
               <Progress value={usagePercent} className="mt-3 h-2" />
               <p className="text-xs text-muted-foreground mt-1">{usagePercent}% {t("usage.ofLimit")}</p>
             </CardContent>
@@ -61,7 +117,7 @@ export default function UsageBilling() {
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{MOCK_BILLING_INFO.planName}</div>
+              <div className="text-2xl font-bold">Free</div>
               <Button size="sm" variant="outline" className="mt-2 rounded-xl">{t("usage.upgrade")}</Button>
             </CardContent>
           </Card>
@@ -74,14 +130,12 @@ export default function UsageBilling() {
             <CardHeader><CardTitle className="text-lg">{t("usage.dailyUsage")}</CardTitle></CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={MOCK_DAILY_USAGE}>
+                <BarChart data={dailyUsage}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="date" className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                   <YAxis tick={{ fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `${v / 1000}K`} />
                   <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "0.75rem" }} formatter={(value: number) => value.toLocaleString()} />
-                  <Legend />
-                  <Bar dataKey="promptTokens" name="Prompt" stackId="tokens" fill="hsl(262 83% 58%)" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="completionTokens" name="Completion" stackId="tokens" fill="hsl(220 90% 56%)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="tokens" name="Tokens" fill="hsl(262 83% 58%)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -93,8 +147,8 @@ export default function UsageBilling() {
             <CardContent>
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
-                  <Pie data={MOCK_USAGE_BY_AGENT} dataKey="tokensUsed" nameKey="agentName" cx="50%" cy="50%" outerRadius={100} innerRadius={50} paddingAngle={3}>
-                    {MOCK_USAGE_BY_AGENT.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                  <Pie data={usageByAgent} dataKey="tokensUsed" nameKey="agentName" cx="50%" cy="50%" outerRadius={100} innerRadius={50} paddingAngle={3}>
+                    {usageByAgent.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
                   </Pie>
                   <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "0.75rem" }} formatter={(value: number) => value.toLocaleString()} />
                   <Legend />
@@ -119,7 +173,7 @@ export default function UsageBilling() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {MOCK_USAGE_BY_AGENT.map((agent) => (
+                {usageByAgent.map((agent) => (
                   <TableRow key={agent.agentName}>
                     <TableCell className="font-medium">{agent.agentName}</TableCell>
                     <TableCell className="text-right">{agent.tokensUsed.toLocaleString()}</TableCell>
@@ -127,12 +181,14 @@ export default function UsageBilling() {
                     <TableCell className="text-right">${agent.cost.toFixed(2)}</TableCell>
                   </TableRow>
                 ))}
-                <TableRow className="font-bold border-t-2">
-                  <TableCell>Total</TableCell>
-                  <TableCell className="text-right">{MOCK_BILLING_INFO.tokensUsed.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">100%</TableCell>
-                  <TableCell className="text-right">${totalCost.toFixed(2)}</TableCell>
-                </TableRow>
+                {usageByAgent.length > 0 && (
+                  <TableRow className="font-bold border-t-2">
+                    <TableCell>Total</TableCell>
+                    <TableCell className="text-right">{totalTokens.toLocaleString()}</TableCell>
+                    <TableCell className="text-right">100%</TableCell>
+                    <TableCell className="text-right">${totalCost.toFixed(2)}</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>

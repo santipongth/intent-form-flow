@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,15 +10,85 @@ import { Eye, EyeOff, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+function useApiKeys() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["user_api_keys", user?.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("user_api_keys")
+        .select("provider, api_key_encrypted");
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      (data || []).forEach((r: any) => { map[r.provider] = r.api_key_encrypted; });
+      return map;
+    },
+    enabled: !!user,
+  });
+}
+
+function useSaveApiKeys() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (keys: Record<string, string>) => {
+      if (!user) throw new Error("Not authenticated");
+      const entries = Object.entries(keys).filter(([, v]) => v.trim());
+      for (const [provider, key] of entries) {
+        const { error } = await (supabase as any)
+          .from("user_api_keys")
+          .upsert(
+            { user_id: user.id, provider, api_key_encrypted: key, updated_at: new Date().toISOString() },
+            { onConflict: "user_id,provider" }
+          );
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["user_api_keys"] }),
+  });
+}
 
 export default function SettingsPage() {
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [keys, setKeys] = useState<Record<string, string>>({});
   const { t, locale, setLocale } = useLanguage();
   const { theme, toggleTheme } = useTheme();
+  const { data: profile } = useProfile();
+  const { user } = useAuth();
+  const updateProfile = useUpdateProfile();
+  const { data: savedKeys } = useApiKeys();
+  const saveApiKeys = useSaveApiKeys();
+
+  const [displayName, setDisplayName] = useState("");
+
+  useEffect(() => {
+    if (profile?.display_name) setDisplayName(profile.display_name);
+  }, [profile]);
+
+  useEffect(() => {
+    if (savedKeys) setKeys(prev => ({ ...savedKeys, ...prev }));
+  }, [savedKeys]);
 
   const toggleKey = (id: string) => setShowKeys((p) => ({ ...p, [id]: !p[id] }));
-  const handleSave = () => toast.success(t("settings.saved"));
+
+  const handleSaveKeys = () => {
+    saveApiKeys.mutate(keys, {
+      onSuccess: () => toast.success(t("settings.saved")),
+      onError: () => toast.error("Failed to save API keys"),
+    });
+  };
+
+  const handleSaveProfile = () => {
+    updateProfile.mutate({ display_name: displayName }, {
+      onSuccess: () => toast.success(t("settings.saved")),
+      onError: () => toast.error("Failed to update profile"),
+    });
+  };
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
@@ -57,7 +127,7 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
           ))}
-          <Button className="gradient-primary text-primary-foreground rounded-xl gap-2" onClick={handleSave}>
+          <Button className="gradient-primary text-primary-foreground rounded-xl gap-2" onClick={handleSaveKeys} disabled={saveApiKeys.isPending}>
             <Save className="h-4 w-4" /> {t("settings.saveApiKeys")}
           </Button>
         </TabsContent>
@@ -66,21 +136,23 @@ export default function SettingsPage() {
           <Card className="rounded-2xl">
             <CardContent className="p-5 space-y-4">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center text-3xl">👤</div>
+                <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center text-3xl">
+                  {profile?.avatar_url ? <img src={profile.avatar_url} className="w-16 h-16 rounded-2xl object-cover" /> : "👤"}
+                </div>
                 <div>
-                  <h3 className="font-semibold">ThoughtMind User</h3>
-                  <p className="text-sm text-muted-foreground">user@thoughtmind.app</p>
+                  <h3 className="font-semibold">{profile?.display_name || "User"}</h3>
+                  <p className="text-sm text-muted-foreground">{user?.email}</p>
                 </div>
               </div>
               <div>
                 <Label>{t("settings.name")}</Label>
-                <Input defaultValue="ThoughtMind User" className="rounded-xl mt-1" />
+                <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="rounded-xl mt-1" />
               </div>
               <div>
                 <Label>Email</Label>
-                <Input defaultValue="user@thoughtmind.app" className="rounded-xl mt-1" />
+                <Input value={user?.email || ""} disabled className="rounded-xl mt-1" />
               </div>
-              <Button className="gradient-primary text-primary-foreground rounded-xl gap-2" onClick={handleSave}>
+              <Button className="gradient-primary text-primary-foreground rounded-xl gap-2" onClick={handleSaveProfile} disabled={updateProfile.isPending}>
                 <Save className="h-4 w-4" /> {t("common.save")}
               </Button>
             </CardContent>
