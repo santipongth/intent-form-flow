@@ -60,17 +60,34 @@ export function useFeedbackAnalytics(days = 7) {
 
       // Aggregate by agent
       const agentStats: Record<string, { up: number; down: number }> = {};
+      const dailyStats: Record<string, { up: number; down: number }> = {};
       let totalUp = 0, totalDown = 0;
 
       for (const fb of feedback) {
         const convId = msgToConv[fb.message_id];
         const agentId = convId ? convToAgent[convId] || "unknown" : "unknown";
         if (!agentStats[agentId]) agentStats[agentId] = { up: 0, down: 0 };
+        
+        const day = (fb.created_at || "").slice(0, 10);
+        if (day) {
+          if (!dailyStats[day]) dailyStats[day] = { up: 0, down: 0 };
+          if (fb.rating === "up") dailyStats[day].up++;
+          else dailyStats[day].down++;
+        }
+
         if (fb.rating === "up") { agentStats[agentId].up++; totalUp++; }
         else { agentStats[agentId].down++; totalDown++; }
       }
 
       const total = totalUp + totalDown;
+
+      const daily = Object.entries(dailyStats)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, v]) => ({
+          date: date.slice(5), // MM-DD
+          thumbsUp: v.up,
+          thumbsDown: v.down,
+        }));
 
       return {
         byAgent: Object.entries(agentStats).map(([agentId, s]) => ({
@@ -80,6 +97,7 @@ export function useFeedbackAnalytics(days = 7) {
           total: s.up + s.down,
           satisfactionRate: s.up + s.down > 0 ? +((s.up / (s.up + s.down)) * 100).toFixed(1) : 0,
         })),
+        daily,
         totals: { up: totalUp, down: totalDown, total, rate: total > 0 ? +((totalUp / total) * 100).toFixed(1) : 0 },
       };
     },
