@@ -1,4 +1,4 @@
-import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, CreditCard, Settings, Plus, LogOut, Sun, Moon } from "lucide-react";
+import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, CreditCard, Settings, Plus, LogOut, Sun, Moon, FlaskConical } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -27,6 +27,7 @@ const menuKeys = [
   { key: "sidebar.chat", url: "/chat", icon: MessageCircle },
   { key: "sidebar.monitor", url: "/monitor", icon: Activity },
   { key: "sidebar.analytics", url: "/analytics", icon: BarChart3 },
+  { key: "sidebar.abTesting", url: "/ab-testing", icon: FlaskConical },
   { key: "sidebar.usage", url: "/usage", icon: CreditCard },
   { key: "sidebar.settings", url: "/settings", icon: Settings },
 ];

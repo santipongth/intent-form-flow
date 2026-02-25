@@ -19,6 +19,8 @@ import Analytics from "./pages/Analytics";
 import AgentDetail from "./pages/AgentDetail";
 import ResetPassword from "./pages/ResetPassword";
 import UsageBilling from "./pages/UsageBilling";
+import ABTesting from "./pages/ABTesting";
+import ABTestDetail from "./pages/ABTestDetail";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -42,9 +44,12 @@ const App = () => (
                 <Route path="/agents/:id" element={<ProtectedRoute><AppLayout><AgentDetail /></AppLayout></ProtectedRoute>} />
                 <Route path="/marketplace" element={<ProtectedRoute><AppLayout><Marketplace /></AppLayout></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><AppLayout><ChatConsole /></AppLayout></ProtectedRoute>} />
+                <Route path="/chat/:conversationId" element={<ProtectedRoute><AppLayout><ChatConsole /></AppLayout></ProtectedRoute>} />
                 <Route path="/monitor" element={<ProtectedRoute><AppLayout><Monitor /></AppLayout></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><AppLayout><Analytics /></AppLayout></ProtectedRoute>} />
                 <Route path="/usage" element={<ProtectedRoute><AppLayout><UsageBilling /></AppLayout></ProtectedRoute>} />
+                <Route path="/ab-testing" element={<ProtectedRoute><AppLayout><ABTesting /></AppLayout></ProtectedRoute>} />
+                <Route path="/ab-testing/:id" element={<ProtectedRoute><AppLayout><ABTestDetail /></AppLayout></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

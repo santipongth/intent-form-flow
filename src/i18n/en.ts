@@ -22,6 +22,7 @@ export const en: Record<string, string> = {
   "sidebar.monitor": "Monitor",
   "sidebar.analytics": "Analytics",
   "sidebar.usage": "Usage & Billing",
+  "sidebar.abTesting": "A/B Testing",
   "sidebar.settings": "Settings",
   "sidebar.createAgent": "Create Agent",
   "sidebar.signOut": "Sign Out",
@@ -258,4 +259,10 @@ export const en: Record<string, string> = {
   // Theme
   "theme.light": "Light",
   "theme.dark": "Dark",
+
+  // A/B Testing
+  "abtest.title": "A/B Testing",
+  "abtest.subtitle": "Compare two agents side-by-side",
+  "abtest.create": "New Test",
+  "abtest.createNew": "Create A/B Test",
 };
