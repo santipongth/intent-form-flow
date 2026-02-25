@@ -93,6 +93,12 @@ export const th: Record<string, string> = {
   "dashboard.statusDraft": "Draft",
   "dashboard.clearFilters": "ล้างตัวกรอง",
   "dashboard.noResults": "ไม่พบ Agent ที่ตรงกับตัวกรอง",
+  "dashboard.sortBy": "เรียงตาม",
+  "dashboard.sortNewest": "ใหม่สุดก่อน",
+  "dashboard.sortOldest": "เก่าสุดก่อน",
+  "dashboard.sortNameAZ": "ชื่อ ก → ฮ",
+  "dashboard.sortNameZA": "ชื่อ ฮ → ก",
+  "dashboard.sortStatus": "สถานะ",
 
   // Agent Builder
   "builder.title": "✨ สร้าง Agent ใหม่",

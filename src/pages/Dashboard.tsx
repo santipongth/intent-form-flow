@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MOCK_ACTIVITY } from "@/data/mockData";
-import { Plus, Bot, MessageCircle, Zap, MoreVertical, Pencil, Trash2, Rocket, Eye, FileText, HardDrive, Search, X } from "lucide-react";
+import { Plus, Bot, MessageCircle, Zap, MoreVertical, Pencil, Trash2, Rocket, Eye, FileText, HardDrive, Search, X, ArrowUpDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -70,18 +70,17 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [modelFilter, setModelFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("newest");
 
-  // Derive unique models for filter dropdown
   const availableModels = useMemo(() => {
     if (!agents) return [];
     const models = new Set(agents.map(a => a.model).filter(Boolean));
     return Array.from(models) as string[];
   }, [agents]);
 
-  // Filtered agents
   const filteredAgents = useMemo(() => {
     if (!agents) return [];
-    return agents.filter(agent => {
+    const filtered = agents.filter(agent => {
       const matchesSearch = !searchQuery ||
         agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (agent.objective || "").toLowerCase().includes(searchQuery.toLowerCase());
@@ -89,9 +88,20 @@ export default function Dashboard() {
       const matchesModel = modelFilter === "all" || agent.model === modelFilter;
       return matchesSearch && matchesStatus && matchesModel;
     });
-  }, [agents, searchQuery, statusFilter, modelFilter]);
 
-  const hasActiveFilters = searchQuery || statusFilter !== "all" || modelFilter !== "all";
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "newest": return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "oldest": return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "name_asc": return a.name.localeCompare(b.name);
+        case "name_desc": return b.name.localeCompare(a.name);
+        case "status": return (a.status || "").localeCompare(b.status || "");
+        default: return 0;
+      }
+    });
+  }, [agents, searchQuery, statusFilter, modelFilter, sortBy]);
+
+  const hasActiveFilters = searchQuery || statusFilter !== "all" || modelFilter !== "all" || sortBy !== "newest";
 
   const agentCount = agents?.length ?? 0;
   const stats = [
@@ -139,7 +149,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <h2 className="font-display font-semibold text-lg">{t("dashboard.yourAgents")}</h2>
             {hasActiveFilters && (
-              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => { setSearchQuery(""); setStatusFilter("all"); setModelFilter("all"); }}>
+              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => { setSearchQuery(""); setStatusFilter("all"); setModelFilter("all"); setSortBy("newest"); }}>
                 <X className="h-3 w-3" /> {t("dashboard.clearFilters")}
               </Button>
             )}
@@ -179,6 +189,19 @@ export default function Dashboard() {
                 </SelectContent>
               </Select>
             )}
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full sm:w-44 rounded-xl">
+                <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                <SelectValue placeholder={t("dashboard.sortBy")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">{t("dashboard.sortNewest")}</SelectItem>
+                <SelectItem value="oldest">{t("dashboard.sortOldest")}</SelectItem>
+                <SelectItem value="name_asc">{t("dashboard.sortNameAZ")}</SelectItem>
+                <SelectItem value="name_desc">{t("dashboard.sortNameZA")}</SelectItem>
+                <SelectItem value="status">{t("dashboard.sortStatus")}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {isLoading ? (
@@ -276,7 +299,7 @@ export default function Dashboard() {
                   {hasActiveFilters ? t("dashboard.noResults") : t("dashboard.noAgents")}
                 </p>
                 {hasActiveFilters ? (
-                  <Button variant="outline" className="mt-4 rounded-xl gap-2" onClick={() => { setSearchQuery(""); setStatusFilter("all"); setModelFilter("all"); }}>
+                  <Button variant="outline" className="mt-4 rounded-xl gap-2" onClick={() => { setSearchQuery(""); setStatusFilter("all"); setModelFilter("all"); setSortBy("newest"); }}>
                     <X className="h-4 w-4" /> {t("dashboard.clearFilters")}
                   </Button>
                 ) : (
