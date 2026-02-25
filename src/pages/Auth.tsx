@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
+import tmLogo from "@/assets/tm-logo.png";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -71,9 +72,7 @@ export default function Auth() {
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center text-2xl mx-auto mb-4">
-            🧠
-          </div>
+          <img src={tmLogo} alt="ThoughtMind" className="w-14 h-14 rounded-2xl object-contain mx-auto mb-4" />
           <h1 className="font-display text-2xl font-bold">{t("auth.title")}</h1>
           <p className="text-muted-foreground text-sm mt-1">{t("auth.subtitle")}</p>
         </div>
