@@ -8,7 +8,6 @@ const corsHeaders = {
 
 /** Remove null bytes and control characters that PostgreSQL text columns cannot store */
 function sanitizeText(text: string): string {
-  // Remove \u0000 and control chars except \t \n \r
   return text.replace(/[\u0000]/g, "").replace(/[\u0001-\u0008\u000B\u000C\u000E-\u001F]/g, "");
 }
 
@@ -56,8 +55,8 @@ serve(async (req) => {
       } else if (fileName.endsWith(".docx")) {
         textContent = await extractTextFromDocx(fileData);
       } else if (fileName.endsWith(".pdf")) {
-        const bytes = new Uint8Array(await fileData.arrayBuffer());
-        textContent = extractTextFromPdf(bytes);
+        // Use AI-based extraction for PDFs (handles all languages including Thai)
+        textContent = await extractTextWithAI(fileData, "pdf");
       } else {
         textContent = await fileData.text();
       }
@@ -104,44 +103,122 @@ serve(async (req) => {
   }
 });
 
-function decodeOctalEscapes(s: string): string {
-  return s.replace(/\\([0-7]{1,3})/g, (_, oct) => String.fromCharCode(parseInt(oct, 8)));
+/**
+ * Use Lovable AI (Gemini Flash) to extract text from binary documents.
+ * This handles all languages including Thai, Chinese, Japanese, etc.
+ */
+async function extractTextWithAI(blob: Blob, fileType: string): Promise<string> {
+  const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!lovableApiKey) {
+    console.warn("LOVABLE_API_KEY not set, falling back to basic extraction");
+    if (fileType === "pdf") {
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      return extractTextFromPdfBasic(bytes);
+    }
+    return await blob.text();
+  }
+
+  // Convert blob to base64
+  const arrayBuffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const base64Data = btoa(binary);
+
+  const mimeType = fileType === "pdf" ? "application/pdf" : "application/octet-stream";
+
+  try {
+    const response = await fetch("https://api.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${lovableApiKey}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Extract ALL text content from this document. Preserve the original language (Thai, English, or any other language). Output ONLY the extracted text, maintaining paragraph structure with line breaks. Do not add any commentary, headers, or formatting beyond what's in the document. If there are tables, format them in a readable way."
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Data}`
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 16000,
+        temperature: 0,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("AI extraction failed:", response.status, errText);
+      // Fallback to basic extraction
+      if (fileType === "pdf") {
+        const bytes2 = new Uint8Array(arrayBuffer);
+        return extractTextFromPdfBasic(bytes2);
+      }
+      return "[Could not extract text from this file]";
+    }
+
+    const result = await response.json();
+    const extractedText = result.choices?.[0]?.message?.content || "";
+    
+    if (extractedText.length > 0) {
+      return extractedText;
+    }
+
+    // Fallback if AI returned empty
+    if (fileType === "pdf") {
+      const bytes2 = new Uint8Array(arrayBuffer);
+      return extractTextFromPdfBasic(bytes2);
+    }
+    return "[Could not extract text from this file]";
+  } catch (err) {
+    console.error("AI extraction error:", err);
+    if (fileType === "pdf") {
+      const bytes2 = new Uint8Array(arrayBuffer);
+      return extractTextFromPdfBasic(bytes2);
+    }
+    return "[Could not extract text from this file]";
+  }
 }
 
-function extractTextFromPdf(bytes: Uint8Array): string {
+/** Basic PDF text extraction fallback - works for simple ASCII/Latin PDFs */
+function extractTextFromPdfBasic(bytes: Uint8Array): string {
   const text: string[] = [];
   const str = new TextDecoder("latin1").decode(bytes);
 
-  // Extract text from PDF stream objects
   const streamRegex = /stream\r?\n([\s\S]*?)endstream/g;
   let match;
 
   while ((match = streamRegex.exec(str)) !== null) {
     const streamContent = match[1];
 
-    // Tj operator
     const tjRegex = /\(([^)]*)\)\s*Tj/g;
     let tjMatch;
     while ((tjMatch = tjRegex.exec(streamContent)) !== null) {
-      text.push(decodeOctalEscapes(tjMatch[1]));
+      text.push(tjMatch[1]);
     }
 
-    // TJ array operator
     const tjArrayRegex = /\[([^\]]*)\]\s*TJ/g;
     let tjArrMatch;
     while ((tjArrMatch = tjArrayRegex.exec(streamContent)) !== null) {
       const innerRegex = /\(([^)]*)\)/g;
       let innerMatch;
       while ((innerMatch = innerRegex.exec(tjArrMatch[1])) !== null) {
-        text.push(decodeOctalEscapes(innerMatch[1]));
+        text.push(innerMatch[1]);
       }
-    }
-
-    // ' and " operators (text with newline)
-    const quoteRegex = /\(([^)]*)\)\s*['"]/g;
-    let qMatch;
-    while ((qMatch = quoteRegex.exec(streamContent)) !== null) {
-      text.push(decodeOctalEscapes(qMatch[1]));
     }
   }
 
@@ -158,7 +235,6 @@ async function extractTextFromDocx(blob: Blob): Promise<string> {
   const wtRegex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
   let match;
 
-  // Track paragraph boundaries
   let lastIndex = 0;
   const pEndRegex = /<\/w:p>/g;
   const pBreaks = new Set<number>();
@@ -169,7 +245,6 @@ async function extractTextFromDocx(blob: Blob): Promise<string> {
 
   while ((match = wtRegex.exec(zipStr)) !== null) {
     xmlParts.push(match[1]);
-    // Check if there's a </w:p> between lastIndex and current match
     for (const idx of pBreaks) {
       if (idx > lastIndex && idx < match.index) {
         xmlParts.push("\n");
