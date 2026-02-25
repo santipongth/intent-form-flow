@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+// Force HMR refresh
 import { th } from "@/i18n/th";
 import { en } from "@/i18n/en";
 
