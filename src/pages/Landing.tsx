@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import tmLogo from "@/assets/tm-logo.png";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -42,7 +43,7 @@ export default function Landing() {
 
         <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-xl">🧠</div>
+            <img src={tmLogo} alt="ThoughtMind" className="w-10 h-10 rounded-xl object-contain" />
             <span className="font-display font-bold text-xl gradient-text">ThoughtMind</span>
           </div>
           <div className="flex items-center gap-2">
