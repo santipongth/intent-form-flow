@@ -130,7 +130,7 @@ async function extractTextWithAI(blob: Blob, fileType: string): Promise<string> 
   const mimeType = fileType === "pdf" ? "application/pdf" : "application/octet-stream";
 
   try {
-    const response = await fetch("https://api.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
