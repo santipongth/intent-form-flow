@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { TEMPLATES, LLM_MODELS, TOOLS_LIST, MARKETPLACE_TEMPLATES } from "@/data/mockData";
-import { ArrowLeft, ArrowRight, Upload, Link, X, Sparkles, Store } from "lucide-react";
+import { ArrowLeft, ArrowRight, Upload, Link, X, Sparkles, Store, Loader2 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useCreateAgent } from "@/hooks/useAgents";
+import { useUploadKnowledgeFile } from "@/hooks/useKnowledge";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const STEPS_KEYS = ["Intent & Type", "Identity & Model", "Knowledge", "Tools & Memory", "Review & Create"];
@@ -32,7 +33,7 @@ export default function AgentBuilder() {
   const [outputStyle, setOutputStyle] = useState("friendly");
   const [selectedProvider, setSelectedProvider] = useState("openai");
   const [selectedModel, setSelectedModel] = useState("GPT-4o");
-  const [files, setFiles] = useState<string[]>([]);
+  const [files, setFiles] = useState<File[]>([]);
   const [urls, setUrls] = useState<string[]>([]);
   const [urlInput, setUrlInput] = useState("");
   const [tools, setTools] = useState<Record<string, boolean>>({ "web-search": true });
@@ -72,6 +73,7 @@ export default function AgentBuilder() {
   };
 
   const createAgent = useCreateAgent();
+  const uploadKnowledge = useUploadKnowledgeFile();
 
   const handleCreate = () => {
     createAgent.mutate({
@@ -88,7 +90,17 @@ export default function AgentBuilder() {
       tools: tools as any,
       memory_enabled: memoryEnabled,
       knowledge_urls: urls,
-    }, { onSuccess: () => navigate("/dashboard") });
+    }, {
+      onSuccess: (data: any) => {
+        // Upload pending files to the newly created agent
+        if (files.length > 0 && data?.id) {
+          files.forEach((file) => {
+            uploadKnowledge.mutate({ file, agentId: data.id });
+          });
+        }
+        navigate("/dashboard");
+      },
+    });
   };
 
   const currentProvider = LLM_MODELS.find((m) => m.id === selectedProvider);
@@ -203,14 +215,26 @@ export default function AgentBuilder() {
                   <Upload className="h-10 w-10 mx-auto mb-3 text-primary/50" />
                   <p className="font-medium mb-1">{t("builder.dragDrop")}</p>
                   <p className="text-sm text-muted-foreground mb-3">{t("builder.fileTypes")}</p>
-                  <Button variant="outline" className="rounded-xl" onClick={() => setFiles([...files, `document_${files.length + 1}.pdf`])}>{t("builder.selectFile")}</Button>
+                  <label>
+                    <input
+                      type="file"
+                      accept=".pdf,.txt,.md,.csv"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setFiles([...files, file]);
+                        e.target.value = "";
+                      }}
+                    />
+                    <Button variant="outline" className="rounded-xl" asChild><span>{t("builder.selectFile")}</span></Button>
+                  </label>
                 </CardContent>
               </Card>
               {files.length > 0 && (
                 <div className="space-y-2">
                   {files.map((f, i) => (
                     <div key={i} className="flex items-center justify-between bg-secondary rounded-xl px-4 py-2">
-                      <span className="text-sm">📄 {f}</span>
+                      <span className="text-sm">📄 {f.name} ({(f.size / 1024).toFixed(1)} KB)</span>
                       <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setFiles(files.filter((_, idx) => idx !== i))}><X className="h-3 w-3" /></Button>
                     </div>
                   ))}
