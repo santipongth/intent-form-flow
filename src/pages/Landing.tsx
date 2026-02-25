@@ -4,6 +4,7 @@ import { TEMPLATES } from "@/data/mockData";
 import { ArrowRight, Sparkles, Zap, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
 
 const features = [
   { icon: Sparkles, title: "ไม่ต้องเขียนโค้ด", description: "สร้าง AI Agent ด้วย Wizard ง่ายๆ 5 ขั้นตอน", color: "text-primary" },
@@ -13,6 +14,8 @@ const features = [
 
 export default function Landing() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const dashTarget = user ? "/dashboard" : "/auth";
 
   return (
     <div className="min-h-screen bg-background">
@@ -24,8 +27,8 @@ export default function Landing() {
             <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-xl">🧠</div>
             <span className="font-display font-bold text-xl gradient-text">ThoughtMind</span>
           </div>
-          <Button onClick={() => navigate("/dashboard")} variant="outline" className="rounded-xl">
-            เข้าสู่ Dashboard
+          <Button onClick={() => navigate(dashTarget)} variant="outline" className="rounded-xl">
+            {user ? "เข้าสู่ Dashboard" : "เข้าสู่ระบบ"}
           </Button>
         </nav>
 
@@ -48,8 +51,8 @@ export default function Landing() {
                 🚀 เริ่มสร้าง Agent ตัวแรก
                 <ArrowRight className="h-4 w-4" />
               </Button>
-              <Button size="lg" variant="outline" className="rounded-xl text-base px-8" onClick={() => navigate("/dashboard")}>
-                ดู Demo
+              <Button size="lg" variant="outline" className="rounded-xl text-base px-8" onClick={() => navigate(dashTarget)}>
+                {user ? "Dashboard" : "เข้าสู่ระบบ"}
               </Button>
             </div>
           </motion.div>
