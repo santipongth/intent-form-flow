@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Send, Bot, ThumbsUp } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { useABTest } from "@/hooks/useABTesting";
+import { useABTest, useABTestVotes, useCastVote } from "@/hooks/useABTesting";
 import { useAgents } from "@/hooks/useAgents";
 import { streamChat } from "@/lib/streamChat";
 import ReactMarkdown from "react-markdown";
@@ -29,7 +29,8 @@ export default function ABTestDetail() {
   const [messagesB, setMessagesB] = useState<SideMessage[]>([]);
   const [streamingA, setStreamingA] = useState(false);
   const [streamingB, setStreamingB] = useState(false);
-  const [votes, setVotes] = useState<{ a: number; b: number; tie: number }>({ a: 0, b: 0, tie: 0 });
+  const { data: votes = { a: 0, b: 0, tie: 0 } } = useABTestVotes(id);
+  const castVote = useCastVote();
 
   const endRefA = useRef<HTMLDivElement>(null);
   const endRefB = useRef<HTMLDivElement>(null);
@@ -100,8 +101,8 @@ export default function ABTestDetail() {
   };
 
   const handleVote = (winner: "a" | "b" | "tie") => {
-    setVotes((prev) => ({ ...prev, [winner]: prev[winner] + 1 }));
-    toast.success(`Vote recorded: ${winner === "tie" ? "Tie" : `Agent ${winner.toUpperCase()} wins`}`);
+    if (!id) return;
+    castVote.mutate({ testId: id, winner });
   };
 
   if (!test) {
