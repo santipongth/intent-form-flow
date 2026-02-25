@@ -9,7 +9,7 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { TEMPLATES, LLM_MODELS, TOOLS_LIST, MARKETPLACE_TEMPLATES } from "@/data/mockData";
+import { TEMPLATES, LLM_MODELS, TOOLS_LIST, MARKETPLACE_TEMPLATES } from "@/data/constants";
 import { ArrowLeft, ArrowRight, Upload, Link, X, Sparkles, Store, Loader2 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";

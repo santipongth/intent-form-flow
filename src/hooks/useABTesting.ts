@@ -19,7 +19,7 @@ export function useABTests() {
   return useQuery({
     queryKey: ["ab_tests", user?.id],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("agent_ab_tests")
         .select("*")
         .order("created_at", { ascending: false });
@@ -34,7 +34,7 @@ export function useABTest(id?: string) {
   return useQuery({
     queryKey: ["ab_test", id],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("agent_ab_tests")
         .select("*")
         .eq("id", id!)
@@ -50,7 +50,7 @@ export function useABTestVotes(testId?: string) {
   return useQuery({
     queryKey: ["ab_test_votes", testId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("ab_test_votes")
         .select("winner")
         .eq("test_id", testId!);
@@ -74,7 +74,7 @@ export function useCastVote() {
   return useMutation({
     mutationFn: async ({ testId, winner }: { testId: string; winner: "a" | "b" | "tie" }) => {
       if (!user) throw new Error("Not authenticated");
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("ab_test_votes")
         .insert({ test_id: testId, user_id: user.id, winner });
       if (error) throw error;
@@ -101,7 +101,7 @@ export function useAllABTestVotes() {
   return useQuery({
     queryKey: ["all_ab_test_votes", user?.id],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("ab_test_votes")
         .select("test_id, winner");
       if (error) throw error;
@@ -123,7 +123,7 @@ export function useDeleteABTest() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("agent_ab_tests")
         .delete()
         .eq("id", id);
@@ -145,7 +145,7 @@ export function useCreateABTest() {
   return useMutation({
     mutationFn: async ({ name, agentAId, agentBId }: { name: string; agentAId: string; agentBId: string }) => {
       if (!user) throw new Error("Not authenticated");
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("agent_ab_tests")
         .insert({
           user_id: user.id,

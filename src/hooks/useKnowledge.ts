@@ -21,7 +21,7 @@ export function useKnowledgeFiles(agentId?: string) {
   return useQuery({
     queryKey: ["knowledge_files", agentId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("knowledge_files")
         .select("*")
         .eq("agent_id", agentId!)
@@ -41,18 +41,15 @@ export function useUploadKnowledgeFile() {
     mutationFn: async ({ file, agentId }: { file: File; agentId: string }) => {
       if (!user) throw new Error("Not authenticated");
 
-      // Sanitize file name to ASCII-safe for Supabase Storage
       const safeName = encodeURIComponent(file.name).replace(/%/g, "_");
       const filePath = `${user.id}/${agentId}/${Date.now()}_${safeName}`;
 
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from("knowledge-files")
         .upload(filePath, file);
       if (uploadError) throw uploadError;
 
-      // Insert metadata
-      const { data: record, error: insertError } = await (supabase as any)
+      const { data: record, error: insertError } = await supabase
         .from("knowledge_files")
         .insert({
           agent_id: agentId,
@@ -67,7 +64,6 @@ export function useUploadKnowledgeFile() {
         .single();
       if (insertError) throw insertError;
 
-      // Call extract-text function (fire-and-forget)
       supabase.functions.invoke("extract-text", {
         body: { file_path: filePath, knowledge_file_id: record.id },
       }).then(() => {
@@ -90,10 +86,8 @@ export function useDeleteKnowledgeFile() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, filePath }: { id: string; filePath: string }) => {
-      // Delete from storage
       await supabase.storage.from("knowledge-files").remove([filePath]);
-      // Delete from DB
-      const { error } = await (supabase as any).from("knowledge_files").delete().eq("id", id);
+      const { error } = await supabase.from("knowledge_files").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

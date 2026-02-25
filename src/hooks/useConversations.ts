@@ -26,7 +26,7 @@ export function useConversations(agentId?: string) {
   return useQuery({
     queryKey: ["conversations", user?.id, agentId],
     queryFn: async () => {
-      let q = (supabase as any)
+      let q = supabase
         .from("conversations")
         .select("*")
         .order("updated_at", { ascending: false });
@@ -43,7 +43,7 @@ export function useConversationMessages(conversationId?: string) {
   return useQuery({
     queryKey: ["chat_messages", conversationId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("chat_messages")
         .select("*")
         .eq("conversation_id", conversationId!)
@@ -62,7 +62,7 @@ export function useCreateConversation() {
   return useMutation({
     mutationFn: async ({ agentId, title }: { agentId?: string; title?: string }) => {
       if (!user) throw new Error("Not authenticated");
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("conversations")
         .insert({
           user_id: user.id,
@@ -89,7 +89,7 @@ export function useSaveMessage() {
       tokens_used?: number;
       response_time_ms?: number;
     }) => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("chat_messages")
         .insert(msg)
         .select()
@@ -104,7 +104,7 @@ export function useUpdateConversationTitle() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, title }: { id: string; title: string }) => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("conversations")
         .update({ title, updated_at: new Date().toISOString() })
         .eq("id", id);
@@ -120,12 +120,11 @@ export function useDeleteConversation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (conversationId: string) => {
-      // Delete messages first, then conversation
-      await (supabase as any)
+      await supabase
         .from("chat_messages")
         .delete()
         .eq("conversation_id", conversationId);
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from("conversations")
         .delete()
         .eq("id", conversationId);
