@@ -264,6 +264,9 @@ export const en: Record<string, string> = {
   "landing.feature3Desc": "Your API Keys are stored safely and securely",
   "landing.templateTitle": "Start from Ready-Made Templates",
   "landing.templateDesc": "Choose a template and customize it — no need to start from zero",
+  "landing.statsAgents": "Agents Created",
+  "landing.statsMessages": "Messages Sent",
+  "landing.statsConversations": "Conversations",
   "landing.footer": "© 2026 ThoughtMind. All rights reserved.",
 
   // Protected Route

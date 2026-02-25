@@ -1,13 +1,32 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TEMPLATES } from "@/data/constants";
-import { ArrowRight, Globe, Sun, Moon } from "lucide-react";
+import { ArrowRight, Globe, Sun, Moon, Bot, MessageCircle, MessagesSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import tmLogo from "@/assets/tm-logo.png";
+
+function useStats() {
+  return useQuery({
+    queryKey: ["platform-stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_platform_stats");
+      if (error) throw error;
+      return data as { total_agents: number; total_messages: number; total_conversations: number };
+    },
+    staleTime: 60_000,
+  });
+}
+
+function formatNumber(n: number) {
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+  return n.toString();
+}
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -15,13 +34,19 @@ export default function Landing() {
   const { t, locale, setLocale } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const dashTarget = user ? "/dashboard" : "/auth";
+  const { data: stats } = useStats();
+
+  const statItems = [
+    { icon: Bot, value: stats?.total_agents ?? 0, label: t("landing.statsAgents"), color: "text-primary" },
+    { icon: MessageCircle, value: stats?.total_messages ?? 0, label: t("landing.statsMessages"), color: "text-brand-orange" },
+    { icon: MessagesSquare, value: stats?.total_conversations ?? 0, label: t("landing.statsConversations"), color: "text-brand-green" },
+  ];
 
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
       <header className="relative overflow-hidden">
         <div className="absolute inset-0 gradient-hero opacity-5" />
-        {/* Animated blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div
             className="absolute top-20 right-20 w-72 h-72 rounded-full bg-primary/10 blur-3xl"
@@ -42,12 +67,7 @@ export default function Landing() {
             <span className="font-display font-bold text-xl gradient-text text-inherit">ThoughtMind</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="rounded-xl gap-1.5 text-xs font-medium"
-              onClick={() => setLocale(locale === "th" ? "en" : "th")}
-            >
+            <Button variant="ghost" size="sm" className="rounded-xl gap-1.5 text-xs font-medium" onClick={() => setLocale(locale === "th" ? "en" : "th")}>
               <Globe className="h-4 w-4" />
               {locale === "th" ? "TH" : "EN"}
             </Button>
@@ -61,7 +81,7 @@ export default function Landing() {
         </nav>
 
         {/* Hero content */}
-        <section className="relative z-10 max-w-3xl mx-auto text-center px-6 pt-24 pb-28">
+        <section className="relative z-10 max-w-3xl mx-auto text-center px-6 pt-24 pb-16">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <h1 className="font-display text-5xl md:text-6xl font-bold mb-6 leading-tight tracking-tight">
               {t("landing.heroTitle1")}{" "}
@@ -73,62 +93,57 @@ export default function Landing() {
               {t("landing.heroDesc")}
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
-              <Button
-                size="lg"
-                className="gradient-primary text-primary-foreground rounded-xl text-base px-8 gap-2 shadow-lg hover:shadow-xl transition-shadow"
-                onClick={() => navigate("/agents/new")}
-              >
+              <Button size="lg" className="gradient-primary text-primary-foreground rounded-xl text-base px-8 gap-2 shadow-lg hover:shadow-xl transition-shadow" onClick={() => navigate("/agents/new")}>
                 {t("landing.cta")}
                 <ArrowRight className="h-4 w-4" />
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="rounded-xl text-base px-8"
-                onClick={() => navigate(dashTarget)}
-              >
+              <Button size="lg" variant="outline" className="rounded-xl text-base px-8" onClick={() => navigate(dashTarget)}>
                 {user ? "Dashboard" : t("landing.signIn")}
               </Button>
             </div>
+          </motion.div>
+        </section>
+
+        {/* Stats */}
+        <section className="relative z-10 max-w-2xl mx-auto px-6 pb-20">
+          <motion.div
+            className="grid grid-cols-3 gap-4"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            {statItems.map((s) => (
+              <div
+                key={s.label}
+                className="flex flex-col items-center gap-1.5 rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm py-5 px-3"
+              >
+                <s.icon className={`h-6 w-6 ${s.color}`} />
+                <span className="text-2xl md:text-3xl font-display font-bold tracking-tight">
+                  {formatNumber(s.value)}
+                </span>
+                <span className="text-xs text-muted-foreground font-medium">{s.label}</span>
+              </div>
+            ))}
           </motion.div>
         </section>
       </header>
 
       {/* Template Gallery */}
       <section className="max-w-6xl mx-auto px-6 py-20">
-        <motion.div
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <h2 className="font-display text-3xl md:text-4xl font-bold mb-3 tracking-tight">
-            {t("landing.templateTitle")}
-          </h2>
+        <motion.div className="text-center mb-12" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <h2 className="font-display text-3xl md:text-4xl font-bold mb-3 tracking-tight">{t("landing.templateTitle")}</h2>
           <p className="text-muted-foreground max-w-lg mx-auto">{t("landing.templateDesc")}</p>
         </motion.div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {TEMPLATES.map((tmpl, i) => (
-            <motion.div
-              key={tmpl.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 + i * 0.06 }}
-            >
-              <Card
-                className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer group h-full"
-                onClick={() => navigate("/agents/new")}
-              >
+            <motion.div key={tmpl.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + i * 0.06 }}>
+              <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer group h-full" onClick={() => navigate("/agents/new")}>
                 <CardContent className="p-5 flex flex-col h-full">
                   <div className={`h-1.5 w-14 rounded-full bg-gradient-to-r ${tmpl.color} mb-4`} />
-                  <h3 className="font-display font-semibold mb-1 group-hover:text-primary transition-colors">
-                    {tmpl.name}
-                  </h3>
+                  <h3 className="font-display font-semibold mb-1 group-hover:text-primary transition-colors">{tmpl.name}</h3>
                   <p className="text-sm text-muted-foreground flex-1">{tmpl.description}</p>
-                  <span className="inline-block mt-3 text-xs bg-secondary text-secondary-foreground rounded-full px-3 py-1 w-fit">
-                    {tmpl.category}
-                  </span>
+                  <span className="inline-block mt-3 text-xs bg-secondary text-secondary-foreground rounded-full px-3 py-1 w-fit">{tmpl.category}</span>
                 </CardContent>
               </Card>
             </motion.div>
@@ -138,9 +153,7 @@ export default function Landing() {
 
       {/* Footer */}
       <footer className="border-t border-border py-8">
-        <div className="max-w-7xl mx-auto px-6 text-center text-sm text-muted-foreground">
-          {t("landing.footer")}
-        </div>
+        <div className="max-w-7xl mx-auto px-6 text-center text-sm text-muted-foreground">{t("landing.footer")}</div>
       </footer>
     </div>
   );
