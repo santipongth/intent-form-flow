@@ -4,13 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Copy, Paperclip, Bot, Plus, MessageSquare, Settings2, PanelLeftOpen, Search, Trash2 } from "lucide-react";
+import { Send, Copy, Paperclip, Bot, Plus, MessageSquare, Settings2, PanelLeftOpen, Search, Trash2, ThumbsUp, ThumbsDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAgents } from "@/hooks/useAgents";
 import { useConversations, useConversationMessages, useCreateConversation, useSaveMessage, useUpdateConversationTitle, useDeleteConversation } from "@/hooks/useConversations";
 import { streamChat } from "@/lib/streamChat";
+import { useMessageFeedback, useSaveMessageFeedback } from "@/hooks/useMessageFeedback";
 import ReactMarkdown from "react-markdown";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
@@ -19,6 +20,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 interface LocalMessage {
   id: string;
+  dbId?: string;
   role: "user" | "assistant";
   content: string;
   timestamp: string;
@@ -37,6 +39,8 @@ export default function ChatConsole() {
   const createConversation = useCreateConversation();
   const saveMessage = useSaveMessage();
   const updateTitle = useUpdateConversationTitle();
+  const { data: feedbackMap } = useMessageFeedback(activeConvId);
+  const saveFeedback = useSaveMessageFeedback();
 
   const [messages, setMessages] = useState<LocalMessage[]>([]);
   const [input, setInput] = useState("");
@@ -50,6 +54,7 @@ export default function ChatConsole() {
       setMessages(
         dbMessages.map((m) => ({
           id: m.id,
+          dbId: m.id,
           role: m.role as "user" | "assistant",
           content: m.content,
           timestamp: new Date(m.created_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }),
@@ -118,11 +123,20 @@ export default function ChatConsole() {
     setMessages((prev) => [...prev, userMsg]);
 
     // Save user message to DB
-    saveMessage.mutate({
-      conversation_id: convId,
-      role: "user",
-      content: userContent,
-    });
+    saveMessage.mutate(
+      {
+        conversation_id: convId,
+        role: "user",
+        content: userContent,
+      },
+      {
+        onSuccess: (data: any) => {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === userMsg.id ? { ...m, dbId: data.id } : m))
+          );
+        },
+      }
+    );
 
     // Update conversation title on first message
     if (messages.length === 0) {
@@ -175,12 +189,25 @@ export default function ChatConsole() {
           );
           // Save assistant message to DB
           if (assistantSoFar && convId) {
-            saveMessage.mutate({
-              conversation_id: convId,
-              role: "assistant",
-              content: assistantSoFar,
-              response_time_ms: responseTime,
-            });
+            saveMessage.mutate(
+              {
+                conversation_id: convId,
+                role: "assistant",
+                content: assistantSoFar,
+                response_time_ms: responseTime,
+              },
+              {
+                onSuccess: (data: any) => {
+                  setMessages((prev) =>
+                    prev.map((m) =>
+                      m.id !== "streaming" && m.role === "assistant" && !m.dbId && m.content === assistantSoFar
+                        ? { ...m, dbId: data.id }
+                        : m
+                    )
+                  );
+                },
+              }
+            );
           }
         },
         onError: (err) => {
@@ -322,6 +349,38 @@ export default function ChatConsole() {
                 </div>
                 <div className={`flex items-center gap-2 mt-1 ${msg.role === "user" ? "justify-end" : ""}`}>
                   <span className="text-[10px] sm:text-xs text-muted-foreground">{msg.timestamp}</span>
+                  {msg.role === "assistant" && msg.id !== "streaming" && msg.dbId && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-5 w-5 sm:h-6 sm:w-6 ${feedbackMap?.[msg.dbId] === "up" ? "text-green-500" : ""}`}
+                        onClick={() =>
+                          saveFeedback.mutate({
+                            messageId: msg.dbId!,
+                            rating: "up",
+                            currentRating: feedbackMap?.[msg.dbId!],
+                          })
+                        }
+                      >
+                        <ThumbsUp className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`h-5 w-5 sm:h-6 sm:w-6 ${feedbackMap?.[msg.dbId] === "down" ? "text-red-500" : ""}`}
+                        onClick={() =>
+                          saveFeedback.mutate({
+                            messageId: msg.dbId!,
+                            rating: "down",
+                            currentRating: feedbackMap?.[msg.dbId!],
+                          })
+                        }
+                      >
+                        <ThumbsDown className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                      </Button>
+                    </>
+                  )}
                   {msg.role === "assistant" && msg.id !== "streaming" && (
                     <Button
                       variant="ghost"
