@@ -29,6 +29,7 @@ serve(async (req) => {
   const customBrand = url.searchParams.get("brand") || "";
   const position = url.searchParams.get("position") || "bottom-right";
   const bubbleSize = parseInt(url.searchParams.get("bubble_size") || "60", 10) || 60;
+  const welcomeMessage = url.searchParams.get("welcome_message") || "";
 
   if (!agentId) {
     return new Response("Missing agent_id", { status: 400, headers: corsHeaders });
@@ -59,7 +60,7 @@ serve(async (req) => {
   if(document.getElementById('tm-widget-frame'))return;
   var f=document.createElement('iframe');
   f.id='tm-widget-frame';
-  f.src='${SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&theme=${theme}&mode=fullpage&color=${encodedColor}&brand=${encodedBrand}&position=${position}&bubble_size=${bubbleSize}';
+  f.src='${SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&theme=${theme}&mode=fullpage&color=${encodedColor}&brand=${encodedBrand}&position=${position}&bubble_size=${bubbleSize}${welcomeMessage ? `&welcome_message=${encodeURIComponent(welcomeMessage)}` : ""}';
   f.style.cssText='position:fixed;bottom:0;${posAlign};width:420px;height:700px;border:none;z-index:999999;background:transparent;';
   f.allow='microphone';
   document.body.appendChild(f);
@@ -166,7 +167,7 @@ function toggleChat(){
   document.getElementById('chat-window').classList.toggle('open',isOpen);
   document.getElementById('bubble').style.display=isOpen?'none':'flex';
   if(isOpen&&messages.length===0){
-    addBotMessage("สวัสดีค่ะ! 👋 มีอะไรให้ช่วยไหมคะ?");
+    addBotMessage(${welcomeMessage ? `"${welcomeMessage.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"` : `"สวัสดีค่ะ! 👋 มีอะไรให้ช่วยไหมคะ?"`});
   }
   if(isOpen)document.getElementById('user-input').focus();
 }
