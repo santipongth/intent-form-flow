@@ -1,33 +1,61 @@
 
-# Pre-fill Agent Builder from Template Query Param
+
+# Deploy / Publish Panel
 
 ## Overview
-เมื่อผู้ใช้กด "ใช้ Template นี้" จาก Marketplace จะ navigate มาที่ `/agents/new?template=xxx` ระบบจะอ่าน query param แล้ว pre-fill ฟอร์มทั้งหมดจาก `MARKETPLACE_TEMPLATES` อัตโนมัติ พร้อมข้ามไป Step 2 (Identity & Model) เลย
-
-## Changes
-
-### File: `src/pages/AgentBuilder.tsx`
-
-1. **Import เพิ่ม**: เพิ่ม `useSearchParams` จาก `react-router-dom` และ import `MARKETPLACE_TEMPLATES` จาก mockData
-
-2. **useEffect สำหรับ pre-fill**: เมื่อ component mount จะอ่าน `?template=xxx` จาก URL แล้ว:
-   - ค้นหา template จาก `MARKETPLACE_TEMPLATES` ด้วย id
-   - ถ้าเจอ จะ pre-fill ค่าต่อไปนี้:
-     - `selectedTemplate` = template id
-     - `name` = ชื่อ template (ตัด emoji ออก)
-     - `objective` = description
-     - `tools` = เปิด tools ตามที่ template กำหนด
-     - `selectedModel` + `selectedProvider` = จับคู่จาก `recommendedModel` กับ `LLM_MODELS`
-   - ข้าม Step 1 ไปที่ Step 2 (Identity) โดยอัตโนมัติ เพราะ template ถูกเลือกแล้ว
-   - แสดง toast แจ้งว่าโหลด template สำเร็จ
-
-3. **แสดง banner เล็กๆ** ที่ Step 1 ว่ามี template ถูกเลือกจาก Marketplace แล้ว (ถ้ามี query param)
+เพิ่มหน้า Deploy/Publish สำหรับ Agent ที่สร้างเสร็จแล้ว แสดง embed code, API endpoint, widget preview และ API key พร้อม copy-to-clipboard
 
 ---
 
-### Technical Details
+## Changes
 
-- ใช้ `useSearchParams` แทน manual parsing ของ `window.location`
-- `useEffect` รันครั้งเดียวตอน mount (dependency: `searchParams`)
-- จับคู่ `recommendedModel` กับ provider โดย loop หา model ใน `LLM_MODELS` array
-- ไม่มี dependency ใหม่ ใช้ของที่มีอยู่แล้วทั้งหมด
+### 1. New Page: `src/pages/DeployPanel.tsx`
+
+หน้า Deploy แสดงข้อมูลสำหรับ agent ที่เลือก (ใช้ query param `?agent=xxx` หรือ default agent) ประกอบด้วย:
+
+**Header Section:**
+- ชื่อ Agent + สถานะ (Draft/Published) พร้อมปุ่ม "Publish" toggle
+- Badge แสดง model ที่ใช้
+
+**4 Tabs (ใช้ Shadcn Tabs):**
+
+**Tab 1 - API Endpoint:**
+- แสดง mock API URL: `https://api.thoughtmind.ai/v1/agents/{agent-id}/chat`
+- Code block แสดงตัวอย่าง cURL request
+- ปุ่ม Copy สำหรับ endpoint และ cURL
+
+**Tab 2 - Embed Code:**
+- Code block แสดง iframe/script embed snippet
+- ปรับขนาด widget (width/height) ด้วย input fields
+- ปุ่ม Copy embed code
+
+**Tab 3 - Widget Preview:**
+- แสดง mock iframe preview ของ chat widget ในกรอบโทรศัพท์/browser frame
+- ปรับธีม light/dark ได้
+
+**Tab 4 - API Key:**
+- แสดง mock API key แบบ masked (sk-xxxx...xxxx) พร้อมปุ่ม show/hide
+- ปุ่ม Copy key
+- ปุ่ม Regenerate key (mock - แสดง toast)
+- คำเตือนว่าอย่าแชร์ key
+
+### 2. Route: `src/App.tsx`
+- เพิ่ม route `/deploy` -> `<AppLayout><DeployPanel /></AppLayout>`
+
+### 3. Sidebar: `src/components/layout/AppSidebar.tsx`
+- เพิ่มเมนู "Deploy" ด้วยไอคอน `Rocket` จาก lucide-react ระหว่าง Monitor กับ Settings
+
+### 4. Agent Builder Integration
+- แก้ `handleCreate` ใน `AgentBuilder.tsx` ให้ navigate ไป `/deploy?agent=new-agent` แทน `/dashboard` เพื่อให้ผู้ใช้เห็นหน้า deploy ทันทีหลังสร้าง
+
+---
+
+## Technical Details
+
+- ใช้ Shadcn `Tabs` สำหรับ section switching
+- ใช้ `useState` สำหรับ show/hide API key และ widget size
+- Copy-to-clipboard ใช้ `navigator.clipboard.writeText()` + toast notification
+- Mock API key สร้างจาก random string
+- Widget preview ใช้ Card + mock chat UI (ไม่ใช่ iframe จริง)
+- ไม่มี dependency ใหม่
+
