@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import AgentBuilder from "./pages/AgentBuilder";
 import ChatConsole from "./pages/ChatConsole";
 import Monitor from "./pages/Monitor";
+import Marketplace from "./pages/Marketplace";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/" element={<Landing />} />
           <Route path="/dashboard" element={<AppLayout><Dashboard /></AppLayout>} />
           <Route path="/agents/new" element={<AppLayout><AgentBuilder /></AppLayout>} />
+          <Route path="/marketplace" element={<AppLayout><Marketplace /></AppLayout>} />
           <Route path="/chat" element={<AppLayout><ChatConsole /></AppLayout>} />
           <Route path="/monitor" element={<AppLayout><Monitor /></AppLayout>} />
           <Route path="/settings" element={<AppLayout><SettingsPage /></AppLayout>} />

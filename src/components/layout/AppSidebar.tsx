@@ -1,4 +1,4 @@
-import { LayoutDashboard, Bot, MessageCircle, Activity, Settings, Plus } from "lucide-react";
+import { LayoutDashboard, Bot, Store, MessageCircle, Activity, Settings, Plus } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 const menuItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Agents", url: "/agents/new", icon: Bot },
+  { title: "Marketplace", url: "/marketplace", icon: Store },
   { title: "Chat", url: "/chat", icon: MessageCircle },
   { title: "Monitor", url: "/monitor", icon: Activity },
   { title: "Settings", url: "/settings", icon: Settings },
