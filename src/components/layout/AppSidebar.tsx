@@ -81,8 +81,8 @@ export function AppSidebar() {
                   >
                     <NavLink
                       to={item.url}
-                      className="flex items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-sidebar-accent hover:translate-x-0.5"
-                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      className="flex items-center gap-3 rounded-xl px-3 py-2 transition-all duration-200 hover:bg-sidebar-accent hover:translate-x-1 hover:shadow-sm active:scale-[0.98]"
+                      activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm"
                     >
                       <item.icon className="h-5 w-5 shrink-0" />
                       <span>{t(item.key)}</span>
