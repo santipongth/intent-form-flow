@@ -1,9 +1,12 @@
+import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MOCK_ACTIVITY } from "@/data/mockData";
-import { Plus, Bot, MessageCircle, Zap, MoreVertical, Pencil, Trash2, Rocket, Eye, FileText, HardDrive } from "lucide-react";
+import { Plus, Bot, MessageCircle, Zap, MoreVertical, Pencil, Trash2, Rocket, Eye, FileText, HardDrive, Search, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -64,8 +67,33 @@ export default function Dashboard() {
   });
 
   const displayName = profile?.display_name || user?.email?.split("@")[0] || "";
-  const agentCount = agents?.length ?? 0;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [modelFilter, setModelFilter] = useState<string>("all");
 
+  // Derive unique models for filter dropdown
+  const availableModels = useMemo(() => {
+    if (!agents) return [];
+    const models = new Set(agents.map(a => a.model).filter(Boolean));
+    return Array.from(models) as string[];
+  }, [agents]);
+
+  // Filtered agents
+  const filteredAgents = useMemo(() => {
+    if (!agents) return [];
+    return agents.filter(agent => {
+      const matchesSearch = !searchQuery ||
+        agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (agent.objective || "").toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = statusFilter === "all" || agent.status === statusFilter;
+      const matchesModel = modelFilter === "all" || agent.model === modelFilter;
+      return matchesSearch && matchesStatus && matchesModel;
+    });
+  }, [agents, searchQuery, statusFilter, modelFilter]);
+
+  const hasActiveFilters = searchQuery || statusFilter !== "all" || modelFilter !== "all";
+
+  const agentCount = agents?.length ?? 0;
   const stats = [
     { label: t("dashboard.totalAgents"), value: String(agentCount), icon: Bot, color: "text-primary", bg: "bg-secondary" },
     { label: t("dashboard.messagestoday"), value: "0", icon: MessageCircle, color: "text-brand-green", bg: "bg-brand-green/10" },
@@ -108,7 +136,51 @@ export default function Dashboard() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Agent Grid */}
         <div className="lg:col-span-2 space-y-4">
-          <h2 className="font-display font-semibold text-lg">{t("dashboard.yourAgents")}</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-display font-semibold text-lg">{t("dashboard.yourAgents")}</h2>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => { setSearchQuery(""); setStatusFilter("all"); setModelFilter("all"); }}>
+                <X className="h-3 w-3" /> {t("dashboard.clearFilters")}
+              </Button>
+            )}
+          </div>
+
+          {/* Search & Filters */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={t("dashboard.searchPlaceholder")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 rounded-xl"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-36 rounded-xl">
+                <SelectValue placeholder={t("dashboard.filterStatus")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("common.all")}</SelectItem>
+                <SelectItem value="published">{t("dashboard.statusPublished")}</SelectItem>
+                <SelectItem value="draft">{t("dashboard.statusDraft")}</SelectItem>
+              </SelectContent>
+            </Select>
+            {availableModels.length > 0 && (
+              <Select value={modelFilter} onValueChange={setModelFilter}>
+                <SelectTrigger className="w-full sm:w-44 rounded-xl">
+                  <SelectValue placeholder={t("dashboard.filterModel")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("common.all")}</SelectItem>
+                  {availableModels.map(m => (
+                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
           {isLoading ? (
             <div className="grid sm:grid-cols-2 gap-4">
               {[1, 2].map((i) => (
@@ -121,9 +193,9 @@ export default function Dashboard() {
                 </Card>
               ))}
             </div>
-          ) : agents && agents.length > 0 ? (
+          ) : filteredAgents.length > 0 ? (
             <div className="grid sm:grid-cols-2 gap-4">
-              {agents.map((agent, i) => (
+              {filteredAgents.map((agent, i) => (
                 <motion.div key={agent.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.08 }}>
                   <Card className="rounded-2xl hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer" onClick={() => navigate(`/agents/${agent.id}`)}>
                     <CardContent className="p-5">
@@ -200,10 +272,18 @@ export default function Dashboard() {
             <Card className="rounded-2xl">
               <CardContent className="p-10 text-center">
                 <Bot className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-muted-foreground">{t("dashboard.noAgents")}</p>
-                <Button className="mt-4 gradient-primary text-primary-foreground rounded-xl gap-2" onClick={() => navigate("/agents/new")}>
-                  <Plus className="h-4 w-4" /> {t("dashboard.createAgent")}
-                </Button>
+                <p className="text-muted-foreground">
+                  {hasActiveFilters ? t("dashboard.noResults") : t("dashboard.noAgents")}
+                </p>
+                {hasActiveFilters ? (
+                  <Button variant="outline" className="mt-4 rounded-xl gap-2" onClick={() => { setSearchQuery(""); setStatusFilter("all"); setModelFilter("all"); }}>
+                    <X className="h-4 w-4" /> {t("dashboard.clearFilters")}
+                  </Button>
+                ) : (
+                  <Button className="mt-4 gradient-primary text-primary-foreground rounded-xl gap-2" onClick={() => navigate("/agents/new")}>
+                    <Plus className="h-4 w-4" /> {t("dashboard.createAgent")}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}

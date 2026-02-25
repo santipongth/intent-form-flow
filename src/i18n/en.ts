@@ -86,6 +86,13 @@ export const en: Record<string, string> = {
   "dashboard.notSpecified": "Not specified",
   "dashboard.deleteSuccess": "Agent deleted successfully",
   "dashboard.deleteError": "Failed to delete agent",
+  "dashboard.searchPlaceholder": "Search agents...",
+  "dashboard.filterStatus": "Status",
+  "dashboard.filterModel": "Model",
+  "dashboard.statusPublished": "Published",
+  "dashboard.statusDraft": "Draft",
+  "dashboard.clearFilters": "Clear filters",
+  "dashboard.noResults": "No agents match your filters",
 
   // Agent Builder
   "builder.title": "✨ Create New Agent",

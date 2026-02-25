@@ -86,6 +86,13 @@ export const th: Record<string, string> = {
   "dashboard.notSpecified": "ไม่ระบุ",
   "dashboard.deleteSuccess": "ลบ Agent สำเร็จ",
   "dashboard.deleteError": "ลบ Agent ไม่สำเร็จ",
+  "dashboard.searchPlaceholder": "ค้นหา Agent...",
+  "dashboard.filterStatus": "สถานะ",
+  "dashboard.filterModel": "โมเดล",
+  "dashboard.statusPublished": "Published",
+  "dashboard.statusDraft": "Draft",
+  "dashboard.clearFilters": "ล้างตัวกรอง",
+  "dashboard.noResults": "ไม่พบ Agent ที่ตรงกับตัวกรอง",
 
   // Agent Builder
   "builder.title": "✨ สร้าง Agent ใหม่",
