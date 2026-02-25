@@ -244,6 +244,34 @@ export default function Analytics() {
             </Card>
           </motion.div>
 
+          {/* Agent Comparison Charts */}
+          {agentPerf.length >= 2 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
+              <div className="grid lg:grid-cols-3 gap-6">
+                {[
+                  { title: "Total Calls by Agent", dataKey: "totalCalls", fill: "hsl(var(--primary))" },
+                  { title: "Avg Response Time by Agent", dataKey: "avgResponseTime", fill: "hsl(var(--brand-orange))" },
+                  { title: "Success Rate by Agent", dataKey: "successRate", fill: "hsl(var(--brand-green))" },
+                ].map((chart) => (
+                  <Card key={chart.dataKey} className="rounded-2xl">
+                    <CardHeader className="pb-2"><CardTitle className="text-base">{chart.title}</CardTitle></CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={Math.max(150, agentPerf.length * 50)}>
+                        <BarChart data={agentPerf} layout="vertical" margin={{ left: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis type="number" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" domain={chart.dataKey === "successRate" ? [0, 100] : undefined} />
+                          <YAxis type="category" dataKey="agentName" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={80} />
+                          <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }} />
+                          <Bar dataKey={chart.dataKey} fill={chart.fill} radius={[0, 6, 6, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
           {/* Agent Performance Table */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
             <Card className="rounded-2xl">
