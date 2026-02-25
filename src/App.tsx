@@ -13,8 +13,9 @@ import ChatConsole from "./pages/ChatConsole";
 import Monitor from "./pages/Monitor";
 import Marketplace from "./pages/Marketplace";
 import SettingsPage from "./pages/SettingsPage";
-import DeployPanel from "./pages/DeployPanel";
 import Analytics from "./pages/Analytics";
+import AgentDetail from "./pages/AgentDetail";
+import ResetPassword from "./pages/ResetPassword";
 import UsageBilling from "./pages/UsageBilling";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -31,14 +32,16 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
             <Route path="/agents/new" element={<ProtectedRoute><AppLayout><AgentBuilder /></AppLayout></ProtectedRoute>} />
+            <Route path="/agents/:id" element={<ProtectedRoute><AppLayout><AgentDetail /></AppLayout></ProtectedRoute>} />
             <Route path="/marketplace" element={<ProtectedRoute><AppLayout><Marketplace /></AppLayout></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><AppLayout><ChatConsole /></AppLayout></ProtectedRoute>} />
             <Route path="/monitor" element={<ProtectedRoute><AppLayout><Monitor /></AppLayout></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><AppLayout><Analytics /></AppLayout></ProtectedRoute>} />
             <Route path="/usage" element={<ProtectedRoute><AppLayout><UsageBilling /></AppLayout></ProtectedRoute>} />
-            <Route path="/deploy" element={<ProtectedRoute><AppLayout><DeployPanel /></AppLayout></ProtectedRoute>} />
+            
             <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

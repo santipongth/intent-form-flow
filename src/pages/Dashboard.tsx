@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MOCK_ACTIVITY } from "@/data/mockData";
-import { Plus, Bot, MessageCircle, Zap, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Plus, Bot, MessageCircle, Zap, MoreVertical, Pencil, Trash2, Rocket, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -87,7 +87,7 @@ export default function Dashboard() {
             <div className="grid sm:grid-cols-2 gap-4">
               {agents.map((agent, i) => (
                 <motion.div key={agent.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.08 }}>
-                  <Card className="rounded-2xl hover:shadow-md transition-shadow">
+                  <Card className="rounded-2xl hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/agents/${agent.id}`)}>
                     <CardContent className="p-5">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
@@ -101,18 +101,24 @@ export default function Dashboard() {
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate("/chat")}>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/agents/${agent.id}`); }}>
+                              <Eye className="h-4 w-4 mr-2" /> ดูรายละเอียด
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/agents/${agent.id}?tab=deploy`); }}>
+                              <Rocket className="h-4 w-4 mr-2" /> Deploy
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate("/chat"); }}>
                               <MessageCircle className="h-4 w-4 mr-2" /> Chat
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); }}>
                               <Pencil className="h-4 w-4 mr-2" /> แก้ไข
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => deleteAgent.mutate(agent.id)}>
+                            <DropdownMenuItem className="text-destructive" onClick={(e) => { e.stopPropagation(); deleteAgent.mutate(agent.id); }}>
                               <Trash2 className="h-4 w-4 mr-2" /> ลบ
                             </DropdownMenuItem>
                           </DropdownMenuContent>
