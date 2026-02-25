@@ -17,10 +17,10 @@ export default function Landing() {
   const dashTarget = user ? "/dashboard" : "/auth";
 
   const features = [
-    { icon: Sparkles, title: t("landing.feature1Title"), description: t("landing.feature1Desc"), color: "text-primary" },
-    { icon: Zap, title: t("landing.feature2Title"), description: t("landing.feature2Desc"), color: "text-brand-orange" },
-    { icon: Shield, title: t("landing.feature3Title"), description: t("landing.feature3Desc"), color: "text-brand-green" },
-  ];
+  { icon: Sparkles, title: t("landing.feature1Title"), description: t("landing.feature1Desc"), color: "text-primary" },
+  { icon: Zap, title: t("landing.feature2Title"), description: t("landing.feature2Desc"), color: "text-brand-orange" },
+  { icon: Shield, title: t("landing.feature3Title"), description: t("landing.feature3Desc"), color: "text-brand-green" }];
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -32,18 +32,18 @@ export default function Landing() {
           <motion.div
             className="absolute top-20 right-20 w-64 h-64 rounded-full bg-primary/10 blur-3xl"
             animate={{ scale: [1, 1.2, 1], x: [0, 30, 0], y: [0, -20, 0] }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          />
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }} />
+
           <motion.div
             className="absolute bottom-10 left-10 w-72 h-72 rounded-full bg-accent/10 blur-3xl"
             animate={{ scale: [1, 1.1, 1], x: [0, -20, 0], y: [0, 15, 0] }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          />
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }} />
+
         </div>
 
         <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
           <div className="flex items-center gap-2">
-            <img src={tmLogo} alt="ThoughtMind" className="w-14 h-14 rounded-xl object-contain" />
+            <img src={tmLogo} alt="ThoughtMind" className="w-14 h-14 object-contain rounded-2xl" />
             <span className="font-display font-bold text-xl gradient-text">ThoughtMind</span>
           </div>
           <div className="flex items-center gap-2">
@@ -51,8 +51,8 @@ export default function Landing() {
               variant="ghost"
               size="sm"
               className="rounded-xl gap-1.5 text-xs font-medium"
-              onClick={() => setLocale(locale === "th" ? "en" : "th")}
-            >
+              onClick={() => setLocale(locale === "th" ? "en" : "th")}>
+
               <Globe className="h-4 w-4" />
               {locale === "th" ? "TH" : "EN"}
             </Button>
@@ -60,8 +60,8 @@ export default function Landing() {
               variant="ghost"
               size="icon"
               className="rounded-xl"
-              onClick={toggleTheme}
-            >
+              onClick={toggleTheme}>
+
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
             <Button onClick={() => navigate(dashTarget)} variant="outline" className="rounded-xl">
@@ -99,8 +99,8 @@ export default function Landing() {
       {/* Features */}
       <section className="max-w-5xl mx-auto px-6 py-16">
         <div className="grid md:grid-cols-3 gap-6">
-          {features.map((f, i) => (
-            <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }}>
+          {features.map((f, i) =>
+          <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }}>
               <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-1 transition-all">
                 <CardContent className="p-6">
                   <f.icon className={`h-10 w-10 mb-4 ${f.color}`} />
@@ -109,7 +109,7 @@ export default function Landing() {
                 </CardContent>
               </Card>
             </motion.div>
-          ))}
+          )}
         </div>
       </section>
 
@@ -120,8 +120,8 @@ export default function Landing() {
           <p className="text-muted-foreground">{t("landing.templateDesc")}</p>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {TEMPLATES.map((tmpl, i) => (
-            <motion.div key={tmpl.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.08 }}>
+          {TEMPLATES.map((tmpl, i) =>
+          <motion.div key={tmpl.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.08 }}>
               <Card className="rounded-2xl border-border/50 hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer group" onClick={() => navigate("/agents/new")}>
                 <CardContent className="p-5">
                   <div className={`h-2 w-16 rounded-full bg-gradient-to-r ${tmpl.color} mb-4`} />
@@ -131,7 +131,7 @@ export default function Landing() {
                 </CardContent>
               </Card>
             </motion.div>
-          ))}
+          )}
         </div>
       </section>
 
@@ -141,6 +141,6 @@ export default function Landing() {
           {t("landing.footer")}
         </div>
       </footer>
-    </div>
-  );
+    </div>);
+
 }
