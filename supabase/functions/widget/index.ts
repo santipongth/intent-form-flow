@@ -9,6 +9,15 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+// Compute a lighter shade for gradient stops
+function lightenHex(hex: string, amount = 30): string {
+  const h = hex.replace("#", "");
+  const r = Math.min(255, parseInt(h.substring(0, 2), 16) + amount);
+  const g = Math.min(255, parseInt(h.substring(2, 4), 16) + amount);
+  const b = Math.min(255, parseInt(h.substring(4, 6), 16) + amount);
+  return `#${r.toString(16).padStart(2,"0")}${g.toString(16).padStart(2,"0")}${b.toString(16).padStart(2,"0")}`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -16,6 +25,8 @@ serve(async (req) => {
   const agentId = url.searchParams.get("agent_id");
   const theme = url.searchParams.get("theme") || "light";
   const mode = url.searchParams.get("mode") || "bubble";
+  const customColor = url.searchParams.get("color") || "#6366f1";
+  const customBrand = url.searchParams.get("brand") || "";
 
   if (!agentId) {
     return new Response("Missing agent_id", { status: 400, headers: corsHeaders });
@@ -31,16 +42,21 @@ serve(async (req) => {
 
   const agentName = agent?.name || "AI Assistant";
   const agentAvatar = agent?.avatar || "🤖";
+  const brandName = customBrand || agentName;
+  const primaryColor = customColor;
+  const primaryLight = lightenHex(primaryColor, 40);
   const chatUrl = `${SUPABASE_URL}/functions/v1/chat`;
 
   // If mode=bubble and not fullpage, return a script that injects an iframe
   if (mode === "bubble") {
+    const encodedColor = encodeURIComponent(primaryColor);
+    const encodedBrand = encodeURIComponent(customBrand);
     const scriptJs = `
 (function(){
   if(document.getElementById('tm-widget-frame'))return;
   var f=document.createElement('iframe');
   f.id='tm-widget-frame';
-  f.src='${SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&theme=${theme}&mode=fullpage';
+  f.src='${SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&theme=${theme}&mode=fullpage&color=${encodedColor}&brand=${encodedBrand}';
   f.style.cssText='position:fixed;bottom:0;right:0;width:420px;height:700px;border:none;z-index:999999;background:transparent;';
   f.allow='microphone';
   document.body.appendChild(f);
@@ -58,7 +74,7 @@ serve(async (req) => {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${agentName} Chat</title>
+<title>${brandName} Chat</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -67,20 +83,21 @@ serve(async (req) => {
   --bg3:${isDark ? "#3f3f46" : "#e4e4e7"};
   --fg:${isDark ? "#fafafa" : "#18181b"};
   --fg2:${isDark ? "#a1a1aa" : "#71717a"};
-  --primary:#6366f1;
+  --primary:${primaryColor};
+  --primary-light:${primaryLight};
   --primary-fg:#fff;
   --border:${isDark ? "#3f3f46" : "#e4e4e7"};
   --shadow:${isDark ? "0 -2px 20px rgba(0,0,0,0.4)" : "0 -2px 20px rgba(0,0,0,0.08)"};
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:transparent;color:var(--fg)}
 #widget-root{position:fixed;bottom:24px;right:24px;z-index:99999;display:flex;flex-direction:column;align-items:flex-end;gap:12px}
-#bubble{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#8b5cf6);color:#fff;border:none;cursor:pointer;font-size:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(99,102,241,0.4);transition:transform .2s}
+#bubble{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;border:none;cursor:pointer;font-size:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(99,102,241,0.4);transition:transform .2s}
 #bubble:hover{transform:scale(1.08)}
 #chat-window{width:380px;max-width:calc(100vw - 32px);height:520px;max-height:calc(100vh - 100px);background:var(--bg);border-radius:16px;box-shadow:var(--shadow);border:1px solid var(--border);display:none;flex-direction:column;overflow:hidden;animation:slideUp .25s ease}
 #chat-window.open{display:flex}
 @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 .header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--bg2)}
-.header .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary),#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;flex-shrink:0}
+.header .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-light));display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;flex-shrink:0}
 .header .info{flex:1}
 .header .name{font-weight:600;font-size:14px}
 .header .status{font-size:11px;color:var(--fg2)}
@@ -91,7 +108,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .msg.user{align-self:flex-end;flex-direction:row-reverse}
 .msg .bubble{padding:10px 14px;border-radius:16px;font-size:13px;line-height:1.5;word-break:break-word}
 .msg.bot .bubble{background:var(--bg2);border-bottom-left-radius:4px}
-.msg.user .bubble{background:linear-gradient(135deg,var(--primary),#8b5cf6);color:var(--primary-fg);border-bottom-right-radius:4px}
+.msg.user .bubble{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:var(--primary-fg);border-bottom-right-radius:4px}
 .msg .icon{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
 .msg.bot .icon{background:var(--bg3)}
 .msg.user .icon{background:var(--primary);color:#fff}
@@ -104,7 +121,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .input-area input{flex:1;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--bg2);color:var(--fg);font-size:13px;outline:none}
 .input-area input::placeholder{color:var(--fg2)}
 .input-area input:focus{border-color:var(--primary)}
-.input-area button{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--primary),#8b5cf6);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .2s}
+.input-area button{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity .2s}
 .input-area button:disabled{opacity:.4;cursor:not-allowed}
 .input-area button svg{width:18px;height:18px}
 .powered{text-align:center;padding:6px;font-size:10px;color:var(--fg2)}
@@ -116,7 +133,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
     <div class="header">
       <div class="avatar">${agentAvatar}</div>
       <div class="info">
-        <div class="name">${agentName}</div>
+        <div class="name">${brandName}</div>
         <div class="status">● Online</div>
       </div>
       <button class="close" onclick="toggleChat()" aria-label="Close">&times;</button>
@@ -128,7 +145,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
       </button>
     </div>
-    <div class="powered">Powered by ThoughtMind</div>
+    <div class="powered">Powered by ${brandName}</div>
   </div>
   <button id="bubble" onclick="toggleChat()" aria-label="Open chat">${agentAvatar}</button>
 </div>

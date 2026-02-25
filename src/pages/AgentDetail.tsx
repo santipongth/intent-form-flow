@@ -75,6 +75,8 @@ export default function AgentDetail() {
   const [widgetWidth, setWidgetWidth] = useState("400");
   const [widgetHeight, setWidgetHeight] = useState("600");
   const [previewTheme, setPreviewTheme] = useState<"light" | "dark">("light");
+  const [primaryColor, setPrimaryColor] = useState("#6366f1");
+  const [brandName, setBrandName] = useState("");
 
   const agentName = agent?.name || "Agent";
   const agentId = agent?.id || "unknown";
@@ -86,11 +88,13 @@ export default function AgentDetail() {
   -d '{"message": "สวัสดี", "session_id": "user-123"}'`;
 
   const widgetBaseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget`;
+  const colorParam = encodeURIComponent(primaryColor);
+  const brandParam = encodeURIComponent(brandName || agent?.name || "");
 
-  const scriptEmbedCode = `<script src="${widgetBaseUrl}?agent_id=${agentId}&theme=${previewTheme}" defer><\/script>`;
+  const scriptEmbedCode = `<script src="${widgetBaseUrl}?agent_id=${agentId}&theme=${previewTheme}&color=${colorParam}&brand=${brandParam}" defer><\/script>`;
 
   const iframeEmbedCode = `<iframe
-  src="${widgetBaseUrl}?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true"
+  src="${widgetBaseUrl}?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${colorParam}&brand=${brandParam}"
   width="${widgetWidth}"
   height="${widgetHeight}"
   frameborder="0"
@@ -333,6 +337,36 @@ export default function AgentDetail() {
                   <CardDescription>{t("detail.embedCodeDesc")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* Customization */}
+                  <div className="grid sm:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-xl border border-border">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">🎨 สี Primary</Label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="color"
+                          value={primaryColor}
+                          onChange={(e) => setPrimaryColor(e.target.value)}
+                          className="w-10 h-10 rounded-lg border border-border cursor-pointer"
+                        />
+                        <Input
+                          value={primaryColor}
+                          onChange={(e) => setPrimaryColor(e.target.value)}
+                          className="rounded-xl font-mono text-sm flex-1"
+                          placeholder="#6366f1"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">✏️ ชื่อแบรนด์</Label>
+                      <Input
+                        value={brandName}
+                        onChange={(e) => setBrandName(e.target.value)}
+                        className="rounded-xl mt-1"
+                        placeholder={agent?.name || "ชื่อแบรนด์"}
+                      />
+                      <p className="text-xs text-muted-foreground">แสดงใน header และ footer ของ widget</p>
+                    </div>
+                  </div>
                   {/* Script embed */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -389,7 +423,7 @@ export default function AgentDetail() {
                     style={{ width: Math.min(Number(widgetWidth) || 400, 420), height: Math.min(Number(widgetHeight) || 600, 620) }}
                   >
                     <iframe
-                      src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true`}
+                      src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${encodeURIComponent(primaryColor)}&brand=${encodeURIComponent(brandName || agent?.name || "")}`}
                       className="w-full h-full border-none"
                       title="Widget Preview"
                     />
