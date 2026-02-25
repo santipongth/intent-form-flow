@@ -53,7 +53,8 @@ serve(async (req) => {
           textContent = raw;
         }
       } else if (fileName.endsWith(".docx")) {
-        textContent = await extractTextFromDocx(fileData);
+        // Use AI-based extraction for DOCX (handles all languages including Thai)
+        textContent = await extractTextWithAI(fileData, "docx");
       } else if (fileName.endsWith(".pdf")) {
         // Use AI-based extraction for PDFs (handles all languages including Thai)
         textContent = await extractTextWithAI(fileData, "pdf");
@@ -115,6 +116,9 @@ async function extractTextWithAI(blob: Blob, fileType: string): Promise<string> 
       const bytes = new Uint8Array(await blob.arrayBuffer());
       return extractTextFromPdfBasic(bytes);
     }
+    if (fileType === "docx") {
+      return extractTextFromDocxBasic(blob);
+    }
     return await blob.text();
   }
 
@@ -127,7 +131,11 @@ async function extractTextWithAI(blob: Blob, fileType: string): Promise<string> 
   }
   const base64Data = btoa(binary);
 
-  const mimeType = fileType === "pdf" ? "application/pdf" : "application/octet-stream";
+  const mimeMap: Record<string, string> = {
+    pdf: "application/pdf",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  };
+  const mimeType = mimeMap[fileType] || "application/octet-stream";
 
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -168,6 +176,9 @@ async function extractTextWithAI(blob: Blob, fileType: string): Promise<string> 
         const bytes2 = new Uint8Array(arrayBuffer);
         return extractTextFromPdfBasic(bytes2);
       }
+      if (fileType === "docx") {
+        return extractTextFromDocxBasic(new Blob([arrayBuffer]));
+      }
       return "[Could not extract text from this file]";
     }
 
@@ -183,12 +194,18 @@ async function extractTextWithAI(blob: Blob, fileType: string): Promise<string> 
       const bytes2 = new Uint8Array(arrayBuffer);
       return extractTextFromPdfBasic(bytes2);
     }
+    if (fileType === "docx") {
+      return extractTextFromDocxBasic(new Blob([arrayBuffer]));
+    }
     return "[Could not extract text from this file]";
   } catch (err) {
     console.error("AI extraction error:", err);
     if (fileType === "pdf") {
       const bytes2 = new Uint8Array(arrayBuffer);
       return extractTextFromPdfBasic(bytes2);
+    }
+    if (fileType === "docx") {
+      return extractTextFromDocxBasic(new Blob([arrayBuffer]));
     }
     return "[Could not extract text from this file]";
   }
@@ -226,7 +243,7 @@ function extractTextFromPdfBasic(bytes: Uint8Array): string {
   return result || "[Could not extract text from this PDF. Please try uploading a TXT file instead.]";
 }
 
-async function extractTextFromDocx(blob: Blob): Promise<string> {
+async function extractTextFromDocxBasic(blob: Blob): Promise<string> {
   const arrayBuffer = await blob.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
   const zipStr = new TextDecoder("latin1").decode(bytes);
