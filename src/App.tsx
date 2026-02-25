@@ -23,6 +23,7 @@ import ABTesting from "./pages/ABTesting";
 import ABTestDetail from "./pages/ABTestDetail";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import WidgetPreview from "./pages/WidgetPreview";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
                 <Route path="/ab-testing" element={<ProtectedRoute><AppLayout><ABTesting /></AppLayout></ProtectedRoute>} />
                 <Route path="/ab-testing/:id" element={<ProtectedRoute><AppLayout><ABTestDetail /></AppLayout></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
+                <Route path="/widget-preview/:agentId" element={<WidgetPreview />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
