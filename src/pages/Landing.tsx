@@ -104,28 +104,6 @@ export default function Landing() {
           </motion.div>
         </section>
 
-        {/* Stats */}
-        <section className="relative z-10 max-w-2xl mx-auto px-6 pb-20">
-          <motion.div
-            className="grid grid-cols-3 gap-4"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
-          >
-            {statItems.map((s) => (
-              <div
-                key={s.label}
-                className="flex flex-col items-center gap-1.5 rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm py-5 px-3"
-              >
-                <s.icon className={`h-6 w-6 ${s.color}`} />
-                <span className="text-2xl md:text-3xl font-display font-bold tracking-tight">
-                  {formatNumber(s.value)}
-                </span>
-                <span className="text-xs text-muted-foreground font-medium">{s.label}</span>
-              </div>
-            ))}
-          </motion.div>
-        </section>
       </header>
 
       {/* Template Gallery */}
