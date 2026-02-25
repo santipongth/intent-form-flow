@@ -77,6 +77,8 @@ export default function AgentDetail() {
   const [previewTheme, setPreviewTheme] = useState<"light" | "dark">("light");
   const [primaryColor, setPrimaryColor] = useState("#6366f1");
   const [brandName, setBrandName] = useState("");
+  const [widgetPosition, setWidgetPosition] = useState<"bottom-right" | "bottom-left">("bottom-right");
+  const [bubbleSize, setBubbleSize] = useState([60]);
 
   const agentName = agent?.name || "Agent";
   const agentId = agent?.id || "unknown";
@@ -91,10 +93,13 @@ export default function AgentDetail() {
   const colorParam = encodeURIComponent(primaryColor);
   const brandParam = encodeURIComponent(brandName || agent?.name || "");
 
-  const scriptEmbedCode = `<script src="${widgetBaseUrl}?agent_id=${agentId}&theme=${previewTheme}&color=${colorParam}&brand=${brandParam}" defer><\/script>`;
+  const positionParam = widgetPosition;
+  const bubbleSizeParam = bubbleSize[0];
+
+  const scriptEmbedCode = `<script src="${widgetBaseUrl}?agent_id=${agentId}&theme=${previewTheme}&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}" defer><\/script>`;
 
   const iframeEmbedCode = `<iframe
-  src="${widgetBaseUrl}?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${colorParam}&brand=${brandParam}"
+  src="${widgetBaseUrl}?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}"
   width="${widgetWidth}"
   height="${widgetHeight}"
   frameborder="0"
@@ -366,6 +371,44 @@ export default function AgentDetail() {
                       />
                       <p className="text-xs text-muted-foreground">แสดงใน header และ footer ของ widget</p>
                     </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">📍 ตำแหน่ง Widget</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant={widgetPosition === "bottom-left" ? "default" : "outline"}
+                          className="rounded-xl flex-1 gap-1.5 text-xs"
+                          onClick={() => setWidgetPosition("bottom-left")}
+                        >
+                          ◁ ซ้ายล่าง
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={widgetPosition === "bottom-right" ? "default" : "outline"}
+                          className="rounded-xl flex-1 gap-1.5 text-xs"
+                          onClick={() => setWidgetPosition("bottom-right")}
+                        >
+                          ขวาล่าง ▷
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">⭕ ขนาดปุ่ม Bubble: {bubbleSize[0]}px</Label>
+                      <div className="flex items-center gap-3">
+                        <Slider value={bubbleSize} onValueChange={setBubbleSize} min={48} max={80} step={2} className="flex-1" />
+                        <div
+                          className="rounded-full flex items-center justify-center text-primary-foreground shrink-0"
+                          style={{
+                            width: bubbleSize[0] * 0.6,
+                            height: bubbleSize[0] * 0.6,
+                            background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc)`,
+                            fontSize: bubbleSize[0] * 0.25,
+                          }}
+                        >
+                          💬
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   {/* Script embed */}
                   <div className="space-y-2">
@@ -423,7 +466,7 @@ export default function AgentDetail() {
                     style={{ width: Math.min(Number(widgetWidth) || 400, 420), height: Math.min(Number(widgetHeight) || 600, 620) }}
                   >
                     <iframe
-                      src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${encodeURIComponent(primaryColor)}&brand=${encodeURIComponent(brandName || agent?.name || "")}`}
+                      src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${encodeURIComponent(primaryColor)}&brand=${encodeURIComponent(brandName || agent?.name || "")}&position=${widgetPosition}&bubble_size=${bubbleSize[0]}`}
                       className="w-full h-full border-none"
                       title="Widget Preview"
                     />
