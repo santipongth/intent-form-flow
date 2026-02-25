@@ -56,7 +56,7 @@ export default function Dashboard() {
         .select("event_type, tokens_used, created_at")
         .gte("created_at", todayStart);
       if (error) throw error;
-      const msgs = (data || []).filter(e => e.event_type === "chat_message" || e.event_type === "message").length;
+      const msgs = (data || []).filter(e => e.event_type === "chat" || e.event_type === "chat_message" || e.event_type === "message").length;
       const tokens = (data || []).reduce((sum, e) => sum + (e.tokens_used || 0), 0);
       return { messagesToday: msgs, tokensUsed: tokens };
     },
