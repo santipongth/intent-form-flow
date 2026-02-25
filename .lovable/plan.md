@@ -1,277 +1,98 @@
 
-# แผนพัฒนาระบบครบวงจร 7 ฟีเจอร์
 
-## Overview
-พัฒนาระบบ ThoughtMind ให้ใช้งานได้จริงครบวงจร ตั้งแต่ AI Chat จริง, Knowledge Base, ประวัติแชท, Analytics จาก database จริง, Embed Widget, Webhook/API, และ A/B Testing
+# Real AI Chat System - Complete Setup
 
-เนื่องจากขอบเขตงานกว้างมาก จะแบ่งทำเป็นหลาย message ตามลำดับ โดยเริ่มจากฐานข้อมูลและ backend ก่อน แล้วค่อยทำ frontend
+## Problem
+The chat system code exists (ChatConsole, streamChat, useConversations, edge function) but won't work because:
+1. **Database tables missing** - `conversations`, `chat_messages`, `agent_analytics_events` tables don't exist yet
+2. **Edge function not configured** - `supabase/config.toml` doesn't have `[functions.chat]` with `verify_jwt = false`
+3. These two gaps mean the streaming chat will fail on both the API call and the data persistence side
 
----
+## Plan
 
-## Phase 1: Database Foundation + Real AI Chat
+### Step 1: Create Database Tables
+Run a migration to create the 3 core tables needed for chat:
 
-### 1.1 Database Migration (Tables ใหม่)
+- **conversations** (id, user_id, agent_id, title, created_at, updated_at) with RLS by user_id
+- **chat_messages** (id, conversation_id, role, content, tokens_used, response_time_ms, created_at) with RLS via conversation ownership
+- **agent_analytics_events** (id, agent_id, user_id, event_type, tokens_used, response_time_ms, status, metadata, created_at) with RLS by user_id
 
-สร้างตารางใหม่ทั้งหมด:
+Enable Realtime on `chat_messages`.
 
-```text
-conversations
-  - id (uuid, PK)
-  - user_id (uuid, NOT NULL)
-  - agent_id (uuid, FK -> agents)
-  - title (text)
-  - created_at, updated_at
-
-chat_messages
-  - id (uuid, PK)
-  - conversation_id (uuid, FK -> conversations)
-  - role (text: user/assistant/system)
-  - content (text)
-  - tokens_used (int)
-  - response_time_ms (int)
-  - created_at
-
-agent_analytics_events
-  - id (uuid, PK)
-  - agent_id (uuid, FK -> agents)
-  - user_id (uuid)
-  - event_type (text: chat, api_call, embed_view)
-  - tokens_used (int)
-  - response_time_ms (int)
-  - status (text: success/error)
-  - metadata (jsonb)
-  - created_at
-
-knowledge_files
-  - id (uuid, PK)
-  - agent_id (uuid, FK -> agents)
-  - user_id (uuid)
-  - file_name (text)
-  - file_path (text)
-  - file_size (int)
-  - file_type (text)
-  - status (text: uploading/ready/error)
-  - created_at
-
-agent_deployments
-  - id (uuid, PK)
-  - agent_id (uuid, FK -> agents)
-  - user_id (uuid)
-  - deploy_type (text: embed/api/webhook)
-  - config (jsonb)
-  - is_active (boolean)
-  - api_key (text)
-  - created_at, updated_at
-
-agent_ab_tests
-  - id (uuid, PK)
-  - user_id (uuid)
-  - agent_a_id (uuid, FK -> agents)
-  - agent_b_id (uuid, FK -> agents)
-  - name (text)
-  - status (text: active/completed/paused)
-  - created_at, updated_at
-
-ab_test_results
-  - id (uuid, PK)
-  - test_id (uuid, FK -> agent_ab_tests)
-  - agent_id (uuid)
-  - conversation_id (uuid)
-  - response_time_ms (int)
-  - tokens_used (int)
-  - user_rating (int, nullable)
-  - created_at
+### Step 2: Configure Edge Function
+Update `supabase/config.toml` to add:
+```toml
+[functions.chat]
+verify_jwt = false
 ```
 
-RLS policies จะถูกสร้างให้ทุกตารางโดยจำกัดสิทธิ์ตาม user_id
+### Step 3: Deploy Edge Function
+Deploy the existing `supabase/functions/chat/index.ts` so it's live and callable.
 
-### 1.2 Edge Function: `chat` (Real AI)
+### Step 4: Test
+Use the curl tool to send a test message to the chat edge function and verify streaming works.
 
-**ไฟล์:** `supabase/functions/chat/index.ts`
+## Technical Details
 
-- รับ `{ messages, agent_id }` จาก client
-- ดึง agent config (system_prompt, temperature, model) จาก database
-- ดึง knowledge files content ถ้ามี (แนบเป็น system context)
-- เรียก Lovable AI Gateway (`https://ai.gateway.lovable.dev/v1/chat/completions`) แบบ streaming
-- ใช้ model `google/gemini-3-flash-preview` เป็น default
-- Handle 429/402 errors
-- Return SSE stream
+### Database Migration SQL
+```sql
+-- conversations table
+CREATE TABLE public.conversations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  agent_id uuid REFERENCES public.agents(id) ON DELETE SET NULL,
+  title text DEFAULT 'New Chat',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
 
-### 1.3 แก้ไข ChatConsole.tsx
+ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own conversations" ON public.conversations FOR ALL USING (auth.uid() = user_id);
 
-- เปลี่ยนจาก mock response เป็น streaming จริงผ่าน edge function
-- เพิ่ม agent selector (เลือก agent ที่สร้างไว้จาก database)
-- เพิ่ม conversation list sidebar (ประวัติการสนทนา)
-- บันทึก messages ลง database ทุกครั้ง
-- แสดง streaming text แบบ token-by-token
-- รองรับ markdown rendering ด้วย `react-markdown`
+-- chat_messages table
+CREATE TABLE public.chat_messages (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id uuid NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
+  role text NOT NULL,
+  content text NOT NULL,
+  tokens_used int DEFAULT 0,
+  response_time_ms int DEFAULT 0,
+  created_at timestamptz DEFAULT now()
+);
 
----
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own chat messages" ON public.chat_messages FOR ALL
+  USING (EXISTS (SELECT 1 FROM public.conversations c WHERE c.id = chat_messages.conversation_id AND c.user_id = auth.uid()));
 
-## Phase 2: Knowledge Base (RAG)
+-- agent_analytics_events table
+CREATE TABLE public.agent_analytics_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  agent_id uuid REFERENCES public.agents(id) ON DELETE CASCADE,
+  user_id uuid,
+  event_type text NOT NULL,
+  tokens_used int DEFAULT 0,
+  response_time_ms int DEFAULT 0,
+  status text DEFAULT 'success',
+  metadata jsonb DEFAULT '{}',
+  created_at timestamptz DEFAULT now()
+);
 
-### 2.1 Storage Bucket
+ALTER TABLE public.agent_analytics_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own analytics" ON public.agent_analytics_events FOR ALL USING (auth.uid() = user_id);
 
-สร้าง bucket `knowledge-files` สำหรับเก็บไฟล์ PDF/TXT พร้อม RLS
+-- updated_at trigger for conversations
+CREATE TRIGGER update_conversations_updated_at
+  BEFORE UPDATE ON public.conversations
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
-### 2.2 Edge Function: `process-knowledge`
+-- Enable realtime for chat_messages
+ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;
+```
 
-- รับไฟล์จาก storage
-- อ่านเนื้อหา (text extraction)
-- เก็บ metadata ลง knowledge_files table
-
-### 2.3 แก้ไข AgentBuilder.tsx + AgentDetail.tsx
-
-- เปลี่ยนจาก mock file upload เป็นอัปโหลดจริงไปยัง storage
-- แสดงรายการไฟล์ที่อัปโหลดแล้วพร้อมสถานะ
-- ลบไฟล์ได้
-- ใน AgentDetail เพิ่ม tab "Knowledge" แสดงไฟล์ทั้งหมดของ agent
-
----
-
-## Phase 3: Conversation History
-
-### 3.1 Hook: `useConversations.ts`
-
-- `useConversations(agentId?)` - ดึงรายการ conversations
-- `useConversationMessages(conversationId)` - ดึง messages ของ conversation
-- `useCreateConversation()` - สร้าง conversation ใหม่
-- `useSaveMessage()` - บันทึก message
-
-### 3.2 แก้ไข ChatConsole.tsx
-
-- Sidebar ซ้ายแสดง conversation list (แทน config panel เดิม)
-- กด "New Chat" สร้าง conversation ใหม่
-- กดเลือก conversation เก่าโหลดประวัติ
-- Config panel ย้ายเป็น popover/drawer
-
-### 3.3 เพิ่ม route `/chat/:conversationId`
-
-- เข้าถึง conversation ตรงได้จาก URL
-
----
-
-## Phase 4: Agent Analytics with Real Data
-
-### 4.1 Hook: `useAnalytics.ts`
-
-- ดึงข้อมูลจาก `agent_analytics_events` แทน mock data
-- Aggregate: daily API calls, avg response time, token usage, success rate
-- Per-agent breakdown
-
-### 4.2 แก้ไข Analytics.tsx
-
-- เปลี่ยนจาก MOCK data เป็นข้อมูลจริง
-- เพิ่ม date range picker
-- กราฟ real-time จาก database
-
-### 4.3 บันทึก Analytics Events
-
-- ทุกครั้งที่ chat -> บันทึก event (tokens, response time, status)
-- Edge function `chat` จะ insert event หลังตอบเสร็จ
-
----
-
-## Phase 5: Agent Deployment with Embed Code
-
-### 5.1 Edge Function: `widget`
-
-- Serve embeddable chat widget HTML/JS
-- รับ agent_id จาก URL path
-- Widget ทำงานเป็น standalone chat ที่ embed ในเว็บภายนอกได้
-
-### 5.2 Edge Function: `api-chat`
-
-- Public API endpoint สำหรับเรียกใช้ agent
-- Authenticate ด้วย API key จาก `agent_deployments`
-- Return JSON response (non-streaming) หรือ SSE (streaming)
-
-### 5.3 แก้ไข AgentDetail.tsx (Deploy tab)
-
-- เพิ่มระบบ generate/revoke API key จริง (บันทึกลง agent_deployments)
-- Embed code ชี้ไปที่ edge function จริง
-- แสดงสถานะ deployment (active/inactive)
-
----
-
-## Phase 6: Webhook & API Integration
-
-### 6.1 เพิ่มตาราง webhooks ใน agents
-
-- เพิ่ม webhook_url column ใน agents table หรือใช้ agent_deployments
-- Config: trigger events (on_message, on_error, on_session_start)
-
-### 6.2 แก้ไข AgentDetail.tsx
-
-- เพิ่ม tab "Webhooks" ใน Deploy section
-- Form สำหรับใส่ webhook URL
-- เลือก events ที่จะ trigger
-- ปุ่ม "Test Webhook" ส่ง test payload
-
-### 6.3 Edge function `chat` เพิ่ม webhook dispatch
-
-- หลังตอบเสร็จ ถ้า agent มี webhook -> POST ไปที่ webhook URL
-
----
-
-## Phase 7: A/B Testing for Agents
-
-### 7.1 หน้าใหม่: `src/pages/ABTesting.tsx`
-
-- แสดงรายการ A/B tests ที่สร้างไว้
-- สร้าง test ใหม่: เลือก Agent A vs Agent B
-- ตั้งชื่อ test
-
-### 7.2 หน้าใหม่: `src/pages/ABTestDetail.tsx`
-
-- Split-screen chat: ส่งข้อความเดียวกันไปทั้ง 2 agents พร้อมกัน
-- แสดง response แบบ side-by-side
-- ปุ่ม vote (A ดีกว่า / B ดีกว่า / เท่ากัน)
-- สรุปผลลัพธ์: win rate, avg response time, avg tokens
-
-### 7.3 เพิ่ม route + sidebar menu
-
-- `/ab-testing` - รายการ tests
-- `/ab-testing/:id` - detail + chat comparison
-- เพิ่มเมนูใน sidebar
-
----
-
-## สรุปไฟล์ที่เปลี่ยนแปลง
-
-| ไฟล์ | Action |
+### Files Changed
+| File | Change |
 |------|--------|
-| Database migration (7+ tables) | สร้างใหม่ |
-| `supabase/functions/chat/index.ts` | สร้างใหม่ |
-| `supabase/functions/process-knowledge/index.ts` | สร้างใหม่ |
-| `supabase/functions/widget/index.ts` | สร้างใหม่ |
-| `supabase/functions/api-chat/index.ts` | สร้างใหม่ |
-| `supabase/config.toml` | แก้ไข (เพิ่ม function configs) |
-| `src/hooks/useConversations.ts` | สร้างใหม่ |
-| `src/hooks/useAnalytics.ts` | สร้างใหม่ |
-| `src/hooks/useKnowledge.ts` | สร้างใหม่ |
-| `src/hooks/useDeployment.ts` | สร้างใหม่ |
-| `src/hooks/useABTesting.ts` | สร้างใหม่ |
-| `src/lib/streamChat.ts` | สร้างใหม่ |
-| `src/pages/ChatConsole.tsx` | แก้ไขใหญ่ (real AI + history) |
-| `src/pages/AgentDetail.tsx` | แก้ไข (knowledge tab, real deploy) |
-| `src/pages/AgentBuilder.tsx` | แก้ไข (real file upload) |
-| `src/pages/Analytics.tsx` | แก้ไข (real data) |
-| `src/pages/Dashboard.tsx` | แก้ไข (real stats) |
-| `src/pages/ABTesting.tsx` | สร้างใหม่ |
-| `src/pages/ABTestDetail.tsx` | สร้างใหม่ |
-| `src/components/layout/AppSidebar.tsx` | แก้ไข (เพิ่มเมนู A/B Testing) |
-| `src/App.tsx` | แก้ไข (เพิ่ม routes) |
-| `src/i18n/th.ts` + `src/i18n/en.ts` | แก้ไข (เพิ่ม translations) |
+| `supabase/config.toml` | Add `[functions.chat]` config |
+| Database migration | Create 3 tables + RLS + trigger |
 
----
-
-## ลำดับการทำงาน
-
-เนื่องจากมีไฟล์จำนวนมาก จะแบ่งทำดังนี้:
-1. **Message 1**: Database migration + Edge function `chat` + `streamChat.ts` + แก้ ChatConsole (Real AI)
-2. **Message 2**: Knowledge Base (storage + upload + hooks) + Conversation History
-3. **Message 3**: Analytics real data + Deployment system
-4. **Message 4**: Webhook integration + A/B Testing pages + routes
-
-ต้องติดตั้ง dependency เพิ่ม: `react-markdown`
+No code file changes needed - the existing ChatConsole.tsx, streamChat.ts, useConversations.ts, and chat edge function are already correctly implemented.
