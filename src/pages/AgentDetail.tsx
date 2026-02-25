@@ -78,7 +78,7 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
     });
   };
 
-  const ALLOWED_EXTS = ["pdf", "txt", "md", "csv", "json", "docx"];
+  const ALLOWED_EXTS = ["pdf", "txt", "md", "csv", "json", "docx", "xlsx", "xls"];
 
   const startMultiUpload = (fileList: FileList) => {
     const filesToUpload = Array.from(fileList);
