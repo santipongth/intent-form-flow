@@ -275,6 +275,31 @@ export default function Analytics() {
             </motion.div>
           )}
 
+          {/* Feedback Trend Chart */}
+          {feedbackData && feedbackData.daily && feedbackData.daily.length > 0 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.56 }}>
+              <Card className="rounded-2xl">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ThumbsUp className="h-4 w-4" /> Feedback Trend
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <LineChart data={feedbackData.daily}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
+                      <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
+                      <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }} />
+                      <Line type="monotone" dataKey="thumbsUp" name="👍 Positive" stroke="hsl(var(--brand-green))" strokeWidth={2.5} dot={{ r: 4, fill: "hsl(var(--brand-green))" }} />
+                      <Line type="monotone" dataKey="thumbsDown" name="👎 Negative" stroke="hsl(var(--destructive))" strokeWidth={2.5} dot={{ r: 4, fill: "hsl(var(--destructive))" }} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
           {/* Feedback Analytics */}
           {feedbackData && feedbackData.totals.total > 0 && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.57 }}>
