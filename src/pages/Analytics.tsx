@@ -5,13 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, Activity, Users, CheckCircle, TrendingUp, TrendingDown, MessageSquare, Download, FileText } from "lucide-react";
+import { BarChart3, Activity, Users, CheckCircle, TrendingUp, TrendingDown, MessageSquare, Download, FileText, ThumbsUp, ThumbsDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { exportCSV, exportPDF } from "@/lib/exportAnalytics";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAnalyticsEvents } from "@/hooks/useAnalytics";
 import { useAgents } from "@/hooks/useAgents";
+import { useFeedbackAnalytics } from "@/hooks/useFeedbackAnalytics";
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -74,6 +75,7 @@ export default function Analytics() {
     selectedAgent === "all" ? undefined : selectedAgent,
     selectedDays
   );
+  const { data: feedbackData } = useFeedbackAnalytics(selectedDays);
 
   const daily = useMemo(() => aggregateDaily(events || []), [events]);
   const agentPerf = useMemo(() => aggregateByAgent(events || [], agents || []), [events, agents]);
@@ -89,6 +91,7 @@ export default function Analytics() {
     { label: "Avg Response Time", value: `${avgRT}ms`, icon: Activity, color: "text-brand-green", bg: "bg-brand-green/10" },
     { label: "Total Tokens", value: totalTokens.toLocaleString(), icon: Users, color: "text-brand-orange", bg: "bg-brand-orange/10" },
     { label: "Success Rate", value: `${successRate}%`, icon: CheckCircle, color: "text-brand-cyan", bg: "bg-brand-cyan/10" },
+    { label: "Satisfaction", value: `${feedbackData?.totals.rate || 0}%`, icon: ThumbsUp, color: "text-brand-green", bg: "bg-brand-green/10" },
   ];
 
   const isEmpty = !isLoading && totalCalls === 0;
@@ -138,7 +141,7 @@ export default function Analytics() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {stats.map((s, i) => (
           <motion.div key={s.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
             <Card className="rounded-2xl">
@@ -269,6 +272,68 @@ export default function Analytics() {
                   </Card>
                 ))}
               </div>
+            </motion.div>
+          )}
+
+          {/* Feedback Analytics */}
+          {feedbackData && feedbackData.totals.total > 0 && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.57 }}>
+              <Card className="rounded-2xl">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ThumbsUp className="h-4 w-4" /> Message Feedback by Agent
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid sm:grid-cols-3 gap-4 mb-6">
+                    <div className="text-center p-4 bg-brand-green/10 rounded-xl">
+                      <ThumbsUp className="h-5 w-5 text-brand-green mx-auto mb-1" />
+                      <p className="text-2xl font-bold font-display text-brand-green">{feedbackData.totals.up}</p>
+                      <p className="text-xs text-muted-foreground">Positive</p>
+                    </div>
+                    <div className="text-center p-4 bg-destructive/10 rounded-xl">
+                      <ThumbsDown className="h-5 w-5 text-destructive mx-auto mb-1" />
+                      <p className="text-2xl font-bold font-display text-destructive">{feedbackData.totals.down}</p>
+                      <p className="text-xs text-muted-foreground">Negative</p>
+                    </div>
+                    <div className="text-center p-4 bg-secondary rounded-xl">
+                      <p className="text-2xl font-bold font-display">{feedbackData.totals.rate}%</p>
+                      <p className="text-xs text-muted-foreground">Satisfaction Rate</p>
+                    </div>
+                  </div>
+                  {feedbackData.byAgent.length > 0 && (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Agent</TableHead>
+                          <TableHead className="text-right">👍 Up</TableHead>
+                          <TableHead className="text-right">👎 Down</TableHead>
+                          <TableHead className="text-right">Total</TableHead>
+                          <TableHead className="text-right">Satisfaction</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {feedbackData.byAgent.map((row) => {
+                          const agentName = agents?.find((a) => a.id === row.agentId)?.name || "Unknown Agent";
+                          return (
+                            <TableRow key={row.agentId}>
+                              <TableCell className="font-medium">{agentName}</TableCell>
+                              <TableCell className="text-right text-brand-green font-medium">{row.thumbsUp}</TableCell>
+                              <TableCell className="text-right text-destructive font-medium">{row.thumbsDown}</TableCell>
+                              <TableCell className="text-right">{row.total}</TableCell>
+                              <TableCell className="text-right">
+                                <Badge variant={row.satisfactionRate >= 70 ? "secondary" : "destructive"} className="rounded-full text-xs">
+                                  {row.satisfactionRate}%
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
             </motion.div>
           )}
 
