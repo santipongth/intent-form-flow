@@ -255,7 +255,7 @@ export const en: Record<string, string> = {
   "landing.heroTitle2": "AI Agent",
   "landing.heroTitle3": "as easy as filling a form",
   "landing.heroDesc": "No drag-and-drop, no coding. Just tell us what you need AI to help with and ThoughtMind will build it for you in 5 minutes",
-  "landing.cta": "🚀 Create Your First Agent",
+  "landing.cta": "Create Your First Agent",
   "landing.feature1Title": "No Coding Required",
   "landing.feature1Desc": "Build AI Agents with a simple 5-step wizard",
   "landing.feature2Title": "Lightning Fast",
