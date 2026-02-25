@@ -1,32 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TEMPLATES } from "@/data/constants";
-import { ArrowRight, Globe, Sun, Moon, Bot, MessageCircle, MessagesSquare } from "lucide-react";
+import { ArrowRight, Globe, Sun, Moon, Bot, BookOpen, Rocket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 import tmLogo from "@/assets/tm-logo.png";
-
-function useStats() {
-  return useQuery({
-    queryKey: ["platform-stats"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_platform_stats");
-      if (error) throw error;
-      return data as { total_agents: number; total_messages: number; total_conversations: number };
-    },
-    staleTime: 60_000,
-  });
-}
-
-function formatNumber(n: number) {
-  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
-  return n.toString();
-}
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -34,12 +15,11 @@ export default function Landing() {
   const { t, locale, setLocale } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const dashTarget = user ? "/dashboard" : "/auth";
-  const { data: stats } = useStats();
 
-  const statItems = [
-    { icon: Bot, value: stats?.total_agents ?? 0, label: t("landing.statsAgents"), color: "text-primary" },
-    { icon: MessageCircle, value: stats?.total_messages ?? 0, label: t("landing.statsMessages"), color: "text-brand-orange" },
-    { icon: MessagesSquare, value: stats?.total_conversations ?? 0, label: t("landing.statsConversations"), color: "text-brand-green" },
+  const steps = [
+    { icon: Bot, title: t("landing.step1Title"), desc: t("landing.step1Desc"), color: "bg-primary/10 text-primary" },
+    { icon: BookOpen, title: t("landing.step2Title"), desc: t("landing.step2Desc"), color: "bg-brand-orange/10 text-brand-orange" },
+    { icon: Rocket, title: t("landing.step3Title"), desc: t("landing.step3Desc"), color: "bg-brand-green/10 text-brand-green" },
   ];
 
   return (
@@ -81,7 +61,7 @@ export default function Landing() {
         </nav>
 
         {/* Hero content */}
-        <section className="relative z-10 max-w-3xl mx-auto text-center px-6 pt-24 pb-16">
+        <section className="relative z-10 max-w-3xl mx-auto text-center px-6 pt-24 pb-28">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <h1 className="font-display text-5xl md:text-6xl font-bold mb-6 leading-tight tracking-tight">
               {t("landing.heroTitle1")}{" "}
@@ -103,8 +83,42 @@ export default function Landing() {
             </div>
           </motion.div>
         </section>
-
       </header>
+
+      {/* How it Works */}
+      <section className="max-w-5xl mx-auto px-6 py-20">
+        <motion.div className="text-center mb-14" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+          <h2 className="font-display text-3xl md:text-4xl font-bold mb-3 tracking-tight">{t("landing.howItWorksTitle")}</h2>
+          <p className="text-muted-foreground max-w-lg mx-auto">{t("landing.howItWorksDesc")}</p>
+        </motion.div>
+
+        <div className="grid md:grid-cols-3 gap-8 relative">
+          {/* Connector line (desktop only) */}
+          <div className="hidden md:block absolute top-16 left-[16.66%] right-[16.66%] h-0.5 bg-gradient-to-r from-primary/20 via-brand-orange/20 to-brand-green/20" />
+
+          {steps.map((step, i) => (
+            <motion.div
+              key={step.title}
+              className="relative flex flex-col items-center text-center"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + i * 0.12 }}
+            >
+              {/* Step number badge */}
+              <div className="relative mb-5">
+                <div className={`w-14 h-14 rounded-2xl ${step.color} flex items-center justify-center shadow-sm`}>
+                  <step.icon className="h-7 w-7" />
+                </div>
+                <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-foreground text-background text-xs font-bold flex items-center justify-center shadow">
+                  {i + 1}
+                </span>
+              </div>
+              <h3 className="font-display font-semibold text-lg mb-2">{step.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-[260px]">{step.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
 
       {/* Template Gallery */}
       <section className="max-w-6xl mx-auto px-6 py-20">

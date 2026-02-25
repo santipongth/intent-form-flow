@@ -264,9 +264,14 @@ export const th: Record<string, string> = {
   "landing.feature3Desc": "API Key ของคุณถูกเก็บรักษาอย่างปลอดภัย",
   "landing.templateTitle": "เริ่มจาก Template สำเร็จรูป",
   "landing.templateDesc": "เลือก Template แล้วปรับแต่งให้ตรงใจ ไม่ต้องเริ่มจากศูนย์",
-  "landing.statsAgents": "Agents สร้างแล้ว",
-  "landing.statsMessages": "ข้อความทั้งหมด",
-  "landing.statsConversations": "บทสนทนา",
+  "landing.howItWorksTitle": "เริ่มต้นใช้งานง่ายๆ 3 ขั้นตอน",
+  "landing.howItWorksDesc": "สร้าง AI Agent ของคุณได้ภายใน 5 นาที ไม่ต้องเขียนโค้ดแม้แต่บรรทัดเดียว",
+  "landing.step1Title": "สร้าง Agent",
+  "landing.step1Desc": "ตั้งชื่อ เลือก Template และกำหนดบุคลิกให้ AI ของคุณ",
+  "landing.step2Title": "เพิ่มความรู้",
+  "landing.step2Desc": "อัปโหลดเอกสาร PDF, Excel หรือ URL เพื่อให้ Agent เรียนรู้",
+  "landing.step3Title": "เผยแพร่ & ใช้งาน",
+  "landing.step3Desc": "ฝัง Widget ลงเว็บไซต์ หรือใช้งานผ่าน Chat Console ได้ทันที",
   "landing.footer": "© 2026 ThoughtMind. All rights reserved.",
 
   // Protected Route
