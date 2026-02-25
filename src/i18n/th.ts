@@ -255,7 +255,7 @@ export const th: Record<string, string> = {
   "landing.heroTitle2": "AI Agent",
   "landing.heroTitle3": "ง่ายเหมือนกรอกฟอร์ม",
   "landing.heroDesc": "ไม่ต้องลากเส้น ไม่ต้องเขียนโค้ด แค่บอกว่าอยากได้ AI ช่วยเรื่องอะไร แล้ว ThoughtMind จะสร้างให้คุณใน 5 นาที",
-  "landing.cta": "🚀 เริ่มสร้าง Agent ตัวแรก",
+  "landing.cta": "เริ่มสร้าง Agent ตัวแรก",
   "landing.feature1Title": "ไม่ต้องเขียนโค้ด",
   "landing.feature1Desc": "สร้าง AI Agent ด้วย Wizard ง่ายๆ 5 ขั้นตอน",
   "landing.feature2Title": "เร็วทันใจ",
