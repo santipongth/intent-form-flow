@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Copy, Paperclip, Bot, Plus, MessageSquare, Settings2 } from "lucide-react";
+import { Send, Copy, Paperclip, Bot, Plus, MessageSquare, Settings2, PanelLeftOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -15,6 +15,7 @@ import ReactMarkdown from "react-markdown";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 interface LocalMessage {
   id: string;
@@ -40,6 +41,7 @@ export default function ChatConsole() {
   const [messages, setMessages] = useState<LocalMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Load messages from DB when conversation changes
@@ -196,73 +198,59 @@ export default function ChatConsole() {
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)]">
-      {/* Sidebar: Conversations */}
-      <div className="w-64 border-r border-border flex flex-col hidden md:flex">
-        <div className="p-3 border-b border-border space-y-2">
-          <Button className="w-full gradient-primary text-primary-foreground rounded-xl gap-2" size="sm" onClick={handleNewChat}>
-            <Plus className="h-4 w-4" /> New Chat
-          </Button>
-          {agents && agents.length > 0 && (
-            <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
-              <SelectTrigger className="rounded-xl h-8 text-xs">
-                <SelectValue placeholder="Select Agent" />
-              </SelectTrigger>
-              <SelectContent>
-                {agents.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {a.avatar} {a.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-        <ScrollArea className="flex-1">
-          <div className="p-2 space-y-1">
-            {conversations?.map((conv) => (
-              <button
-                key={conv.id}
-                onClick={() => handleSelectConversation(conv.id)}
-                className={`w-full text-left px-3 py-2 rounded-xl text-sm truncate transition-colors ${
-                  activeConvId === conv.id
-                    ? "bg-secondary font-medium"
-                    : "hover:bg-secondary/50 text-muted-foreground"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">{conv.title || "New Chat"}</span>
-                </div>
-                <p className="text-xs text-muted-foreground ml-5.5 mt-0.5">
-                  {new Date(conv.updated_at).toLocaleDateString("th-TH")}
-                </p>
-              </button>
-            ))}
-            {(!conversations || conversations.length === 0) && (
-              <p className="text-xs text-muted-foreground text-center py-4">No conversations yet</p>
-            )}
-          </div>
-        </ScrollArea>
+      {/* Desktop Sidebar */}
+      <div className="w-64 border-r border-border flex-col hidden md:flex">
+        <SidebarContent
+          agents={agents}
+          selectedAgentId={selectedAgentId}
+          setSelectedAgentId={setSelectedAgentId}
+          conversations={conversations}
+          activeConvId={activeConvId}
+          onNewChat={handleNewChat}
+          onSelectConversation={handleSelectConversation}
+        />
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="border-b border-border px-4 py-2 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="border-b border-border px-3 sm:px-4 py-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            {/* Mobile sidebar toggle */}
+            <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-xl h-8 w-8 md:hidden shrink-0">
+                  <PanelLeftOpen className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 p-0">
+                <div className="flex flex-col h-full pt-8">
+                  <SidebarContent
+                    agents={agents}
+                    selectedAgentId={selectedAgentId}
+                    setSelectedAgentId={setSelectedAgentId}
+                    conversations={conversations}
+                    activeConvId={activeConvId}
+                    onNewChat={() => { handleNewChat(); setMobileSidebarOpen(false); }}
+                    onSelectConversation={(id) => { handleSelectConversation(id); setMobileSidebarOpen(false); }}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+
             {selectedAgent && (
               <>
-                <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center text-sm">
+                <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center text-sm shrink-0">
                   {selectedAgent.avatar}
                 </div>
-                <span className="text-sm font-medium">{selectedAgent.name}</span>
+                <span className="text-sm font-medium truncate">{selectedAgent.name}</span>
               </>
             )}
-            {!selectedAgent && <span className="text-sm text-muted-foreground">Select an agent to start</span>}
+            {!selectedAgent && <span className="text-sm text-muted-foreground truncate">Select an agent to start</span>}
           </div>
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-xl h-8 w-8">
+              <Button variant="ghost" size="icon" className="rounded-xl h-8 w-8 shrink-0">
                 <Settings2 className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
@@ -287,14 +275,14 @@ export default function ChatConsole() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
           {messages.length === 0 && !isStreaming && (
             <div className="flex-1 flex items-center justify-center h-full">
-              <div className="text-center space-y-3">
-                <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center text-2xl mx-auto">
-                  <Bot className="h-8 w-8 text-primary-foreground" />
+              <div className="text-center space-y-3 px-4">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl gradient-primary flex items-center justify-center text-2xl mx-auto">
+                  <Bot className="h-7 w-7 sm:h-8 sm:w-8 text-primary-foreground" />
                 </div>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-muted-foreground text-xs sm:text-sm">
                   {selectedAgent ? `Start chatting with ${selectedAgent.name}` : "Select an agent and start chatting"}
                 </p>
               </div>
@@ -308,17 +296,17 @@ export default function ChatConsole() {
               animate={{ opacity: 1, y: 0 }}
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              <div className={`max-w-[75%] ${msg.role === "user" ? "order-1" : ""}`}>
+              <div className={`max-w-[85%] sm:max-w-[75%] ${msg.role === "user" ? "order-1" : ""}`}>
                 {msg.role === "assistant" && (
                   <div className="flex items-center gap-2 mb-1">
-                    <div className="w-6 h-6 rounded-lg gradient-primary flex items-center justify-center">
-                      <Bot className="h-3 w-3 text-primary-foreground" />
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg gradient-primary flex items-center justify-center">
+                      <Bot className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary-foreground" />
                     </div>
                     <span className="text-xs font-medium">{selectedAgent?.name || "AI"}</span>
                   </div>
                 )}
                 <div
-                  className={`rounded-2xl px-4 py-3 text-sm ${
+                  className={`rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 text-sm ${
                     msg.role === "user"
                       ? "gradient-primary text-primary-foreground rounded-br-md"
                       : "bg-secondary text-foreground rounded-bl-md"
@@ -333,18 +321,18 @@ export default function ChatConsole() {
                   )}
                 </div>
                 <div className={`flex items-center gap-2 mt-1 ${msg.role === "user" ? "justify-end" : ""}`}>
-                  <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
+                  <span className="text-[10px] sm:text-xs text-muted-foreground">{msg.timestamp}</span>
                   {msg.role === "assistant" && msg.id !== "streaming" && (
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6"
+                      className="h-5 w-5 sm:h-6 sm:w-6"
                       onClick={() => {
                         navigator.clipboard.writeText(msg.content);
                         toast.success(t("chat.copied"));
                       }}
                     >
-                      <Copy className="h-3 w-3" />
+                      <Copy className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                     </Button>
                   )}
                 </div>
@@ -354,8 +342,8 @@ export default function ChatConsole() {
 
           {isStreaming && messages[messages.length - 1]?.role !== "assistant" && (
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg gradient-primary flex items-center justify-center">
-                <Bot className="h-3 w-3 text-primary-foreground" />
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg gradient-primary flex items-center justify-center">
+                <Bot className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary-foreground" />
               </div>
               <div className="bg-secondary rounded-2xl px-4 py-3 rounded-bl-md">
                 <div className="flex gap-1">
@@ -370,9 +358,9 @@ export default function ChatConsole() {
         </div>
 
         {/* Input */}
-        <div className="border-t border-border p-4">
-          <div className="flex gap-2 max-w-3xl mx-auto">
-            <Button variant="outline" size="icon" className="rounded-xl shrink-0">
+        <div className="border-t border-border p-2.5 sm:p-4">
+          <div className="flex gap-1.5 sm:gap-2 max-w-3xl mx-auto">
+            <Button variant="outline" size="icon" className="rounded-xl shrink-0 h-9 w-9 sm:h-10 sm:w-10">
               <Paperclip className="h-4 w-4" />
             </Button>
             <Input
@@ -380,11 +368,12 @@ export default function ChatConsole() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-              className="rounded-xl"
+              className="rounded-xl h-9 sm:h-10 text-sm"
               disabled={isStreaming}
             />
             <Button
-              className="gradient-primary text-primary-foreground rounded-xl shrink-0"
+              className="gradient-primary text-primary-foreground rounded-xl shrink-0 h-9 w-9 sm:h-10 sm:w-10"
+              size="icon"
               onClick={handleSend}
               disabled={!input.trim() || isStreaming}
             >
@@ -394,5 +383,74 @@ export default function ChatConsole() {
         </div>
       </div>
     </div>
+  );
+}
+
+/* Extracted sidebar content for reuse in desktop & mobile sheet */
+function SidebarContent({
+  agents,
+  selectedAgentId,
+  setSelectedAgentId,
+  conversations,
+  activeConvId,
+  onNewChat,
+  onSelectConversation,
+}: {
+  agents: any[] | undefined;
+  selectedAgentId: string;
+  setSelectedAgentId: (v: string) => void;
+  conversations: any[] | undefined;
+  activeConvId: string | undefined;
+  onNewChat: () => void;
+  onSelectConversation: (id: string) => void;
+}) {
+  return (
+    <>
+      <div className="p-3 border-b border-border space-y-2">
+        <Button className="w-full gradient-primary text-primary-foreground rounded-xl gap-2" size="sm" onClick={onNewChat}>
+          <Plus className="h-4 w-4" /> New Chat
+        </Button>
+        {agents && agents.length > 0 && (
+          <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
+            <SelectTrigger className="rounded-xl h-8 text-xs">
+              <SelectValue placeholder="Select Agent" />
+            </SelectTrigger>
+            <SelectContent>
+              {agents.map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {a.avatar} {a.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+      <ScrollArea className="flex-1">
+        <div className="p-2 space-y-1">
+          {conversations?.map((conv) => (
+            <button
+              key={conv.id}
+              onClick={() => onSelectConversation(conv.id)}
+              className={`w-full text-left px-3 py-2 rounded-xl text-sm truncate transition-colors ${
+                activeConvId === conv.id
+                  ? "bg-secondary font-medium"
+                  : "hover:bg-secondary/50 text-muted-foreground"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{conv.title || "New Chat"}</span>
+              </div>
+              <p className="text-xs text-muted-foreground ml-5.5 mt-0.5">
+                {new Date(conv.updated_at).toLocaleDateString("th-TH")}
+              </p>
+            </button>
+          ))}
+          {(!conversations || conversations.length === 0) && (
+            <p className="text-xs text-muted-foreground text-center py-4">No conversations yet</p>
+          )}
+        </div>
+      </ScrollArea>
+    </>
   );
 }
