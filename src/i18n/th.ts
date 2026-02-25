@@ -305,4 +305,8 @@ export const th: Record<string, string> = {
   "knowledge.refresh": "รีเฟรช",
   "knowledge.dropHere": "วางไฟล์ที่นี่เพื่ออัปโหลด",
   "knowledge.dragDropHint": "หรือลากไฟล์มาวางที่นี่",
+  "knowledge.storageUsed": "พื้นที่ใช้งาน",
+  "knowledge.fileCount": "จำนวนไฟล์",
+  "knowledge.limitFiles": "อัปโหลดได้สูงสุด 10 ไฟล์ต่อ Agent",
+  "knowledge.limitSize": "พื้นที่จัดเก็บสูงสุด 50MB ต่อ Agent",
 };

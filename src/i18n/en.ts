@@ -305,4 +305,8 @@ export const en: Record<string, string> = {
   "knowledge.refresh": "Refresh",
   "knowledge.dropHere": "Drop file here to upload",
   "knowledge.dragDropHint": "or drag & drop files here",
+  "knowledge.storageUsed": "Storage used",
+  "knowledge.fileCount": "Files",
+  "knowledge.limitFiles": "Maximum 10 files per agent",
+  "knowledge.limitSize": "Maximum 50MB storage per agent",
 };
