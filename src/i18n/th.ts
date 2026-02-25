@@ -283,4 +283,9 @@ export const th: Record<string, string> = {
   "abtest.detail.results": "ผลลัพธ์",
   "abtest.detail.sendBoth": "พิมพ์ข้อความเพื่อส่งถึง Agent ทั้ง 2 ตัว...",
   "abtest.detail.loading": "กำลังโหลด test...",
+  "abtest.delete": "ลบ",
+  "abtest.deleteConfirmTitle": "ลบ A/B Test",
+  "abtest.deleteConfirmDesc": "การลบจะลบ test นี้และโหวตทั้งหมดอย่างถาวร ไม่สามารถกู้คืนได้",
+  "abtest.deleteSuccess": "ลบ A/B Test สำเร็จ",
+  "abtest.cancel": "ยกเลิก",
 };

@@ -283,4 +283,9 @@ export const en: Record<string, string> = {
   "abtest.detail.results": "Results",
   "abtest.detail.sendBoth": "Type a message to send to both agents...",
   "abtest.detail.loading": "Loading test...",
+  "abtest.delete": "Delete",
+  "abtest.deleteConfirmTitle": "Delete A/B Test",
+  "abtest.deleteConfirmDesc": "This will permanently delete this test and all its votes. This action cannot be undone.",
+  "abtest.deleteSuccess": "A/B Test deleted successfully",
+  "abtest.cancel": "Cancel",
 };

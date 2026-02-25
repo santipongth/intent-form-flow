@@ -118,6 +118,26 @@ export function useAllABTestVotes() {
   });
 }
 
+export function useDeleteABTest() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any)
+        .from("agent_ab_tests")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ab_tests"] });
+    },
+    onError: (err: Error) => {
+      toast.error("Failed to delete test", { description: err.message });
+    },
+  });
+}
+
 export function useCreateABTest() {
   const qc = useQueryClient();
   const { user } = useAuth();
