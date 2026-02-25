@@ -85,8 +85,12 @@ export default function AgentDetail() {
   -H "Content-Type: application/json" \\
   -d '{"message": "สวัสดี", "session_id": "user-123"}'`;
 
-  const embedCode = `<iframe
-  src="https://widget.thoughtmind.ai/chat/${agentId}"
+  const widgetBaseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget`;
+
+  const scriptEmbedCode = `<script src="${widgetBaseUrl}?agent_id=${agentId}&theme=${previewTheme}" defer><\/script>`;
+
+  const iframeEmbedCode = `<iframe
+  src="${widgetBaseUrl}?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true"
   width="${widgetWidth}"
   height="${widgetHeight}"
   frameborder="0"
@@ -328,25 +332,38 @@ export default function AgentDetail() {
                   <CardTitle className="text-lg">{t("detail.embedCode")}</CardTitle>
                   <CardDescription>{t("detail.embedCodeDesc")}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex gap-4">
-                    <div className="space-y-1.5">
-                      <Label>Width (px)</Label>
-                      <Input value={widgetWidth} onChange={(e) => setWidgetWidth(e.target.value)} className="w-28 rounded-xl" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Height (px)</Label>
-                      <Input value={widgetHeight} onChange={(e) => setWidgetHeight(e.target.value)} className="w-28 rounded-xl" />
-                    </div>
-                  </div>
+                <CardContent className="space-y-6">
+                  {/* Script embed */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label>{t("detail.embedSnippet")}</Label>
-                      <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => copyToClipboard(embedCode, "Embed Code")}>
+                      <Label className="flex items-center gap-1.5"><Code className="h-4 w-4" /> Script Tag (แนะนำ)</Label>
+                      <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => copyToClipboard(scriptEmbedCode, "Script Code")}>
                         <Copy className="h-3.5 w-3.5" /> {t("common.copy")}
                       </Button>
                     </div>
-                    <pre className="bg-muted rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{embedCode}</pre>
+                    <p className="text-xs text-muted-foreground">วางโค้ดนี้ก่อนปิด &lt;/body&gt; ในเว็บไซต์ของคุณ จะแสดงปุ่มแชทลอยมุมขวาล่าง</p>
+                    <pre className="bg-muted rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{scriptEmbedCode}</pre>
+                  </div>
+
+                  {/* iframe embed */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="flex items-center gap-1.5"><Monitor className="h-4 w-4" /> iframe Embed</Label>
+                      <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => copyToClipboard(iframeEmbedCode, "iframe Code")}>
+                        <Copy className="h-3.5 w-3.5" /> {t("common.copy")}
+                      </Button>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Width (px)</Label>
+                        <Input value={widgetWidth} onChange={(e) => setWidgetWidth(e.target.value)} className="w-28 rounded-xl" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Height (px)</Label>
+                        <Input value={widgetHeight} onChange={(e) => setWidgetHeight(e.target.value)} className="w-28 rounded-xl" />
+                      </div>
+                    </div>
+                    <pre className="bg-muted rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{iframeEmbedCode}</pre>
                   </div>
                 </CardContent>
               </Card>
@@ -371,41 +388,11 @@ export default function AgentDetail() {
                     className="rounded-2xl border-2 border-border overflow-hidden shadow-lg"
                     style={{ width: Math.min(Number(widgetWidth) || 400, 420), height: Math.min(Number(widgetHeight) || 600, 620) }}
                   >
-                    <div className={`h-full flex flex-col ${previewTheme === "dark" ? "bg-zinc-900 text-zinc-100" : "bg-background text-foreground"}`}>
-                      <div className={`px-4 py-3 flex items-center gap-2 border-b ${previewTheme === "dark" ? "border-zinc-700 bg-zinc-800" : "border-border bg-muted/50"}`}>
-                        <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-sm">🧠</div>
-                        <div>
-                          <p className="text-sm font-semibold">{agentName}</p>
-                          <p className={`text-xs ${previewTheme === "dark" ? "text-zinc-400" : "text-muted-foreground"}`}>Online</p>
-                        </div>
-                      </div>
-                      <div className="flex-1 p-4 space-y-3 overflow-y-auto">
-                        <div className="flex gap-2 items-end">
-                          <Bot className="h-5 w-5 shrink-0 text-primary" />
-                          <div className={`rounded-2xl rounded-bl-sm px-3 py-2 text-sm max-w-[80%] ${previewTheme === "dark" ? "bg-zinc-800" : "bg-muted"}`}>
-                            สวัสดีค่ะ! 👋 มีอะไรให้ช่วยไหมคะ?
-                          </div>
-                        </div>
-                        <div className="flex gap-2 items-end justify-end">
-                          <div className="rounded-2xl rounded-br-sm px-3 py-2 text-sm max-w-[80%] gradient-primary text-primary-foreground">
-                            อยากรู้เกี่ยวกับ ThoughtMind
-                          </div>
-                          <User className="h-5 w-5 shrink-0 text-muted-foreground" />
-                        </div>
-                        <div className="flex gap-2 items-end">
-                          <Bot className="h-5 w-5 shrink-0 text-primary" />
-                          <div className={`rounded-2xl rounded-bl-sm px-3 py-2 text-sm max-w-[80%] ${previewTheme === "dark" ? "bg-zinc-800" : "bg-muted"}`}>
-                            ThoughtMind เป็นแพลตฟอร์มสร้าง AI Agent อัจฉริยะที่ช่วยให้คุณ...
-                          </div>
-                        </div>
-                      </div>
-                      <div className={`px-3 py-2 border-t ${previewTheme === "dark" ? "border-zinc-700" : "border-border"}`}>
-                        <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${previewTheme === "dark" ? "bg-zinc-800" : "bg-muted"}`}>
-                          <span className={`text-sm flex-1 ${previewTheme === "dark" ? "text-zinc-500" : "text-muted-foreground"}`}>{t("chat.typePlaceholder")}</span>
-                          <Send className="h-4 w-4 text-primary" />
-                        </div>
-                      </div>
-                    </div>
+                    <iframe
+                      src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true`}
+                      className="w-full h-full border-none"
+                      title="Widget Preview"
+                    />
                   </div>
                 </CardContent>
               </Card>
