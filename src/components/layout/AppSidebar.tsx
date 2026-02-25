@@ -1,4 +1,4 @@
-import { LayoutDashboard, Bot, Store, MessageCircle, Activity, Settings, Plus } from "lucide-react";
+import { LayoutDashboard, Bot, Store, MessageCircle, Activity, Rocket, Settings, Plus } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -20,6 +20,7 @@ const menuItems = [
   { title: "Marketplace", url: "/marketplace", icon: Store },
   { title: "Chat", url: "/chat", icon: MessageCircle },
   { title: "Monitor", url: "/monitor", icon: Activity },
+  { title: "Deploy", url: "/deploy", icon: Rocket },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 

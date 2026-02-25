@@ -83,7 +83,7 @@ export default function AgentBuilder() {
 
   const handleCreate = () => {
     toast.success("🚀 สร้าง Agent สำเร็จ!", { description: `${name || "Agent ใหม่"} พร้อมใช้งานแล้ว` });
-    navigate("/dashboard");
+    navigate(`/deploy?agent=${encodeURIComponent(name || "new-agent").replace(/%20/g, "-")}`);
   };
 
   const currentProvider = LLM_MODELS.find((m) => m.id === selectedProvider);
