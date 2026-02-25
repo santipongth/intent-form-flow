@@ -1,54 +1,47 @@
 
 
-# สร้างตาราง agent_ab_tests เพื่อให้ฟีเจอร์ A/B Testing ใช้งานได้
+# บันทึกผล Vote ของ A/B Test ลงฐานข้อมูล
 
-## สาเหตุของปัญหา
-ตาราง `agent_ab_tests` ยังไม่ได้สร้างในฐานข้อมูล ทำให้หน้า A/B Testing แสดง error 404 ทุกครั้งที่โหลด
+## Overview
+สร้างตาราง `ab_test_votes` เพื่อเก็บผลโหวตแต่ละครั้ง และแก้ไข frontend ให้บันทึกลงฐานข้อมูลแทนการเก็บใน state อย่างเดียว พร้อมโหลดผลโหวตเดิมเมื่อเปิดหน้า
 
-## สิ่งที่ต้องทำ
+## Changes
 
-### 1. สร้างตาราง `agent_ab_tests` ในฐานข้อมูล
-สร้างตารางด้วยคอลัมน์ตามที่โค้ดฝั่ง frontend ใช้งานอยู่แล้ว:
-- `id` (uuid, primary key)
-- `user_id` (uuid, not null)
-- `agent_a_id` (uuid, not null)
-- `agent_b_id` (uuid, not null)
-- `name` (text, not null)
-- `status` (text, default 'active')
-- `created_at`, `updated_at` (timestamptz)
-
-### 2. เพิ่ม RLS Policy
-- เปิด RLS บนตาราง
-- เพิ่ม policy ให้ผู้ใช้จัดการได้เฉพาะ test ของตัวเอง (`auth.uid() = user_id`)
-
-### 3. ไม่ต้องแก้ไขโค้ด frontend
-โค้ดในไฟล์ `src/pages/ABTesting.tsx`, `src/pages/ABTestDetail.tsx`, และ `src/hooks/useABTesting.ts` พร้อมใช้งานอยู่แล้ว -- แค่สร้างตารางก็จะทำงานได้ทันที
-
-## Technical Details
-
-### SQL Migration
+### 1. สร้างตาราง `ab_test_votes` (Database Migration)
 
 ```sql
-CREATE TABLE public.agent_ab_tests (
+CREATE TABLE public.ab_test_votes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  test_id uuid NOT NULL REFERENCES public.agent_ab_tests(id) ON DELETE CASCADE,
   user_id uuid NOT NULL,
-  agent_a_id uuid NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
-  agent_b_id uuid NOT NULL REFERENCES public.agents(id) ON DELETE CASCADE,
-  name text NOT NULL,
-  status text NOT NULL DEFAULT 'active',
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
+  winner text NOT NULL,  -- 'a', 'b', or 'tie'
+  created_at timestamptz DEFAULT now()
 );
 
-ALTER TABLE public.agent_ab_tests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ab_test_votes ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users manage own ab tests"
-  ON public.agent_ab_tests
+CREATE POLICY "Users manage own votes"
+  ON public.ab_test_votes
   FOR ALL
   USING (auth.uid() = user_id);
 ```
 
-### ผลลัพธ์หลังทำเสร็จ
-- หน้า A/B Testing จะโหลดได้โดยไม่ error
-- สามารถสร้าง test ใหม่ เลือก Agent 2 ตัวเปรียบเทียบ แล้วส่งข้อความทดสอบได้
+### 2. เพิ่ม hooks ใน `src/hooks/useABTesting.ts`
 
+- `useABTestVotes(testId)` -- query ดึงจำนวน vote แยกตาม winner สำหรับ test นั้น
+- `useCastVote()` -- mutation สำหรับ insert vote ใหม่ พร้อม invalidate query
+
+### 3. แก้ไข `src/pages/ABTestDetail.tsx`
+
+- ลบ local `votes` state
+- ใช้ `useABTestVotes(id)` เพื่อโหลดผลโหวตจากฐานข้อมูล
+- แก้ `handleVote` ให้เรียก `useCastVote` mutation แทนการ setState
+- ผลโหวตจะคงอยู่เมื่อรีเฟรชหน้าหรือกลับมาดูทีหลัง
+
+### Files to Modify
+
+| File | Changes |
+|------|---------|
+| Database | สร้างตาราง `ab_test_votes` พร้อม RLS |
+| `src/hooks/useABTesting.ts` | เพิ่ม `useABTestVotes` query และ `useCastVote` mutation |
+| `src/pages/ABTestDetail.tsx` | ใช้ hooks แทน local state สำหรับ votes |
