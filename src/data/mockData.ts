@@ -169,6 +169,40 @@ export const MARKETPLACE_TEMPLATES: MarketplaceTemplate[] = [
   },
 ];
 
+export interface AnalyticsDaily {
+  date: string;
+  apiCalls: number;
+  avgResponseTime: number;
+  activeSessions: number;
+  tokensUsed: number;
+}
+
+export interface AgentAnalytics {
+  agentId: string;
+  agentName: string;
+  totalCalls: number;
+  avgResponseTime: number;
+  errorRate: number;
+  successRate: number;
+}
+
+export const MOCK_ANALYTICS_DAILY: AnalyticsDaily[] = [
+  { date: "19 ก.พ.", apiCalls: 1240, avgResponseTime: 320, activeSessions: 45, tokensUsed: 89000 },
+  { date: "20 ก.พ.", apiCalls: 1580, avgResponseTime: 290, activeSessions: 62, tokensUsed: 112000 },
+  { date: "21 ก.พ.", apiCalls: 1350, avgResponseTime: 340, activeSessions: 51, tokensUsed: 95000 },
+  { date: "22 ก.พ.", apiCalls: 1890, avgResponseTime: 280, activeSessions: 78, tokensUsed: 134000 },
+  { date: "23 ก.พ.", apiCalls: 2100, avgResponseTime: 260, activeSessions: 84, tokensUsed: 156000 },
+  { date: "24 ก.พ.", apiCalls: 1950, avgResponseTime: 275, activeSessions: 71, tokensUsed: 142000 },
+  { date: "25 ก.พ.", apiCalls: 2340, avgResponseTime: 250, activeSessions: 92, tokensUsed: 168000 },
+];
+
+export const MOCK_AGENT_ANALYTICS: AgentAnalytics[] = [
+  { agentId: "1", agentName: "Nong Support", totalCalls: 4520, avgResponseTime: 280, errorRate: 1.2, successRate: 98.8 },
+  { agentId: "2", agentName: "News Bot", totalCalls: 2180, avgResponseTime: 350, errorRate: 2.5, successRate: 97.5 },
+  { agentId: "3", agentName: "Doc Reader", totalCalls: 890, avgResponseTime: 420, errorRate: 3.1, successRate: 96.9 },
+  { agentId: "4", agentName: "Code Helper", totalCalls: 1340, avgResponseTime: 310, errorRate: 1.8, successRate: 98.2 },
+];
+
 export const TOOLS_LIST = [
   { id: "web-search", name: "🌐 ค้นหาเว็บ", description: "ค้นหาข้อมูลจากอินเทอร์เน็ต" },
   { id: "read-excel", name: "📊 อ่าน Excel/CSV", description: "อ่านและวิเคราะห์ไฟล์ตาราง" },
