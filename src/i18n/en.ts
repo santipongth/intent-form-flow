@@ -303,4 +303,6 @@ export const en: Record<string, string> = {
   "knowledge.supportedTypes": "Supports PDF, TXT, DOCX, JSON (max 20MB)",
   "knowledge.characters": "characters extracted",
   "knowledge.refresh": "Refresh",
+  "knowledge.dropHere": "Drop file here to upload",
+  "knowledge.dragDropHint": "or drag & drop files here",
 };
