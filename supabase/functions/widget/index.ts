@@ -30,6 +30,27 @@ serve(async (req) => {
   const position = url.searchParams.get("position") || "bottom-right";
   const bubbleSize = parseInt(url.searchParams.get("bubble_size") || "60", 10) || 60;
   const welcomeMessage = url.searchParams.get("welcome_message") || "";
+  const lang = url.searchParams.get("lang") || "th";
+
+  const i18n: Record<string, Record<string, string>> = {
+    th: {
+      placeholder: "พิมพ์ข้อความ...",
+      online: "● ออนไลน์",
+      defaultWelcome: "สวัสดีค่ะ! 👋 มีอะไรให้ช่วยไหมคะ?",
+      errorGeneric: "เกิดข้อผิดพลาด",
+      errorConnection: "เกิดข้อผิดพลาดในการเชื่อมต่อ",
+      noResponse: "ไม่ได้รับคำตอบ กรุณาลองใหม่อีกครั้ง",
+    },
+    en: {
+      placeholder: "Type a message...",
+      online: "● Online",
+      defaultWelcome: "Hello! 👋 How can I help you?",
+      errorGeneric: "An error occurred",
+      errorConnection: "Connection error",
+      noResponse: "No response received. Please try again.",
+    },
+  };
+  const txt = i18n[lang] || i18n.th;
 
   if (!agentId) {
     return new Response("Missing agent_id", { status: 400, headers: corsHeaders });
@@ -60,7 +81,7 @@ serve(async (req) => {
   if(document.getElementById('tm-widget-frame'))return;
   var f=document.createElement('iframe');
   f.id='tm-widget-frame';
-  f.src='${SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&theme=${theme}&mode=fullpage&color=${encodedColor}&brand=${encodedBrand}&position=${position}&bubble_size=${bubbleSize}${welcomeMessage ? `&welcome_message=${encodeURIComponent(welcomeMessage)}` : ""}';
+  f.src='${SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&theme=${theme}&mode=fullpage&color=${encodedColor}&brand=${encodedBrand}&position=${position}&bubble_size=${bubbleSize}&lang=${lang}${welcomeMessage ? `&welcome_message=${encodeURIComponent(welcomeMessage)}` : ""}';
   f.style.cssText='position:fixed;bottom:0;${posAlign};width:420px;height:700px;border:none;z-index:999999;background:transparent;';
   f.allow='microphone';
   document.body.appendChild(f);
@@ -138,13 +159,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
       <div class="avatar">${agentAvatar}</div>
       <div class="info">
         <div class="name">${brandName}</div>
-        <div class="status">● Online</div>
+        <div class="status">${txt.online}</div>
       </div>
       <button class="close" onclick="toggleChat()" aria-label="Close">&times;</button>
     </div>
     <div class="messages" id="messages"></div>
     <div class="input-area">
-      <input id="user-input" placeholder="พิมพ์ข้อความ..." autocomplete="off" />
+      <input id="user-input" placeholder="${txt.placeholder}" autocomplete="off" />
       <button id="send-btn" onclick="sendMessage()" aria-label="Send">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
       </button>
@@ -167,7 +188,7 @@ function toggleChat(){
   document.getElementById('chat-window').classList.toggle('open',isOpen);
   document.getElementById('bubble').style.display=isOpen?'none':'flex';
   if(isOpen&&messages.length===0){
-    addBotMessage(${welcomeMessage ? `"${welcomeMessage.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"` : `"สวัสดีค่ะ! 👋 มีอะไรให้ช่วยไหมคะ?"`});
+    addBotMessage(${welcomeMessage ? `"${welcomeMessage.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"` : `"${txt.defaultWelcome}"`});
   }
   if(isOpen)document.getElementById('user-input').focus();
 }
@@ -228,7 +249,7 @@ async function sendMessage(){
     
     if(!resp.ok){
       const err=await resp.json().catch(()=>({error:'Error'}));
-      addBotMessage('⚠️ '+(err.error||'เกิดข้อผิดพลาด'));
+      addBotMessage('⚠️ '+(err.error||'${txt.errorGeneric}'));
       return;
     }
     
@@ -266,11 +287,11 @@ async function sendMessage(){
     
     if(!assistantMsg){
       messages.pop();
-      addBotMessage('ไม่ได้รับคำตอบ กรุณาลองใหม่อีกครั้ง');
+      addBotMessage('${txt.noResponse}');
     }
   }catch(e){
     hideTyping();
-    addBotMessage('⚠️ เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    addBotMessage('⚠️ ${txt.errorConnection}');
   }finally{
     isSending=false;
     document.getElementById('send-btn').disabled=false;
