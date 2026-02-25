@@ -16,9 +16,15 @@ serve(async (req) => {
 
     // Get auth user
     const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.replace("Bearer ", "");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Resolve user from JWT
+    let userId: string | null = null;
+    const { data: { user } } = await supabase.auth.getUser(token);
+    if (user) userId = user.id;
 
     // Get agent config if agent_id provided
     let systemPrompt = "You are a helpful AI assistant. Keep answers clear and concise.";
@@ -88,21 +94,16 @@ serve(async (req) => {
     if (!response.ok) {
       const responseTime = Date.now() - startTime;
       
-      // Log analytics event for errors
-      if (agent_id && conversation_id) {
-        // Extract user_id from JWT
-        const token = authHeader.replace("Bearer ", "");
-        const { data: { user } } = await supabase.auth.getUser(token);
-        if (user) {
-          await supabase.from("agent_analytics_events").insert({
-            agent_id,
-            user_id: user.id,
-            event_type: "chat",
-            status: "error",
-            response_time_ms: responseTime,
-            metadata: { error_status: response.status },
-          });
-        }
+      // Log analytics event for errors (no longer requires conversation_id)
+      if (agent_id && userId) {
+        await supabase.from("agent_analytics_events").insert({
+          agent_id,
+          user_id: userId,
+          event_type: "chat",
+          status: "error",
+          response_time_ms: responseTime,
+          metadata: { error_status: response.status },
+        });
       }
 
       if (response.status === 429) {
@@ -125,23 +126,55 @@ serve(async (req) => {
       });
     }
 
-    // Log successful analytics event (fire-and-forget)
-    const responseTime = Date.now() - startTime;
-    if (agent_id) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user } } = await supabase.auth.getUser(token);
-      if (user) {
-        supabase.from("agent_analytics_events").insert({
-          agent_id,
-          user_id: user.id,
-          event_type: "chat",
-          status: "success",
-          response_time_ms: responseTime,
-        }).then(() => {});
-      }
-    }
+    // Use TransformStream to intercept tokens_used from streaming response
+    let totalTokens = 0;
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
 
-    return new Response(response.body, {
+    const transformStream = new TransformStream({
+      transform(chunk, controller) {
+        // Pass through the chunk as-is
+        controller.enqueue(chunk);
+
+        // Try to extract usage/tokens from the chunk
+        const text = decoder.decode(chunk, { stream: true });
+        const lines = text.split("\n");
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            // OpenAI-compatible APIs send usage in the last chunk
+            if (parsed.usage?.total_tokens) {
+              totalTokens = parsed.usage.total_tokens;
+            }
+            // Some APIs use prompt_tokens + completion_tokens
+            if (parsed.usage?.prompt_tokens && parsed.usage?.completion_tokens) {
+              totalTokens = parsed.usage.prompt_tokens + parsed.usage.completion_tokens;
+            }
+          } catch { /* ignore parse errors */ }
+        }
+      },
+      flush() {
+        // After stream ends, log analytics (fire-and-forget)
+        const responseTime = Date.now() - startTime;
+        if (agent_id && userId) {
+          supabase.from("agent_analytics_events").insert({
+            agent_id,
+            user_id: userId,
+            event_type: "chat",
+            status: "success",
+            response_time_ms: responseTime,
+            tokens_used: totalTokens || null,
+          }).then(() => {});
+        }
+      },
+    });
+
+    const streamedBody = response.body!.pipeThrough(transformStream);
+
+    return new Response(streamedBody, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e) {
