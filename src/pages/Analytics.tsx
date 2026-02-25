@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, Activity, Users, CheckCircle, TrendingUp, TrendingDown, MessageSquare } from "lucide-react";
+import { BarChart3, Activity, Users, CheckCircle, TrendingUp, TrendingDown, MessageSquare, Download, FileText } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { exportCSV, exportPDF } from "@/lib/exportAnalytics";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAnalyticsEvents } from "@/hooks/useAnalytics";
@@ -99,6 +101,21 @@ export default function Analytics() {
           <p className="text-muted-foreground text-sm">{t("analytics.subtitle")}</p>
         </div>
         <div className="flex items-center gap-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="rounded-xl no-print" disabled={isEmpty || isLoading}>
+                <Download className="h-4 w-4 mr-1" /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => exportCSV(daily, agentPerf, { totalCalls, avgRT, totalTokens, successRate }, selectedDays)}>
+                <FileText className="h-4 w-4 mr-2" /> Export CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportPDF}>
+                <FileText className="h-4 w-4 mr-2" /> Export PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Select value={selectedAgent} onValueChange={setSelectedAgent}>
             <SelectTrigger className="w-[180px] rounded-xl">
               <SelectValue placeholder="All Agents" />
