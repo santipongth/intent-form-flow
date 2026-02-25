@@ -1,4 +1,4 @@
-import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, CreditCard, Rocket, Settings, Plus, LogOut } from "lucide-react";
+import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, CreditCard, Settings, Plus, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -26,7 +26,6 @@ const menuItems = [
   { title: "Monitor", url: "/monitor", icon: Activity },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Usage & Billing", url: "/usage", icon: CreditCard },
-  { title: "Deploy", url: "/deploy", icon: Rocket },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 

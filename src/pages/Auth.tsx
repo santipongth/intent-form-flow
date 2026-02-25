@@ -91,6 +91,26 @@ export default function Auth() {
                   <Button type="submit" className="w-full gradient-primary text-primary-foreground rounded-xl" disabled={loading}>
                     {loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
                   </Button>
+                  <button
+                    type="button"
+                    className="w-full text-sm text-primary hover:underline mt-1"
+                    onClick={async () => {
+                      if (!email) {
+                        toast.error("กรุณากรอกอีเมลก่อน");
+                        return;
+                      }
+                      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                        redirectTo: `${window.location.origin}/reset-password`,
+                      });
+                      if (error) {
+                        toast.error("ส่งอีเมลไม่สำเร็จ", { description: error.message });
+                      } else {
+                        toast.success("ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว!", { description: "กรุณาตรวจสอบอีเมลของคุณ" });
+                      }
+                    }}
+                  >
+                    ลืมรหัสผ่าน?
+                  </button>
                 </form>
               </TabsContent>
 
