@@ -1,13 +1,21 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Upload, Link, X, FileText } from "lucide-react";
+import { Upload, Link, X, FileText, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+
+const PREVIEWABLE_EXTS = [".txt", ".md", ".csv", ".json"];
+const PREVIEW_MAX_CHARS = 200;
+
+function canPreview(file: File): boolean {
+  const ext = "." + file.name.split(".").pop()?.toLowerCase();
+  return PREVIEWABLE_EXTS.includes(ext);
+}
 
 const ACCEPTED_TYPES = [".pdf", ".txt", ".md", ".csv", ".json", ".docx"];
 const MAX_FILES = 10;
@@ -41,9 +49,29 @@ interface KnowledgeStepProps {
 export default function KnowledgeStep({ files, setFiles, urls, setUrls, urlInput, setUrlInput, onAddUrl }: KnowledgeStepProps) {
   const { t } = useLanguage();
   const [isDragOver, setIsDragOver] = useState(false);
+  const [previews, setPreviews] = useState<Record<number, string>>({});
+  const [expandedPreviews, setExpandedPreviews] = useState<Record<number, boolean>>({});
 
   const totalSize = files.reduce((sum, f) => sum + f.size, 0);
   const storagePercent = Math.min((totalSize / MAX_TOTAL_SIZE) * 100, 100);
+
+  // Read previewable files
+  useEffect(() => {
+    files.forEach((file, idx) => {
+      if (previews[idx] !== undefined) return;
+      if (!canPreview(file)) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = (e.target?.result as string) || "";
+        setPreviews((prev) => ({ ...prev, [idx]: text.slice(0, PREVIEW_MAX_CHARS) }));
+      };
+      reader.readAsText(file);
+    });
+  }, [files]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const togglePreview = (idx: number) => {
+    setExpandedPreviews((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  };
 
   const addFiles = useCallback((newFiles: FileList | File[]) => {
     const incoming = Array.from(newFiles);
@@ -143,18 +171,38 @@ export default function KnowledgeStep({ files, setFiles, urls, setUrls, urlInput
       {files.length > 0 && (
         <div className="space-y-2">
           {files.map((f, i) => (
-            <div key={i} className="flex items-center justify-between bg-secondary rounded-xl px-4 py-2.5">
-              <div className="flex items-center gap-3 min-w-0">
-                <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="text-sm truncate">{f.name}</span>
-                <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 py-0">
-                  {getFileExtension(f.name)}
-                </Badge>
-                <span className="text-xs text-muted-foreground shrink-0">{formatFileSize(f.size)}</span>
+            <div key={i} className="bg-secondary rounded-xl overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2.5">
+                <div className="flex items-center gap-3 min-w-0">
+                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="text-sm truncate">{f.name}</span>
+                  <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 py-0">
+                    {getFileExtension(f.name)}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground shrink-0">{formatFileSize(f.size)}</span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {canPreview(f) && (
+                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => togglePreview(i)}>
+                      {expandedPreviews[i] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
+                    setFiles(files.filter((_, idx) => idx !== i));
+                    setPreviews((prev) => { const n = { ...prev }; delete n[i]; return n; });
+                    setExpandedPreviews((prev) => { const n = { ...prev }; delete n[i]; return n; });
+                  }}>
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
-              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => setFiles(files.filter((_, idx) => idx !== i))}>
-                <X className="h-3 w-3" />
-              </Button>
+              {expandedPreviews[i] && previews[i] !== undefined && (
+                <div className="px-4 pb-3">
+                  <pre className="text-xs text-muted-foreground bg-background/50 rounded-lg p-3 whitespace-pre-wrap break-all max-h-32 overflow-auto font-mono">
+                    {previews[i]}{previews[i].length >= PREVIEW_MAX_CHARS ? "…" : ""}
+                  </pre>
+                </div>
+              )}
             </div>
           ))}
         </div>
