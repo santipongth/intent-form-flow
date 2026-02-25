@@ -21,6 +21,7 @@ import ResetPassword from "./pages/ResetPassword";
 import UsageBilling from "./pages/UsageBilling";
 import ABTesting from "./pages/ABTesting";
 import ABTestDetail from "./pages/ABTestDetail";
+import ABTestResults from "./pages/ABTestResults";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import WidgetPreview from "./pages/WidgetPreview";
@@ -50,6 +51,7 @@ const App = () => (
                 <Route path="/analytics" element={<ProtectedRoute><AppLayout><Analytics /></AppLayout></ProtectedRoute>} />
                 <Route path="/usage" element={<ProtectedRoute><AppLayout><UsageBilling /></AppLayout></ProtectedRoute>} />
                 <Route path="/ab-testing" element={<ProtectedRoute><AppLayout><ABTesting /></AppLayout></ProtectedRoute>} />
+                <Route path="/ab-testing/results" element={<ProtectedRoute><AppLayout><ABTestResults /></AppLayout></ProtectedRoute>} />
                 <Route path="/ab-testing/:id" element={<ProtectedRoute><AppLayout><ABTestDetail /></AppLayout></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
                 <Route path="/widget-preview/:agentId" element={<WidgetPreview />} />

@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, FlaskConical, ArrowRight } from "lucide-react";
+import { Plus, FlaskConical, ArrowRight, BarChart3 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAgents } from "@/hooks/useAgents";
 import { useABTests, useCreateABTest } from "@/hooks/useABTesting";
@@ -42,9 +42,13 @@ export default function ABTesting() {
           <h1 className="font-display text-2xl font-bold">🧪 {t("abtest.title") || "A/B Testing"}</h1>
           <p className="text-muted-foreground text-sm">{t("abtest.subtitle") || "Compare two agents side-by-side"}</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button className="gradient-primary text-primary-foreground rounded-xl gap-2">
+        <div className="flex gap-2">
+          <Button variant="outline" className="rounded-xl gap-2" onClick={() => navigate("/ab-testing/results")}>
+            <BarChart3 className="h-4 w-4" /> View Results
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button className="gradient-primary text-primary-foreground rounded-xl gap-2">
               <Plus className="h-4 w-4" /> {t("abtest.create") || "New Test"}
             </Button>
           </DialogTrigger>
@@ -86,7 +90,8 @@ export default function ABTesting() {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {tests && tests.length > 0 ? (
