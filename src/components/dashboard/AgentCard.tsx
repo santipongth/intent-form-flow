@@ -31,7 +31,7 @@ interface AgentCardProps {
   onDelete: (id: string) => void;
 }
 
-const AgentCard = React.forwardRef<HTMLDivElement, AgentCardProps>(({ agent, index, knowledgeStats, onDelete }, ref) => {
+function AgentCard({ agent, index, knowledgeStats, onDelete }: AgentCardProps) {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -104,8 +104,6 @@ const AgentCard = React.forwardRef<HTMLDivElement, AgentCardProps>(({ agent, ind
       </Card>
     </motion.div>
   );
-});
-
-AgentCard.displayName = "AgentCard";
+}
 
 export default AgentCard;
