@@ -36,6 +36,7 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
   const deleteFile = useDeleteKnowledgeFile();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Auto-refresh every 5s when files are processing
   useEffect(() => {
@@ -45,10 +46,7 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
     return () => clearInterval(interval);
   }, [files, refetch]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    // Simulate upload progress
+  const startUpload = (file: File) => {
     setUploadProgress(0);
     const progressInterval = setInterval(() => {
       setUploadProgress(prev => {
@@ -67,7 +65,26 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
         setUploadProgress(null);
       },
     });
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    startUpload(file);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!["pdf", "txt", "md", "csv", "json", "docx"].includes(ext || "")) {
+      toast.error(t("knowledge.supportedTypes"));
+      return;
+    }
+    startUpload(file);
   };
 
   const formatSize = (bytes: number) => {
@@ -83,7 +100,13 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
   };
 
   return (
-    <Card className="rounded-2xl">
+    <Card
+      className={`rounded-2xl transition-colors ${isDragging ? "border-primary border-2 bg-primary/5" : ""}`}
+      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+      onDragEnter={(e) => { e.preventDefault(); setIsDragging(true); }}
+      onDragLeave={(e) => { e.preventDefault(); if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragging(false); }}
+      onDrop={handleDrop}
+    >
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -115,9 +138,10 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
         {isLoading ? (
           <div className="space-y-2">{[1, 2].map(i => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
         ) : files.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />
-            <p>{t("knowledge.noFiles")}</p>
+          <div className={`text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl transition-colors ${isDragging ? "border-primary bg-primary/5" : "border-transparent"}`}>
+            <Upload className={`h-10 w-10 mx-auto mb-2 transition-opacity ${isDragging ? "opacity-70 text-primary" : "opacity-30"}`} />
+            <p>{isDragging ? t("knowledge.dropHere") : t("knowledge.noFiles")}</p>
+            {!isDragging && <p className="text-xs mt-1">{t("knowledge.dragDropHint")}</p>}
           </div>
         ) : (
           <div className="space-y-2">

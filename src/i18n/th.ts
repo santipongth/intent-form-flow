@@ -303,4 +303,6 @@ export const th: Record<string, string> = {
   "knowledge.supportedTypes": "รองรับ PDF, TXT, DOCX, JSON (สูงสุด 20MB)",
   "knowledge.characters": "ตัวอักษรที่ extract ได้",
   "knowledge.refresh": "รีเฟรช",
+  "knowledge.dropHere": "วางไฟล์ที่นี่เพื่ออัปโหลด",
+  "knowledge.dragDropHint": "หรือลากไฟล์มาวางที่นี่",
 };
