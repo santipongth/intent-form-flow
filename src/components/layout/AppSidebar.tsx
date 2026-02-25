@@ -54,7 +54,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <div className="p-4 flex items-center gap-3">
-        <img alt="ThoughtMind" className="w-10 h-10 rounded-xl object-contain shrink-0" src="/lovable-uploads/d1798342-d432-4714-bef6-57e1d84e6ac8.png" />
+        <img alt="ThoughtMind" className="w-14 h-14 rounded-xl object-contain shrink-0" src="/lovable-uploads/d1798342-d432-4714-bef6-57e1d84e6ac8.png" />
         {!collapsed &&
         <div className="flex flex-col">
             <span className="font-display font-bold text-lg leading-tight gradient-text text-black">
