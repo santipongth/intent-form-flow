@@ -302,4 +302,5 @@ export const th: Record<string, string> = {
   "knowledge.deleteConfirmDesc": "การลบจะลบไฟล์นี้ออกจากคลังความรู้อย่างถาวร",
   "knowledge.supportedTypes": "รองรับ PDF, TXT, DOCX, JSON (สูงสุด 20MB)",
   "knowledge.characters": "ตัวอักษรที่ extract ได้",
+  "knowledge.refresh": "รีเฟรช",
 };
