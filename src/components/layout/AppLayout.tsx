@@ -8,7 +8,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { Button } from "@/components/ui/button";
 import { Sun, Moon, Globe } from "lucide-react";
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
+export function AppLayout({ children }: {children: React.ReactNode;}) {
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const { locale, setLocale } = useLanguage();
@@ -28,8 +28,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 variant="ghost"
                 size="sm"
                 className="rounded-lg gap-1.5 text-xs font-medium h-8 px-2.5"
-                onClick={() => setLocale(locale === "th" ? "en" : "th")}
-              >
+                onClick={() => setLocale(locale === "th" ? "en" : "th")}>
+
                 <Globe className="h-3.5 w-3.5" />
                 {locale === "th" ? "TH" : "EN"}
               </Button>
@@ -38,11 +38,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 variant="ghost"
                 size="icon"
                 className="rounded-lg h-8 w-8"
-                onClick={toggleTheme}
-              >
+                onClick={toggleTheme}>
+
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
-              <span className="text-sm text-muted-foreground hidden sm:inline">{displayName}</span>
+              
               <Avatar className="h-8 w-8">
                 <AvatarImage src={profile?.avatar_url || ""} />
                 <AvatarFallback className="text-xs bg-secondary">
@@ -56,6 +56,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
-    </SidebarProvider>
-  );
+    </SidebarProvider>);
+
 }
