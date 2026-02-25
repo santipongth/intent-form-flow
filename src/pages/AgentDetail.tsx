@@ -35,7 +35,7 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
   const uploadFile = useUploadKnowledgeFile();
   const deleteFile = useDeleteKnowledgeFile();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadQueue, setUploadQueue] = useState<{ name: string; progress: number }[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
   // Auto-refresh every 5s when files are processing
@@ -47,44 +47,52 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
   }, [files, refetch]);
 
   const startUpload = (file: File) => {
-    setUploadProgress(0);
+    const idx = uploadQueue.length;
+    setUploadQueue(prev => [...prev, { name: file.name, progress: 0 }]);
     const progressInterval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev === null || prev >= 90) { clearInterval(progressInterval); return 90; }
-        return prev + Math.random() * 20;
-      });
+      setUploadQueue(prev => prev.map((item, i) =>
+        item.name === file.name && item.progress < 90
+          ? { ...item, progress: Math.min(item.progress + Math.random() * 20, 90) }
+          : item
+      ));
     }, 200);
     uploadFile.mutate({ file, agentId }, {
       onSuccess: () => {
         clearInterval(progressInterval);
-        setUploadProgress(100);
-        setTimeout(() => setUploadProgress(null), 800);
+        setUploadQueue(prev => prev.map(item => item.name === file.name ? { ...item, progress: 100 } : item));
+        setTimeout(() => setUploadQueue(prev => prev.filter(item => item.name !== file.name)), 1000);
       },
       onError: () => {
         clearInterval(progressInterval);
-        setUploadProgress(null);
+        setUploadQueue(prev => prev.filter(item => item.name !== file.name));
       },
     });
   };
 
+  const ALLOWED_EXTS = ["pdf", "txt", "md", "csv", "json", "docx"];
+
+  const startMultiUpload = (fileList: FileList) => {
+    Array.from(fileList).forEach(file => {
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (!ALLOWED_EXTS.includes(ext || "")) {
+        toast.error(`${file.name}: ${t("knowledge.supportedTypes")}`);
+        return;
+      }
+      startUpload(file);
+    });
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    startUpload(file);
+    if (!e.target.files?.length) return;
+    startMultiUpload(e.target.files);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (!file) return;
-    const ext = file.name.split(".").pop()?.toLowerCase();
-    if (!["pdf", "txt", "md", "csv", "json", "docx"].includes(ext || "")) {
-      toast.error(t("knowledge.supportedTypes"));
-      return;
-    }
-    startUpload(file);
+    if (!e.dataTransfer.files?.length) return;
+    startMultiUpload(e.dataTransfer.files);
   };
 
   const formatSize = (bytes: number) => {
@@ -119,7 +127,7 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
                 <RefreshCw className="h-4 w-4" /> {t("knowledge.refresh")}
               </Button>
             )}
-            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md,.csv,.json,.docx" className="hidden" onChange={handleFileSelect} />
+            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.md,.csv,.json,.docx" multiple className="hidden" onChange={handleFileSelect} />
             <Button className="rounded-xl gap-2" onClick={() => fileInputRef.current?.click()} disabled={uploadFile.isPending}>
               {uploadFile.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
               {uploadFile.isPending ? t("knowledge.uploading") : t("knowledge.upload")}
@@ -127,10 +135,17 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
           </div>
         </div>
         <p className="text-xs text-muted-foreground">{t("knowledge.supportedTypes")}</p>
-        {uploadProgress !== null && (
-          <div className="space-y-1">
-            <Progress value={Math.min(uploadProgress, 100)} className="h-2 rounded-full" />
-            <p className="text-xs text-muted-foreground">{uploadProgress >= 100 ? t("knowledge.statusProcessing") : `${t("knowledge.uploading")} ${Math.round(uploadProgress)}%`}</p>
+        {uploadQueue.length > 0 && (
+          <div className="space-y-2">
+            {uploadQueue.map((item) => (
+              <div key={item.name} className="space-y-1">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="truncate max-w-[200px]">📄 {item.name}</span>
+                  <span>{item.progress >= 100 ? t("knowledge.statusProcessing") : `${Math.round(item.progress)}%`}</span>
+                </div>
+                <Progress value={Math.min(item.progress, 100)} className="h-1.5 rounded-full" />
+              </div>
+            ))}
           </div>
         )}
       </CardHeader>
