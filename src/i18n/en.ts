@@ -264,9 +264,14 @@ export const en: Record<string, string> = {
   "landing.feature3Desc": "Your API Keys are stored safely and securely",
   "landing.templateTitle": "Start from Ready-Made Templates",
   "landing.templateDesc": "Choose a template and customize it — no need to start from zero",
-  "landing.statsAgents": "Agents Created",
-  "landing.statsMessages": "Messages Sent",
-  "landing.statsConversations": "Conversations",
+  "landing.howItWorksTitle": "Get Started in 3 Simple Steps",
+  "landing.howItWorksDesc": "Build your AI Agent in under 5 minutes — no coding required",
+  "landing.step1Title": "Create an Agent",
+  "landing.step1Desc": "Name it, pick a template, and define your AI's personality",
+  "landing.step2Title": "Add Knowledge",
+  "landing.step2Desc": "Upload PDFs, Excel files, or URLs for your Agent to learn from",
+  "landing.step3Title": "Deploy & Use",
+  "landing.step3Desc": "Embed a widget on your site or chat directly in the console",
   "landing.footer": "© 2026 ThoughtMind. All rights reserved.",
 
   // Protected Route
