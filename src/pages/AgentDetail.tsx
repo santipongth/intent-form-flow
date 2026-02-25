@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, Eye, EyeOff, RefreshCw, Globe, Code, Monitor, Key, AlertTriangle, Send, Bot, User, ArrowLeft, Info, Pencil, Upload, Trash2, FileText, Loader2 } from "lucide-react";
+import { Copy, Eye, EyeOff, RefreshCw, Globe, Code, Monitor, Key, AlertTriangle, Send, Bot, User, ArrowLeft, Info, Pencil, Upload, Trash2, FileText, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -32,6 +32,7 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
   const { data: files = [], isLoading, refetch } = useKnowledgeFiles(agentId);
   const uploadFile = useUploadKnowledgeFile();
   const deleteFile = useDeleteKnowledgeFile();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -86,32 +87,50 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
         ) : (
           <div className="space-y-2">
             {files.map((f) => (
-              <div key={f.id} className="flex items-center justify-between bg-secondary/50 rounded-xl px-4 py-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <FileText className="h-5 w-5 text-primary shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{f.file_name}</p>
-                    <p className="text-xs text-muted-foreground">{formatSize(f.file_size)} · {new Date(f.created_at).toLocaleDateString("th-TH")}</p>
+              <div key={f.id} className="bg-secondary/50 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3">
+                  <button
+                    className="flex items-center gap-3 min-w-0 flex-1 text-left"
+                    onClick={() => f.status === "ready" && f.content ? setExpandedId(expandedId === f.id ? null : f.id) : null}
+                  >
+                    <FileText className="h-5 w-5 text-primary shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{f.file_name}</p>
+                      <p className="text-xs text-muted-foreground">{formatSize(f.file_size)} · {new Date(f.created_at).toLocaleDateString("th-TH")}</p>
+                    </div>
+                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {statusBadge(f.status)}
+                    {f.status === "ready" && f.content && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setExpandedId(expandedId === f.id ? null : f.id)}>
+                        {expandedId === f.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </Button>
+                    )}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{t("knowledge.deleteConfirm")}</AlertDialogTitle>
+                          <AlertDialogDescription>{t("knowledge.deleteConfirmDesc")}</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                          <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteFile.mutate({ id: f.id, filePath: f.file_path })}>{t("common.delete")}</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {statusBadge(f.status)}
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>{t("knowledge.deleteConfirm")}</AlertDialogTitle>
-                        <AlertDialogDescription>{t("knowledge.deleteConfirmDesc")}</AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                        <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteFile.mutate({ id: f.id, filePath: f.file_path })}>{t("common.delete")}</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+                {expandedId === f.id && f.content && (
+                  <div className="px-4 pb-3">
+                    <div className="bg-background rounded-lg border border-border p-3 max-h-64 overflow-y-auto">
+                      <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono leading-relaxed">{f.content.length > 3000 ? f.content.substring(0, 3000) + "\n\n... (" + (f.content.length - 3000).toLocaleString() + " characters more)" : f.content}</pre>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1.5">{f.content.length.toLocaleString()} {t("knowledge.characters")}</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>
