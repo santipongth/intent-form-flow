@@ -1,20 +1,34 @@
 
 
-# ลบ Recent Activity ออกจาก Dashboard และ Clean Up
+# Refactor Dashboard.tsx -- แยก Component ย่อย
 
-## สิ่งที่จะทำ
+ปัจจุบัน Dashboard.tsx มี 310 บรรทัด รวม logic + UI ทั้งหมดไว้ในไฟล์เดียว จะแยกออกเป็น 3 component ย่อย
 
-### 1. `src/pages/Dashboard.tsx`
-- ลบ import `MOCK_ACTIVITY` ออก
-- ลบตัวแปร `activityIcons` ออก
-- ลบ section "Activity Feed" ทั้งหมด (คอลัมน์ขวาที่แสดง Recent Activity)
-- เปลี่ยน grid layout จาก `lg:grid-cols-3` เป็นไม่ต้องแบ่งคอลัมน์ (Agent Grid เต็มหน้า) โดยลบ `lg:col-span-2` ออกด้วย
+## ไฟล์ใหม่ที่จะสร้าง
 
-### 2. `src/data/mockData.ts`
-- ลบ interface `ActivityItem` (บรรทัด 14-20)
-- ลบ `MOCK_ACTIVITY` array (บรรทัด 57-63)
+### 1. `src/components/dashboard/StatsRow.tsx`
+- รับ props: `stats` array (label, value, icon, color, bg)
+- แสดง grid 3 คอลัมน์ พร้อม motion animation
+- ย้ายจากบรรทัด 122-138 ของ Dashboard.tsx
+
+### 2. `src/components/dashboard/AgentFilters.tsx`
+- รับ props: searchQuery, setSearchQuery, statusFilter, setStatusFilter, modelFilter, setModelFilter, sortBy, setSortBy, availableModels, hasActiveFilters, clearFilters
+- ย้าย search bar + select dropdowns + clear filters button (บรรทัด 142-198)
+
+### 3. `src/components/dashboard/AgentCard.tsx`
+- รับ props: agent, index, knowledgeStats, onDelete
+- ย้าย Card + DropdownMenu + Knowledge stats + Badge (บรรทัด 215-284)
+- รวม `formatSize`, `MAX_FILES`, `MAX_TOTAL_SIZE` ไว้ในไฟล์นี้
+
+## ไฟล์ที่แก้ไข
+
+### `src/pages/Dashboard.tsx`
+- ลบ code ที่ย้ายออกไป
+- Import 3 component ใหม่
+- คงไว้เฉพาะ: hooks, data fetching, filtering/sorting logic, และ layout structure
+- ขนาดจะลดลงจาก ~310 บรรทัดเหลือ ~120 บรรทัด
 
 ## ผลลัพธ์
-- หน้า Dashboard จะแสดงเฉพาะ Stats และ Agent Grid เต็มความกว้าง
-- ไม่มี mock data ที่ไม่ได้ใช้หลงเหลืออยู่
+- ไม่มีการเปลี่ยนแปลง UI หรือ behavior ใดๆ
+- แต่ละ component มีหน้าที่ชัดเจน แก้ไขง่ายขึ้น
 
