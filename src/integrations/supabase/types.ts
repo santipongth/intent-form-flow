@@ -406,7 +406,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_platform_stats: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never
