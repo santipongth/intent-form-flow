@@ -41,6 +41,29 @@ export default function Dashboard() {
     enabled: !!user,
   });
 
+  // Fetch today's messages count and total tokens from analytics events
+  const todayStart = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  }, []);
+
+  const { data: analyticsStats } = useQuery({
+    queryKey: ["dashboard_analytics", todayStart],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("agent_analytics_events")
+        .select("event_type, tokens_used, created_at")
+        .gte("created_at", todayStart);
+      if (error) throw error;
+      const msgs = (data || []).filter(e => e.event_type === "chat_message" || e.event_type === "message").length;
+      const tokens = (data || []).reduce((sum, e) => sum + (e.tokens_used || 0), 0);
+      return { messagesToday: msgs, tokensUsed: tokens };
+    },
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [modelFilter, setModelFilter] = useState<string>("all");
@@ -79,10 +102,12 @@ export default function Dashboard() {
   const clearFilters = () => { setSearchQuery(""); setStatusFilter("all"); setModelFilter("all"); setSortBy("newest"); };
 
   const agentCount = agents?.length ?? 0;
+  const messagesToday = analyticsStats?.messagesToday ?? 0;
+  const tokensUsed = analyticsStats?.tokensUsed ?? 0;
   const stats = [
     { label: t("dashboard.totalAgents"), value: String(agentCount), icon: Bot, color: "text-primary", bg: "bg-secondary" },
-    { label: t("dashboard.messagestoday"), value: "0", icon: MessageCircle, color: "text-brand-green", bg: "bg-brand-green/10" },
-    { label: t("dashboard.tokensUsed"), value: "0", icon: Zap, color: "text-brand-orange", bg: "bg-brand-orange/10" },
+    { label: t("dashboard.messagestoday"), value: String(messagesToday), icon: MessageCircle, color: "text-brand-green", bg: "bg-brand-green/10" },
+    { label: t("dashboard.tokensUsed"), value: tokensUsed.toLocaleString(), icon: Zap, color: "text-brand-orange", bg: "bg-brand-orange/10" },
   ];
 
   return (
