@@ -14,6 +14,7 @@ import { ArrowLeft, ArrowRight, Upload, Link, X, Sparkles, Store } from "lucide-
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { useCreateAgent } from "@/hooks/useAgents";
 
 const STEPS = ["Intent & Type", "Identity & Model", "Knowledge", "Tools & Memory", "Review & Create"];
 
@@ -81,9 +82,31 @@ export default function AgentBuilder() {
     }
   };
 
+  const createAgent = useCreateAgent();
+
   const handleCreate = () => {
-    toast.success("🚀 สร้าง Agent สำเร็จ!", { description: `${name || "Agent ใหม่"} พร้อมใช้งานแล้ว` });
-    navigate(`/deploy?agent=${encodeURIComponent(name || "new-agent").replace(/%20/g, "-")}`);
+    createAgent.mutate(
+      {
+        name: name || "Agent ใหม่",
+        avatar: "🤖",
+        objective,
+        template: selectedTemplate,
+        provider: selectedProvider,
+        model: selectedModel,
+        output_style: outputStyle,
+        system_prompt: systemPrompt || null,
+        temperature: temperature[0],
+        max_tokens: parseInt(maxTokens) || 2048,
+        tools: tools as any,
+        memory_enabled: memoryEnabled,
+        knowledge_urls: urls,
+      },
+      {
+        onSuccess: () => {
+          navigate("/dashboard");
+        },
+      }
+    );
   };
 
   const currentProvider = LLM_MODELS.find((m) => m.id === selectedProvider);

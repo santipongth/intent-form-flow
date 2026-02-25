@@ -14,7 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agents: {
+        Row: {
+          avatar: string | null
+          created_at: string | null
+          id: string
+          knowledge_urls: string[] | null
+          max_tokens: number | null
+          memory_enabled: boolean | null
+          model: string | null
+          name: string
+          objective: string | null
+          output_style: string | null
+          provider: string | null
+          status: string | null
+          system_prompt: string | null
+          temperature: number | null
+          template: string | null
+          tools: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          avatar?: string | null
+          created_at?: string | null
+          id?: string
+          knowledge_urls?: string[] | null
+          max_tokens?: number | null
+          memory_enabled?: boolean | null
+          model?: string | null
+          name: string
+          objective?: string | null
+          output_style?: string | null
+          provider?: string | null
+          status?: string | null
+          system_prompt?: string | null
+          temperature?: number | null
+          template?: string | null
+          tools?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          avatar?: string | null
+          created_at?: string | null
+          id?: string
+          knowledge_urls?: string[] | null
+          max_tokens?: number | null
+          memory_enabled?: boolean | null
+          model?: string | null
+          name?: string
+          objective?: string | null
+          output_style?: string | null
+          provider?: string | null
+          status?: string | null
+          system_prompt?: string | null
+          temperature?: number | null
+          template?: string | null
+          tools?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
