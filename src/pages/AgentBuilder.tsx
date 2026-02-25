@@ -107,7 +107,7 @@ export default function AgentBuilder() {
   const currentProvider = LLM_MODELS.find((m) => m.id === selectedProvider);
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
+    <div className="p-6 max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold">{t("builder.title")}</h1>
         <p className="text-muted-foreground text-sm">{t("builder.subtitle")}</p>
