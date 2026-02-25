@@ -4,12 +4,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Copy, Paperclip, Bot, Plus, MessageSquare, Settings2, PanelLeftOpen } from "lucide-react";
+import { Send, Copy, Paperclip, Bot, Plus, MessageSquare, Settings2, PanelLeftOpen, Search, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAgents } from "@/hooks/useAgents";
-import { useConversations, useConversationMessages, useCreateConversation, useSaveMessage, useUpdateConversationTitle } from "@/hooks/useConversations";
+import { useConversations, useConversationMessages, useCreateConversation, useSaveMessage, useUpdateConversationTitle, useDeleteConversation } from "@/hooks/useConversations";
 import { streamChat } from "@/lib/streamChat";
 import ReactMarkdown from "react-markdown";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -404,6 +404,26 @@ function SidebarContent({
   onNewChat: () => void;
   onSelectConversation: (id: string) => void;
 }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const deleteConversation = useDeleteConversation();
+  const navigate = useNavigate();
+
+  const filteredConversations = conversations?.filter(conv =>
+    !searchQuery || (conv.title || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleDelete = (e: React.MouseEvent, convId: string) => {
+    e.stopPropagation();
+    deleteConversation.mutate(convId, {
+      onSuccess: () => {
+        if (activeConvId === convId) {
+          navigate("/chat", { replace: true });
+        }
+        toast.success("Conversation deleted");
+      },
+    });
+  };
+
   return (
     <>
       <div className="p-3 border-b border-border space-y-2">
@@ -424,30 +444,47 @@ function SidebarContent({
             </SelectContent>
           </Select>
         )}
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search chats..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="rounded-xl h-8 text-xs pl-8"
+          />
+        </div>
       </div>
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
-          {conversations?.map((conv) => (
-            <button
+          {filteredConversations?.map((conv) => (
+            <div
               key={conv.id}
-              onClick={() => onSelectConversation(conv.id)}
-              className={`w-full text-left px-3 py-2 rounded-xl text-sm truncate transition-colors ${
+              className={`group relative w-full text-left px-3 py-2 rounded-xl text-sm truncate transition-colors cursor-pointer ${
                 activeConvId === conv.id
                   ? "bg-secondary font-medium"
                   : "hover:bg-secondary/50 text-muted-foreground"
               }`}
+              onClick={() => onSelectConversation(conv.id)}
             >
               <div className="flex items-center gap-2">
                 <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-                <span className="truncate">{conv.title || "New Chat"}</span>
+                <span className="truncate flex-1">{conv.title || "New Chat"}</span>
+                <button
+                  onClick={(e) => handleDelete(e, conv.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-destructive/10 hover:text-destructive shrink-0"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
               <p className="text-xs text-muted-foreground ml-5.5 mt-0.5">
                 {new Date(conv.updated_at).toLocaleDateString("th-TH")}
               </p>
-            </button>
+            </div>
           ))}
-          {(!conversations || conversations.length === 0) && (
-            <p className="text-xs text-muted-foreground text-center py-4">No conversations yet</p>
+          {(!filteredConversations || filteredConversations.length === 0) && (
+            <p className="text-xs text-muted-foreground text-center py-4">
+              {searchQuery ? "No matching conversations" : "No conversations yet"}
+            </p>
           )}
         </div>
       </ScrollArea>

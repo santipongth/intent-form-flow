@@ -115,3 +115,25 @@ export function useUpdateConversationTitle() {
     },
   });
 }
+
+export function useDeleteConversation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (conversationId: string) => {
+      // Delete messages first, then conversation
+      await (supabase as any)
+        .from("chat_messages")
+        .delete()
+        .eq("conversation_id", conversationId);
+      const { error } = await (supabase as any)
+        .from("conversations")
+        .delete()
+        .eq("id", conversationId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["conversations"] });
+      qc.invalidateQueries({ queryKey: ["chat_messages"] });
+    },
+  });
+}
