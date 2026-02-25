@@ -1,38 +1,47 @@
 
 
-# Add Custom Welcome Message to Widget Embed Settings
+# Widget Language Support (Thai / English)
 
 ## Overview
-Allow users to customize the welcome message that appears when the chat widget opens, instead of the hardcoded Thai greeting. This involves adding an input field in the embed settings, passing it as a URL parameter to the widget, and using it in the widget's JavaScript.
+Add a language selector in the embed settings so widget text (placeholder, error messages, status) adapts to Thai or English. A new `lang` URL parameter controls the widget's UI language.
 
 ## Changes
 
 ### 1. `src/pages/AgentDetail.tsx`
-- Add state: `const [welcomeMessage, setWelcomeMessage] = useState("")`
-- Add a new input field in the embed customization grid (the `bg-muted/50` section around line 346) with label "💬 ข้อความต้อนรับ" and placeholder like "สวัสดีค่ะ! มีอะไรให้ช่วยไหมคะ?"
-- Include `welcome_message` param (URL-encoded) in `scriptEmbedCode`, `iframeEmbedCode`, and the preview iframe `src`
-- Only append the param when the value is non-empty
+- Add state: `const [widgetLang, setWidgetLang] = useState<"th" | "en">("th")`
+- Add a language toggle (two buttons like the position selector) in the embed customization grid with label "🌐 ภาษา Widget"
+- Append `&lang=${widgetLang}` to `scriptEmbedCode`, `iframeEmbedCode`, and the preview iframe `src`
 
 ### 2. `supabase/functions/widget/index.ts`
-- Read `welcome_message` query param: `const welcomeMessage = url.searchParams.get("welcome_message") || ""`
-- Pass it through in bubble mode's iframe src
-- In fullpage mode, use it in the `toggleChat()` function: replace the hardcoded `"สวัสดีค่ะ! 👋 มีอะไรให้ช่วยไหมคะ?"` with the custom message (falling back to the default if empty)
-- Escape the message properly for embedding in JS string
+- Read `lang` param: `const lang = url.searchParams.get("lang") || "th"`
+- Define a translations map:
 
-## Technical Details
+```text
+th:
+  placeholder: "พิมพ์ข้อความ..."
+  online: "● ออนไลน์"
+  defaultWelcome: "สวัสดีค่ะ! 👋 มีอะไรให้ช่วยไหมคะ?"
+  errorGeneric: "เกิดข้อผิดพลาด"
+  errorConnection: "เกิดข้อผิดพลาดในการเชื่อมต่อ"
+  noResponse: "ไม่ได้รับคำตอบ กรุณาลองใหม่อีกครั้ง"
+
+en:
+  placeholder: "Type a message..."
+  online: "● Online"
+  defaultWelcome: "Hello! 👋 How can I help you?"
+  errorGeneric: "An error occurred"
+  errorConnection: "Connection error"
+  noResponse: "No response received. Please try again."
+```
+
+- Pass `lang` through in bubble mode iframe src
+- Replace all hardcoded Thai strings in the HTML template with the corresponding translation variable
+- The `welcome_message` custom field still takes priority over the default welcome text
 
 ### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/pages/AgentDetail.tsx` | Add `welcomeMessage` state, input field in embed settings, include param in all embed URLs |
-| `supabase/functions/widget/index.ts` | Read `welcome_message` param, pass through in bubble mode, use in greeting logic |
-
-### URL Parameter
-- Name: `welcome_message`
-- Encoding: `encodeURIComponent()` on the client, `decodeURIComponent()` in the edge function (automatic from URL parsing)
-- Default fallback: `"สวัสดีค่ะ! 👋 มีอะไรให้ช่วยไหมคะ?"` when empty
-
-### Security
-- The welcome message is escaped via the existing `escapeHtml()` function in the widget before rendering, preventing XSS
+| `src/pages/AgentDetail.tsx` | Add `widgetLang` state, language toggle UI, append `lang` param to all embed URLs |
+| `supabase/functions/widget/index.ts` | Read `lang` param, define i18n map, replace all hardcoded strings with translated values |
 
