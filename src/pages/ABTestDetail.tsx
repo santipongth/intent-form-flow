@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Send, Bot, ThumbsUp } from "lucide-react";
+import { ArrowLeft, Send, Bot, ThumbsUp, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useABTest, useABTestVotes, useCastVote } from "@/hooks/useABTesting";
@@ -140,10 +140,19 @@ export default function ABTestDetail() {
         <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => navigate("/ab-testing")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="font-display text-xl font-bold">{test.name}</h1>
           <Badge variant="default" className="rounded-full text-xs mt-1">{test.status}</Badge>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-xl gap-2"
+          disabled={streamingA || streamingB}
+          onClick={() => { setMessagesA([]); setMessagesB([]); }}
+        >
+          <Trash2 className="h-4 w-4" /> Clear Chat
+        </Button>
       </div>
 
       {/* Vote Summary */}

@@ -89,6 +89,35 @@ export function useCastVote() {
   });
 }
 
+export interface ABTestVoteSummary {
+  test_id: string;
+  a: number;
+  b: number;
+  tie: number;
+}
+
+export function useAllABTestVotes() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["all_ab_test_votes", user?.id],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("ab_test_votes")
+        .select("test_id, winner");
+      if (error) throw error;
+      const map: Record<string, ABTestVoteSummary> = {};
+      for (const row of data || []) {
+        if (!map[row.test_id]) map[row.test_id] = { test_id: row.test_id, a: 0, b: 0, tie: 0 };
+        if (row.winner === "a") map[row.test_id].a++;
+        else if (row.winner === "b") map[row.test_id].b++;
+        else if (row.winner === "tie") map[row.test_id].tie++;
+      }
+      return Object.values(map);
+    },
+    enabled: !!user,
+  });
+}
+
 export function useCreateABTest() {
   const qc = useQueryClient();
   const { user } = useAuth();
