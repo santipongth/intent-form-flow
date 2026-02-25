@@ -10,7 +10,7 @@ export function useAnalyticsEvents(agentId?: string, days = 7) {
       const since = new Date();
       since.setDate(since.getDate() - days);
 
-      let q = (supabase as any)
+      let q = supabase
         .from("agent_analytics_events")
         .select("*")
         .gte("created_at", since.toISOString())
@@ -23,5 +23,6 @@ export function useAnalyticsEvents(agentId?: string, days = 7) {
       return data;
     },
     enabled: !!user,
+    refetchInterval: 30000,
   });
 }

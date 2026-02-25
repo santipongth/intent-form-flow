@@ -101,6 +101,22 @@ serve(async (req) => {
       });
     }
 
+    // Log successful analytics event (fire-and-forget)
+    const responseTime = Date.now() - startTime;
+    if (agent_id) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user } } = await supabase.auth.getUser(token);
+      if (user) {
+        supabase.from("agent_analytics_events").insert({
+          agent_id,
+          user_id: user.id,
+          event_type: "chat",
+          status: "success",
+          response_time_ms: responseTime,
+        }).then(() => {});
+      }
+    }
+
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
