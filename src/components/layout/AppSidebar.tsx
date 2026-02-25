@@ -19,6 +19,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useProfile } from "@/hooks/useProfile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
+import tmLogo from "@/assets/tm-logo.png";
 
 const menuKeys = [
 { key: "sidebar.dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -53,9 +54,7 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border">
       <div className="p-4 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-2xl gradient-primary flex items-center justify-center text-lg shrink-0 shadow-md ring-2 ring-primary/20">
-          🧠
-        </div>
+        <img src={tmLogo} alt="ThoughtMind" className="w-10 h-10 rounded-xl object-contain shrink-0" />
         {!collapsed &&
         <div className="flex flex-col">
             <span className="font-display font-bold text-lg leading-tight gradient-text">
