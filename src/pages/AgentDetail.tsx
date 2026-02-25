@@ -80,6 +80,7 @@ export default function AgentDetail() {
   const [widgetPosition, setWidgetPosition] = useState<"bottom-right" | "bottom-left">("bottom-right");
   const [bubbleSize, setBubbleSize] = useState([60]);
   const [welcomeMessage, setWelcomeMessage] = useState("");
+  const [widgetLang, setWidgetLang] = useState<"th" | "en">("th");
 
   const agentName = agent?.name || "Agent";
   const agentId = agent?.id || "unknown";
@@ -99,10 +100,10 @@ export default function AgentDetail() {
 
   const welcomeParam = welcomeMessage ? `&welcome_message=${encodeURIComponent(welcomeMessage)}` : "";
 
-  const scriptEmbedCode = `<script src="${widgetBaseUrl}?agent_id=${agentId}&theme=${previewTheme}&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}${welcomeParam}" defer><\/script>`;
+  const scriptEmbedCode = `<script src="${widgetBaseUrl}?agent_id=${agentId}&theme=${previewTheme}&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}&lang=${widgetLang}${welcomeParam}" defer><\/script>`;
 
   const iframeEmbedCode = `<iframe
-  src="${widgetBaseUrl}?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}${welcomeParam}"
+  src="${widgetBaseUrl}?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}&lang=${widgetLang}${welcomeParam}"
   width="${widgetWidth}"
   height="${widgetHeight}"
   frameborder="0"
@@ -412,6 +413,27 @@ export default function AgentDetail() {
                         </div>
                       </div>
                     </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">🌐 ภาษา Widget</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant={widgetLang === "th" ? "default" : "outline"}
+                          className="rounded-xl flex-1 gap-1.5 text-xs"
+                          onClick={() => setWidgetLang("th")}
+                        >
+                          🇹🇭 ไทย
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={widgetLang === "en" ? "default" : "outline"}
+                          className="rounded-xl flex-1 gap-1.5 text-xs"
+                          onClick={() => setWidgetLang("en")}
+                        >
+                          🇺🇸 English
+                        </Button>
+                      </div>
+                    </div>
                     <div className="space-y-1.5 sm:col-span-2">
                       <Label className="text-xs font-medium">💬 ข้อความต้อนรับ</Label>
                       <Input
@@ -479,7 +501,7 @@ export default function AgentDetail() {
                     style={{ width: Math.min(Number(widgetWidth) || 400, 420), height: Math.min(Number(widgetHeight) || 600, 620) }}
                   >
                     <iframe
-                      src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${encodeURIComponent(primaryColor)}&brand=${encodeURIComponent(brandName || agent?.name || "")}&position=${widgetPosition}&bubble_size=${bubbleSize[0]}${welcomeParam}`}
+                      src={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${encodeURIComponent(primaryColor)}&brand=${encodeURIComponent(brandName || agent?.name || "")}&position=${widgetPosition}&bubble_size=${bubbleSize[0]}&lang=${widgetLang}${welcomeParam}`}
                       className="w-full h-full border-none"
                       title="Widget Preview"
                     />
