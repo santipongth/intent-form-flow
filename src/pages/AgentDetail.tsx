@@ -371,8 +371,8 @@ export default function AgentDetail() {
     }
   }, [agent]);
 
-  // Deploy state
-  const [published, setPublished] = useState(false);
+  // Deploy state (published is derived from agent.status in DB)
+  const published = agent?.status === "published";
   const [showKey, setShowKey] = useState(false);
   const [apiKey, setApiKey] = useState(() => generateApiKey());
   const [widgetWidth, setWidgetWidth] = useState("400");
@@ -598,8 +598,11 @@ export default function AgentDetail() {
                 id="publish-toggle"
                 checked={published}
                 onCheckedChange={(val) => {
-                  setPublished(val);
-                  toast.success(val ? t("detail.publishedToast") : t("detail.draftToast"));
+                  if (!agent) return;
+                  updateAgent.mutate(
+                    { id: agent.id, status: val ? "published" : "draft" },
+                    { onSuccess: () => toast.success(val ? t("detail.publishedToast") : t("detail.draftToast")) }
+                  );
                 }}
               />
             </div>
