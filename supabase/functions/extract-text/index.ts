@@ -53,11 +53,11 @@ serve(async (req) => {
           textContent = raw;
         }
       } else if (fileName.endsWith(".docx")) {
-        // Use AI-based extraction for DOCX (handles all languages including Thai)
         textContent = await extractTextWithAI(fileData, "docx");
       } else if (fileName.endsWith(".pdf")) {
-        // Use AI-based extraction for PDFs (handles all languages including Thai)
         textContent = await extractTextWithAI(fileData, "pdf");
+      } else if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+        textContent = await extractTextWithAI(fileData, "xlsx");
       } else {
         textContent = await fileData.text();
       }
@@ -105,8 +105,8 @@ serve(async (req) => {
 });
 
 /**
- * Use Lovable AI (Gemini Flash) to extract text from binary documents.
- * This handles all languages including Thai, Chinese, Japanese, etc.
+ * Use Lovable AI to extract text from binary documents.
+ * Supports PDF, DOCX, XLSX. Handles all languages.
  */
 async function extractTextWithAI(blob: Blob, fileType: string): Promise<string> {
   const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
@@ -134,6 +134,7 @@ async function extractTextWithAI(blob: Blob, fileType: string): Promise<string> 
   const mimeMap: Record<string, string> = {
     pdf: "application/pdf",
     docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   };
   const mimeType = mimeMap[fileType] || "application/octet-stream";
 
@@ -145,14 +146,14 @@ async function extractTextWithAI(blob: Blob, fileType: string): Promise<string> 
         "Authorization": `Bearer ${lovableApiKey}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Extract ALL text content from this document. Preserve the original language (Thai, English, or any other language). Output ONLY the extracted text, maintaining paragraph structure with line breaks. Do not add any commentary, headers, or formatting beyond what's in the document. If there are tables, format them in a readable way."
+                text: "Extract ALL text content from this document. Preserve the original language (Thai, English, or any other language). Output ONLY the extracted text, maintaining paragraph structure with line breaks. Do not add any commentary, headers, or formatting beyond what's in the document. If there are tables or spreadsheets, format them as readable tab-separated or markdown tables preserving all rows and columns."
               },
               {
                 type: "image_url",

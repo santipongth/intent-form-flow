@@ -17,7 +17,7 @@ function canPreview(file: File): boolean {
   return PREVIEWABLE_EXTS.includes(ext);
 }
 
-const ACCEPTED_TYPES = [".pdf", ".txt", ".md", ".csv", ".json", ".docx"];
+const ACCEPTED_TYPES = [".pdf", ".txt", ".md", ".csv", ".json", ".docx", ".xlsx", ".xls"];
 const MAX_FILES = 10;
 const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB
 
