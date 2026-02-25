@@ -1,75 +1,56 @@
 
-
-# เพิ่มระบบ Upload Knowledge Files จริงไปยัง Cloud Storage
+# Reset Password + Deploy ย้ายเข้า Agent Detail
 
 ## Overview
-เปลี่ยนระบบ Upload ไฟล์ใน AgentBuilder Step 3 (Knowledge) จาก mock (เพิ่มชื่อไฟล์ปลอม) เป็นการอัพโหลดไฟล์จริงไปยัง Cloud Storage พร้อมแสดงสถานะ upload และเชื่อมโยง URL ไฟล์กับ Agent
+1. เพิ่มระบบ Reset Password (ลืมรหัสผ่าน + หน้าตั้งรหัสใหม่)
+2. ย้าย Deploy Panel จากเมนูแยก เข้าไปอยู่ในหน้า Agent Detail แต่ละตัว โดยเข้าถึงได้จาก Dashboard (คลิกที่ Agent card หรือจุดสามจุด)
+3. ลบเมนู Deploy ออกจาก Sidebar
 
 ---
 
-## ขั้นตอนที่ 1: สร้าง Storage Bucket
+## ส่วนที่ 1: Reset Password
 
-สร้าง migration เพื่อสร้าง bucket `knowledge-files` พร้อม RLS policies:
-- Bucket แบบ private (ไม่เป็น public)
-- Users สามารถ upload, view, delete เฉพาะไฟล์ของตัวเอง
-- โครงสร้างไฟล์: `{user_id}/{filename}`
+### ไฟล์ใหม่: `src/pages/ResetPassword.tsx`
+- หน้าสำหรับตั้งรหัสผ่านใหม่หลังจากคลิก link ในอีเมล
+- ตรวจสอบ `type=recovery` ใน URL hash
+- แสดงฟอร์มกรอกรหัสผ่านใหม่ + ยืนยัน
+- เรียก `supabase.auth.updateUser({ password })` เพื่ออัปเดต
+- เมื่อสำเร็จ redirect ไป `/dashboard`
 
-```sql
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('knowledge-files', 'knowledge-files', false);
+### แก้ไข: `src/pages/Auth.tsx`
+- เพิ่มลิงก์ "ลืมรหัสผ่าน?" ใต้ฟอร์ม Sign In
+- เมื่อกด -> เรียก `supabase.auth.resetPasswordForEmail(email, { redirectTo: origin + '/reset-password' })`
+- แสดง toast แจ้งให้ตรวจสอบอีเมล
 
-CREATE POLICY "Users can upload own files"
-ON storage.objects FOR INSERT
-WITH CHECK (bucket_id = 'knowledge-files' AND auth.uid()::text = (storage.foldername(name))[1]);
-
-CREATE POLICY "Users can view own files"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'knowledge-files' AND auth.uid()::text = (storage.foldername(name))[1]);
-
-CREATE POLICY "Users can delete own files"
-ON storage.objects FOR DELETE
-USING (bucket_id = 'knowledge-files' AND auth.uid()::text = (storage.foldername(name))[1]);
-```
+### แก้ไข: `src/App.tsx`
+- เพิ่ม route `/reset-password` -> `<ResetPassword />` (public route ไม่ต้อง ProtectedRoute)
 
 ---
 
-## ขั้นตอนที่ 2: แก้ไข AgentBuilder.tsx
+## ส่วนที่ 2: Agent Detail + Deploy
 
-### เปลี่ยน state จาก `string[]` เป็น `UploadedFile[]`
-```typescript
-interface UploadedFile {
-  name: string;
-  path: string;       // path ใน storage
-  size: number;
-  uploading: boolean;
-}
-```
+### ไฟล์ใหม่: `src/pages/AgentDetail.tsx`
+- หน้ารวมรายละเอียด Agent + Deploy Panel
+- รับ `agentId` จาก URL params (`/agents/:id`)
+- ดึงข้อมูล Agent จาก database ด้วย `useQuery`
+- แสดง 2 tabs หลัก:
+  - **Overview**: แสดงข้อมูล Agent (ชื่อ, model, status, objective ฯลฯ)
+  - **Deploy**: ย้ายเนื้อหา DeployPanel เดิมทั้งหมดมาไว้ที่นี่ (API endpoint, Embed code, Widget preview, API Key)
 
-### เพิ่ม hidden file input + drag-and-drop
-- ใช้ `<input type="file" accept=".pdf,.doc,.docx,.txt" multiple>` แบบซ่อน
-- ปุ่ม "เลือกไฟล์" trigger input click
-- รองรับ drag & drop บน Card (onDragOver, onDrop)
-- จำกัดขนาดไฟล์ 20MB
+### แก้ไข: `src/pages/Dashboard.tsx`
+- คลิกที่ Agent card -> navigate ไป `/agents/:id`
+- เพิ่มตัวเลือก "Deploy" ใน dropdown menu จุดสามจุด -> navigate ไป `/agents/:id?tab=deploy`
+- เพิ่มตัวเลือก "ดูรายละเอียด" ใน dropdown menu
 
-### Upload logic
-- เมื่อเลือกไฟล์ -> upload ทันทีไปยัง `knowledge-files/{user_id}/{filename}`
-- แสดง uploading state (spinner/progress) ระหว่าง upload
-- เมื่อสำเร็จ -> เพิ่มเข้า files state พร้อม path
-- เมื่อ error -> แสดง toast error
+### แก้ไข: `src/App.tsx`
+- เพิ่ม route `/agents/:id` -> `<AgentDetail />`
+- ลบ route `/deploy`
 
-### ลบไฟล์
-- กดปุ่ม X -> ลบไฟล์จาก storage จริง + ลบออกจาก state
+### แก้ไข: `src/components/layout/AppSidebar.tsx`
+- ลบเมนู "Deploy" ออกจาก sidebar menu items
 
-### เชื่อมกับ handleCreate
-- ตอนสร้าง Agent -> บันทึก file paths ลงใน `knowledge_urls` ของ agents table (รวมกับ URL ที่เพิ่มด้วยมือ)
-
----
-
-## ขั้นตอนที่ 3: แสดงขนาดไฟล์ + สถานะ
-
-- แสดงชื่อไฟล์ + ขนาด (เช่น "document.pdf - 2.4 MB")
-- แสดง Loader icon ระหว่าง uploading
-- ปุ่มลบจะ disabled ระหว่าง uploading
+### ลบ: `src/pages/DeployPanel.tsx`
+- ไม่จำเป็นแล้ว เนื้อหาย้ายเข้า AgentDetail
 
 ---
 
@@ -77,6 +58,10 @@ interface UploadedFile {
 
 | ไฟล์ | Action |
 |------|--------|
-| Database migration (storage bucket) | สร้างใหม่ |
-| `src/pages/AgentBuilder.tsx` | แก้ไข |
-
+| `src/pages/ResetPassword.tsx` | สร้างใหม่ |
+| `src/pages/AgentDetail.tsx` | สร้างใหม่ |
+| `src/pages/Auth.tsx` | แก้ไข (เพิ่มลิงก์ลืมรหัสผ่าน) |
+| `src/App.tsx` | แก้ไข (เพิ่ม routes, ลบ /deploy) |
+| `src/pages/Dashboard.tsx` | แก้ไข (คลิก agent -> detail, เพิ่ม deploy ใน dropdown) |
+| `src/components/layout/AppSidebar.tsx` | แก้ไข (ลบเมนู Deploy) |
+| `src/pages/DeployPanel.tsx` | ลบ |
