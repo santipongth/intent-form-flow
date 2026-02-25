@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +8,7 @@ import { MOCK_AGENTS, MOCK_CHAT, LLM_MODELS, type ChatMessage } from "@/data/moc
 import { Send, Copy, RefreshCw, Paperclip, Bot } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const MOCK_RESPONSES = [
   "ได้เลยค่ะ! ขอตรวจสอบข้อมูลให้สักครู่นะคะ... 🔍\n\nจากที่ตรวจสอบพบว่า สินค้ารุ่นนี้ยังอยู่ในสต็อกค่ะ สามารถสั่งซื้อได้เลยผ่านเว็บไซต์ หรือจะให้ส่งลิงก์ไปให้ก็ได้นะคะ 😊",
@@ -21,6 +22,7 @@ export default function ChatConsole() {
   const [isTyping, setIsTyping] = useState(false);
   const [agentName, setAgentName] = useState(agent.name);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -32,7 +34,6 @@ export default function ChatConsole() {
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setIsTyping(true);
-
     setTimeout(() => {
       const resp = MOCK_RESPONSES[Math.floor(Math.random() * MOCK_RESPONSES.length)];
       const botMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: "assistant", content: resp, timestamp: new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) };
@@ -43,7 +44,6 @@ export default function ChatConsole() {
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)]">
-      {/* Config Panel */}
       <div className="w-72 border-r border-border p-4 space-y-4 hidden md:block overflow-y-auto">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-xl">{agent.avatar}</div>
@@ -54,18 +54,18 @@ export default function ChatConsole() {
         </div>
         <div className="space-y-3">
           <div>
-            <Label className="text-xs">โทนเสียง</Label>
+            <Label className="text-xs">{t("chat.tone")}</Label>
             <Select defaultValue="friendly">
               <SelectTrigger className="rounded-xl mt-1 h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="polite">🙏 สุภาพ</SelectItem>
-                <SelectItem value="friendly">😊 เป็นกันเอง</SelectItem>
-                <SelectItem value="professional">💼 มืออาชีพ</SelectItem>
+                <SelectItem value="polite">{t("builder.tonePolite")}</SelectItem>
+                <SelectItem value="friendly">{t("builder.toneFriendly")}</SelectItem>
+                <SelectItem value="professional">{t("builder.toneProfessional")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Model</Label>
+            <Label className="text-xs">{t("chat.model")}</Label>
             <Select defaultValue="GPT-4o">
               <SelectTrigger className="rounded-xl mt-1 h-9 text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -78,9 +78,7 @@ export default function ChatConsole() {
         </div>
       </div>
 
-      {/* Chat Area */}
       <div className="flex-1 flex flex-col">
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((msg) => (
             <motion.div key={msg.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
@@ -100,7 +98,7 @@ export default function ChatConsole() {
                   <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
                   {msg.role === "assistant" && (
                     <>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success("คัดลอกแล้ว"); }}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(msg.content); toast.success(t("chat.copied")); }}>
                         <Copy className="h-3 w-3" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -130,14 +128,13 @@ export default function ChatConsole() {
           <div ref={chatEndRef} />
         </div>
 
-        {/* Input */}
         <div className="border-t border-border p-4">
           <div className="flex gap-2 max-w-3xl mx-auto">
             <Button variant="outline" size="icon" className="rounded-xl shrink-0">
               <Paperclip className="h-4 w-4" />
             </Button>
             <Input
-              placeholder="พิมพ์ข้อความ..."
+              placeholder={t("chat.typePlaceholder")}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}

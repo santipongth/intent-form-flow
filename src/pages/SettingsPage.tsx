@@ -8,28 +8,30 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LLM_MODELS } from "@/data/mockData";
 import { Eye, EyeOff, Save } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function SettingsPage() {
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [keys, setKeys] = useState<Record<string, string>>({});
-  const [darkMode, setDarkMode] = useState(false);
+  const { t, locale, setLocale } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
 
   const toggleKey = (id: string) => setShowKeys((p) => ({ ...p, [id]: !p[id] }));
-
-  const handleSave = () => toast.success("บันทึกเรียบร้อย! ✅");
+  const handleSave = () => toast.success(t("settings.saved"));
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-bold">⚙️ Settings</h1>
-        <p className="text-muted-foreground text-sm">จัดการบัญชีและ API Keys</p>
+        <h1 className="font-display text-2xl font-bold">{t("settings.title")}</h1>
+        <p className="text-muted-foreground text-sm">{t("settings.subtitle")}</p>
       </div>
 
       <Tabs defaultValue="apikeys">
         <TabsList className="rounded-xl">
-          <TabsTrigger value="apikeys" className="rounded-lg">🔑 API Keys</TabsTrigger>
-          <TabsTrigger value="profile" className="rounded-lg">👤 Profile</TabsTrigger>
-          <TabsTrigger value="preferences" className="rounded-lg">🎨 Preferences</TabsTrigger>
+          <TabsTrigger value="apikeys" className="rounded-lg">{t("settings.apiKeys")}</TabsTrigger>
+          <TabsTrigger value="profile" className="rounded-lg">{t("settings.profile")}</TabsTrigger>
+          <TabsTrigger value="preferences" className="rounded-lg">{t("settings.preferences")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="apikeys" className="space-y-4 mt-4">
@@ -56,7 +58,7 @@ export default function SettingsPage() {
             </Card>
           ))}
           <Button className="gradient-primary text-primary-foreground rounded-xl gap-2" onClick={handleSave}>
-            <Save className="h-4 w-4" /> บันทึก API Keys
+            <Save className="h-4 w-4" /> {t("settings.saveApiKeys")}
           </Button>
         </TabsContent>
 
@@ -71,7 +73,7 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
-                <Label>ชื่อ</Label>
+                <Label>{t("settings.name")}</Label>
                 <Input defaultValue="ThoughtMind User" className="rounded-xl mt-1" />
               </div>
               <div>
@@ -79,7 +81,7 @@ export default function SettingsPage() {
                 <Input defaultValue="user@thoughtmind.app" className="rounded-xl mt-1" />
               </div>
               <Button className="gradient-primary text-primary-foreground rounded-xl gap-2" onClick={handleSave}>
-                <Save className="h-4 w-4" /> บันทึก
+                <Save className="h-4 w-4" /> {t("common.save")}
               </Button>
             </CardContent>
           </Card>
@@ -90,14 +92,17 @@ export default function SettingsPage() {
             <CardContent className="p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-semibold">🌙 Dark Mode</p>
-                  <p className="text-sm text-muted-foreground">เปลี่ยนเป็นธีมมืด</p>
+                  <p className="font-semibold">{t("settings.darkMode")}</p>
+                  <p className="text-sm text-muted-foreground">{t("settings.darkModeDesc")}</p>
                 </div>
-                <Switch checked={darkMode} onCheckedChange={(v) => { setDarkMode(v); document.documentElement.classList.toggle("dark", v); }} />
+                <Switch checked={theme === "dark"} onCheckedChange={toggleTheme} />
               </div>
               <div>
-                <Label>ภาษา</Label>
-                <Input defaultValue="ไทย" className="rounded-xl mt-1" disabled />
+                <Label>{t("settings.language")}</Label>
+                <div className="flex gap-2 mt-1">
+                  <Button variant={locale === "th" ? "default" : "outline"} size="sm" className="rounded-xl" onClick={() => setLocale("th")}>🇹🇭 ไทย</Button>
+                  <Button variant={locale === "en" ? "default" : "outline"} size="sm" className="rounded-xl" onClick={() => setLocale("en")}>🇺🇸 English</Button>
+                </div>
               </div>
             </CardContent>
           </Card>

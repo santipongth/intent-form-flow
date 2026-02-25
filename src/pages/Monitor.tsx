@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MOCK_LOGS, MOCK_AGENTS } from "@/data/mockData";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const statusColors: Record<string, string> = {
   success: "bg-brand-green/10 text-brand-green",
@@ -13,6 +14,7 @@ const statusColors: Record<string, string> = {
 
 export default function Monitor() {
   const [filterAgent, setFilterAgent] = useState("all");
+  const { t } = useLanguage();
 
   const filtered = filterAgent === "all"
     ? MOCK_LOGS
@@ -22,13 +24,13 @@ export default function Monitor() {
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">🔍 Monitor</h1>
-          <p className="text-muted-foreground text-sm">ดูกระบวนการคิดของ Agent แบบ real-time</p>
+          <h1 className="font-display text-2xl font-bold">{t("monitor.title")}</h1>
+          <p className="text-muted-foreground text-sm">{t("monitor.subtitle")}</p>
         </div>
         <Select value={filterAgent} onValueChange={setFilterAgent}>
-          <SelectTrigger className="w-48 rounded-xl"><SelectValue placeholder="ทุก Agent" /></SelectTrigger>
+          <SelectTrigger className="w-48 rounded-xl"><SelectValue placeholder={t("monitor.allAgents")} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">ทุก Agent</SelectItem>
+            <SelectItem value="all">{t("monitor.allAgents")}</SelectItem>
             {MOCK_AGENTS.map((a) => (
               <SelectItem key={a.id} value={a.id}>{a.avatar} {a.name}</SelectItem>
             ))}
@@ -36,7 +38,6 @@ export default function Monitor() {
         </Select>
       </div>
 
-      {/* Timeline */}
       <div className="relative">
         <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border" />
         <div className="space-y-4">

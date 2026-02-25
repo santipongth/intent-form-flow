@@ -1,4 +1,4 @@
-import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, CreditCard, Settings, Plus, LogOut } from "lucide-react";
+import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, CreditCard, Settings, Plus, LogOut, Sun, Moon } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -14,19 +14,21 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useProfile } from "@/hooks/useProfile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 
-const menuItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Agents", url: "/agents/new", icon: Bot },
-  { title: "Marketplace", url: "/marketplace", icon: Store },
-  { title: "Chat", url: "/chat", icon: MessageCircle },
-  { title: "Monitor", url: "/monitor", icon: Activity },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "Usage & Billing", url: "/usage", icon: CreditCard },
-  { title: "Settings", url: "/settings", icon: Settings },
+const menuKeys = [
+  { key: "sidebar.dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { key: "sidebar.agents", url: "/agents/new", icon: Bot },
+  { key: "sidebar.marketplace", url: "/marketplace", icon: Store },
+  { key: "sidebar.chat", url: "/chat", icon: MessageCircle },
+  { key: "sidebar.monitor", url: "/monitor", icon: Activity },
+  { key: "sidebar.analytics", url: "/analytics", icon: BarChart3 },
+  { key: "sidebar.usage", url: "/usage", icon: CreditCard },
+  { key: "sidebar.settings", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
@@ -36,6 +38,8 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
+  const { t } = useLanguage();
+  const { theme, toggleTheme } = useTheme();
 
   const handleSignOut = async () => {
     await signOut();
@@ -62,20 +66,20 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+              {menuKeys.map((item) => (
+                <SidebarMenuItem key={item.key}>
                   <SidebarMenuButton
                     asChild
                     isActive={location.pathname.startsWith(item.url.split("/").slice(0, 2).join("/") || item.url)}
-                    tooltip={item.title}
+                    tooltip={t(item.key)}
                   >
                     <NavLink
                       to={item.url}
-                      className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-sidebar-accent"
+                      className="flex items-center gap-3 rounded-xl px-3 py-2 transition-all hover:bg-sidebar-accent hover:translate-x-0.5"
                       activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     >
                       <item.icon className="h-5 w-5 shrink-0" />
-                      <span>{item.title}</span>
+                      <span>{t(item.key)}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -86,6 +90,18 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-3 space-y-2">
+        {/* Dark mode toggle */}
+        {!collapsed ? (
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 rounded-xl text-xs" onClick={toggleTheme}>
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {theme === "dark" ? t("theme.light") : t("theme.dark")}
+          </Button>
+        ) : (
+          <Button variant="ghost" size="icon" className="rounded-xl mx-auto" onClick={toggleTheme}>
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+        )}
+
         {/* User info */}
         {!collapsed && (
           <div className="flex items-center gap-2 px-2 py-1.5">
@@ -106,10 +122,10 @@ export function AppSidebar() {
               <Button className="flex-1 gradient-primary text-primary-foreground rounded-xl gap-2" asChild>
                 <NavLink to="/agents/new">
                   <Plus className="h-4 w-4" />
-                  สร้าง Agent
+                  {t("sidebar.createAgent")}
                 </NavLink>
               </Button>
-              <Button variant="ghost" size="icon" className="rounded-xl shrink-0" onClick={handleSignOut} title="ออกจากระบบ">
+              <Button variant="ghost" size="icon" className="rounded-xl shrink-0" onClick={handleSignOut} title={t("sidebar.signOut")}>
                 <LogOut className="h-4 w-4" />
               </Button>
             </>
