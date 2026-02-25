@@ -1,87 +1,70 @@
 
 
-# Real Analytics System -- Replace Mock Data with Live Database
+# Export Analytics Data as CSV/PDF
 
 ## Overview
-Replace the current mock-data Analytics page with real data from the `agent_analytics_events` table, aggregated and displayed in charts. Also add an agent filter dropdown and loading/empty states.
-
-## Architecture
-
-```text
-agent_analytics_events table
-  |
-  +-- useAnalytics hook (query with date range + agent filter)
-  |
-  +-- Analytics.tsx (process raw events into daily aggregates + stats)
-        |
-        +-- Summary cards (computed from real data)
-        +-- Line chart (API calls per day)
-        +-- Bar chart (avg response time per day)
-        +-- Area chart (tokens used per day)
-        +-- Agent performance table (grouped by agent)
-```
+Add export buttons to the Analytics page allowing users to download their analytics data as CSV or PDF reports, using pure client-side generation (no additional dependencies needed for CSV; use browser print-to-PDF for PDF).
 
 ## Changes
 
-### 1. Update `src/hooks/useAnalytics.ts`
-- Keep the existing `useAnalyticsEvents` hook mostly as-is
-- Add a second hook `useAgentAnalyticsSummary` that queries events grouped by agent (or reuse raw data and aggregate client-side)
-- Add `refetchInterval: 30000` for near-real-time updates (poll every 30s)
+### 1. Add Export Utility Functions (`src/lib/exportAnalytics.ts`)
+Create a new utility file with two functions:
 
-### 2. Rewrite `src/pages/Analytics.tsx`
-Replace all mock data references with real data:
+- **`exportCSV(daily, agentPerf, summary)`**: Generates a CSV string with three sections:
+  1. Summary section (Total Calls, Avg Response Time, Total Tokens, Success Rate)
+  2. Daily breakdown table (Date, API Calls, Avg Response Time, Tokens Used)
+  3. Agent Performance table (Agent, Total Calls, Avg Response, Error Rate, Success Rate)
+  - Creates a Blob, generates a download link, and triggers the download with filename like `analytics-report-2026-02-25.csv`
 
-**Data flow:**
-- Call `useAnalyticsEvents(selectedAgentId, days)` where `days` is derived from the selected time range (7/30/90)
-- Call `useAgents()` to get agent names for the filter dropdown and performance table
-- Process raw events client-side into:
-  - **Daily aggregates**: group by date, count events as API calls, average `response_time_ms`, sum `tokens_used`
-  - **Summary stats**: total calls, avg response time, unique sessions (distinct dates with activity), success rate (count where status='success' / total)
-  - **Agent performance table**: group by `agent_id`, compute totals per agent
+- **`exportPDF()`**: Opens the browser's native print dialog (`window.print()`) with a print-optimized view. This avoids adding heavy PDF libraries.
 
-**New UI elements:**
-- Agent filter dropdown (All Agents + each agent by name) using existing Select component
-- Loading skeleton states while data is fetching
-- Empty state when no analytics data exists yet
+### 2. Update Analytics Page (`src/pages/Analytics.tsx`)
+- Import `Download`, `FileText` icons from lucide-react
+- Import the export utility functions
+- Add a `DropdownMenu` with two options next to the time range selector:
+  - "Export CSV" -- calls `exportCSV()` with current `daily`, `agentPerf`, and summary stats
+  - "Export PDF" -- calls `window.print()` to use browser's built-in PDF export
+- The export button is disabled when data is empty or loading
 
-**Removed:**
-- All imports of `MOCK_ANALYTICS_DAILY` and `MOCK_AGENT_ANALYTICS`
-- Hardcoded stat values
-
-### 3. Ensure Chat Edge Function Logs Events
-Check `supabase/functions/chat/index.ts` -- if it doesn't already insert into `agent_analytics_events`, add an insert after each chat response with `event_type`, `response_time_ms`, `tokens_used`, `agent_id`, and `user_id`.
+### 3. Print Styles (`src/index.css`)
+Add a `@media print` block to:
+- Hide sidebar, header navigation, and export buttons during printing
+- Ensure charts and tables render cleanly on paper
+- Set white background for print
 
 ## Technical Details
 
-### Files to Modify
+### Files to Create/Modify
 
-| File | Changes |
-|------|---------|
-| `src/hooks/useAnalytics.ts` | Add `refetchInterval`, keep existing hook |
-| `src/pages/Analytics.tsx` | Full rewrite: replace mock data with `useAnalyticsEvents` + `useAgents`, add client-side aggregation, agent filter, loading/empty states |
-| `supabase/functions/chat/index.ts` | Add analytics event insert if not already present |
+| File | Action | Changes |
+|------|--------|---------|
+| `src/lib/exportAnalytics.ts` | Create | CSV generation function with multi-section report |
+| `src/pages/Analytics.tsx` | Modify | Add export dropdown button with CSV and PDF options |
+| `src/index.css` | Modify | Add `@media print` styles for clean PDF output |
 
-### Client-Side Aggregation Logic
+### CSV Format Example
 ```text
-Raw events -> Group by date (YYYY-MM-DD) -> For each day:
-  - apiCalls = count of events
-  - avgResponseTime = average of response_time_ms
-  - tokensUsed = sum of tokens_used
+Analytics Report - Generated 2026-02-25
+Period: Last 7 days
 
-Raw events -> Group by agent_id -> For each agent:
-  - totalCalls = count
-  - avgResponseTime = average of response_time_ms  
-  - errorRate = (count where status != 'success') / total * 100
-  - successRate = 100 - errorRate
+--- Summary ---
+Total API Calls,1234
+Avg Response Time,350ms
+Total Tokens,45000
+Success Rate,98.5%
+
+--- Daily Breakdown ---
+Date,API Calls,Avg Response Time (ms),Tokens Used
+02-20,150,320,5400
+02-21,180,290,6100
+...
+
+--- Agent Performance ---
+Agent,Total Calls,Avg Response (ms),Error Rate (%),Success Rate (%)
+My Bot,800,310,1.2,98.8
+...
 ```
 
-### Time Range Mapping
-- 7 days -> `days = 7`
-- 30 days -> `days = 30`
-- 90 days -> `days = 90`
+### Export Button Placement
+Added as a dropdown button between the agent filter and the time range selector in the header area.
 
-### Loading States
-Use the existing Skeleton component for card placeholders and chart areas while data loads.
-
-### Empty State
-When no events exist, show a friendly message encouraging users to start chatting with their agents to generate analytics data.
