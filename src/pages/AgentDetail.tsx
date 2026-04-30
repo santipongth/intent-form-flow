@@ -360,6 +360,9 @@ export default function AgentDetail() {
   const [editSystemPrompt, setEditSystemPrompt] = useState("");
   const [editTemperature, setEditTemperature] = useState([0.7]);
   const [editMaxTokens, setEditMaxTokens] = useState("2048");
+  const [editUserPrompt, setEditUserPrompt] = useState("");
+  const [editSkills, setEditSkills] = useState<string[]>([]);
+  const [editSkillInput, setEditSkillInput] = useState("");
 
   useEffect(() => {
     if (agent) {
@@ -370,6 +373,9 @@ export default function AgentDetail() {
       setEditSystemPrompt(agent.system_prompt || "");
       setEditTemperature([agent.temperature]);
       setEditMaxTokens(String(agent.max_tokens));
+      const tools = (agent.tools as any) || {};
+      setEditUserPrompt(typeof tools._userPrompt === "string" ? tools._userPrompt : "");
+      setEditSkills(Array.isArray(tools._skills) ? tools._skills : []);
     }
   }, [agent]);
 
@@ -424,6 +430,7 @@ export default function AgentDetail() {
 
   const handleSaveEdit = () => {
     if (!agent) return;
+    const prevTools = (agent.tools as any) || {};
     updateAgent.mutate({
       id: agent.id,
       name: editName,
@@ -433,6 +440,11 @@ export default function AgentDetail() {
       system_prompt: editSystemPrompt || null,
       temperature: editTemperature[0],
       max_tokens: parseInt(editMaxTokens) || 2048,
+      tools: {
+        ...prevTools,
+        _userPrompt: editUserPrompt,
+        _skills: editSkills,
+      },
     }, {
       onSuccess: () => setIsEditing(false),
     });
@@ -511,6 +523,70 @@ export default function AgentDetail() {
             <div>
               <Label>{t("detail.systemPrompt")}</Label>
               <Textarea value={editSystemPrompt} onChange={(e) => setEditSystemPrompt(e.target.value)} className="rounded-xl mt-1 min-h-[100px]" />
+            </div>
+            <div>
+              <Label>User Prompt</Label>
+              <Textarea
+                placeholder="พิมพ์ User Prompt ที่ต้องการ (เช่น: คำถาม: {{question}})"
+                value={editUserPrompt}
+                onChange={(e) => setEditUserPrompt(e.target.value)}
+                className="rounded-xl mt-1 min-h-[100px] font-mono text-xs"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                ใช้ <code>{"{{ตัวแปร}}"}</code> เป็น placeholder ที่จะถูกแทนค่าตอนเรียกใช้งาน Agent
+              </p>
+            </div>
+            <div>
+              <Label>Skills (ความสามารถเฉพาะทาง)</Label>
+              <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
+                {editSkills.map((sk) => (
+                  <span
+                    key={sk}
+                    className="inline-flex items-center gap-1 rounded-full text-xs px-2.5 py-1 bg-secondary text-secondary-foreground"
+                  >
+                    {sk}
+                    <button
+                      type="button"
+                      onClick={() => setEditSkills(editSkills.filter((x) => x !== sk))}
+                      className="hover:text-destructive"
+                      aria-label={`Remove ${sk}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                {editSkills.length === 0 && (
+                  <span className="text-xs text-muted-foreground">ยังไม่มี skill — เพิ่มได้ด้านล่าง</span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="เช่น Document parsing, Sentiment analysis"
+                  value={editSkillInput}
+                  onChange={(e) => setEditSkillInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const v = editSkillInput.trim();
+                      if (v && !editSkills.includes(v)) setEditSkills([...editSkills, v]);
+                      setEditSkillInput("");
+                    }
+                  }}
+                  className="rounded-xl"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => {
+                    const v = editSkillInput.trim();
+                    if (v && !editSkills.includes(v)) setEditSkills([...editSkills, v]);
+                    setEditSkillInput("");
+                  }}
+                >
+                  เพิ่ม
+                </Button>
+              </div>
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" className="rounded-xl" onClick={() => setIsEditing(false)}>{t("common.cancel")}</Button>
