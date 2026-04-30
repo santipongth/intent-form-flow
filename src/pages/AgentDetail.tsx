@@ -23,6 +23,33 @@ import type { AgentRow } from "@/hooks/useAgents";
 import { ApiKeysSection } from "@/components/agent-detail/ApiKeysSection";
 import { WebhooksSection } from "@/components/agent-detail/WebhooksSection";
 import { ErrorLogsSection } from "@/components/agent-detail/ErrorLogsSection";
+import { z } from "zod";
+
+// ---- Validation rules for the edit form (User Prompt + Skills) ----
+const MAX_SKILLS = 15;
+const MAX_SKILL_LEN = 40;
+const MAX_USER_PROMPT_LEN = 4000;
+
+const skillSchema = z
+  .string()
+  .trim()
+  .min(1, { message: "ชื่อ skill ห้ามว่าง" })
+  .max(MAX_SKILL_LEN, { message: `ชื่อ skill ต้องไม่เกิน ${MAX_SKILL_LEN} ตัวอักษร` });
+
+const editFormSchema = z.object({
+  userPrompt: z
+    .string()
+    .trim()
+    .min(1, { message: "User Prompt ห้ามว่าง" })
+    .max(MAX_USER_PROMPT_LEN, { message: `User Prompt ต้องไม่เกิน ${MAX_USER_PROMPT_LEN} ตัวอักษร` }),
+  skills: z
+    .array(skillSchema)
+    .max(MAX_SKILLS, { message: `Skills ได้สูงสุด ${MAX_SKILLS} รายการ` })
+    .refine(
+      (arr) => new Set(arr.map((s) => s.toLowerCase())).size === arr.length,
+      { message: "มี skill ซ้ำ — กรุณาลบรายการที่ซ้ำ" },
+    ),
+});
 
 function generateApiKey() {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
