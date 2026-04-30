@@ -241,6 +241,26 @@ export default function Profile() {
               {t("profile.signOutOthersBtn")}
             </Button>
           </div>
+
+          <div className="flex items-center justify-between p-3 rounded-xl border border-destructive/30 bg-destructive/5">
+            <div className="flex items-center gap-3 min-w-0">
+              <ShieldOff className="h-5 w-5 text-destructive shrink-0" />
+              <div className="min-w-0">
+                <p className="font-medium text-sm">{t("profile.signOutEverywhere")}</p>
+                <p className="text-xs text-muted-foreground truncate">{t("profile.signOutEverywhereDesc")}</p>
+              </div>
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="rounded-xl shrink-0 gap-2"
+              onClick={handleSignOutEverywhere}
+              disabled={signingOutAll}
+            >
+              {signingOutAll && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {t("profile.signOutEverywhereBtn")}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
