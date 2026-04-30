@@ -70,6 +70,16 @@ export const en: Record<string, string> = {
   "reset.error": "Failed to reset password",
   "reset.invalidLink": "Invalid or expired link",
   "reset.backToSignIn": "Back to Sign In",
+  "reset.verifying": "Verifying link...",
+  "reset.verified": "Link verified. You can set a new password.",
+  "reset.invalidLinkDesc": "This password reset link may have expired or been used. Please request a new one.",
+  "reset.requestNew": "Request a new reset link",
+  "reset.show": "Show",
+  "reset.hide": "Hide",
+  "reset.strengthWeak": "Weak",
+  "reset.strengthFair": "Fair",
+  "reset.strengthStrong": "Strong",
+  "reset.successDesc": "Redirecting you to the dashboard...",
 
   // Dashboard
   "dashboard.title": "Dashboard",

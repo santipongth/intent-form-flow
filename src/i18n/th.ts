@@ -70,6 +70,16 @@ export const th: Record<string, string> = {
   "reset.error": "ตั้งรหัสผ่านใหม่ไม่สำเร็จ",
   "reset.invalidLink": "ลิงก์ไม่ถูกต้องหรือหมดอายุ",
   "reset.backToSignIn": "กลับไปหน้าเข้าสู่ระบบ",
+  "reset.verifying": "กำลังตรวจสอบลิงก์...",
+  "reset.verified": "ยืนยันลิงก์สำเร็จ คุณสามารถตั้งรหัสผ่านใหม่ได้",
+  "reset.invalidLinkDesc": "ลิงก์รีเซ็ตรหัสผ่านอาจหมดอายุหรือถูกใช้ไปแล้ว กรุณาขอลิงก์ใหม่",
+  "reset.requestNew": "ขอลิงก์รีเซ็ตใหม่",
+  "reset.show": "แสดง",
+  "reset.hide": "ซ่อน",
+  "reset.strengthWeak": "อ่อน",
+  "reset.strengthFair": "ปานกลาง",
+  "reset.strengthStrong": "แข็งแรง",
+  "reset.successDesc": "กำลังพาคุณเข้าสู่ระบบ...",
 
   // Dashboard
   "dashboard.title": "Dashboard",
