@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Save } from "lucide-react";
+import { Save, Mail, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -87,6 +87,26 @@ export default function SettingsPage() {
                 <div className="flex gap-2 mt-1">
                   <Button variant={locale === "th" ? "default" : "outline"} size="sm" className="rounded-xl" onClick={() => setLocale("th")}>🇹🇭 ไทย</Button>
                   <Button variant={locale === "en" ? "default" : "outline"} size="sm" className="rounded-xl" onClick={() => setLocale("en")}>🇺🇸 English</Button>
+                </div>
+              </div>
+              <div className="border-t pt-4 mt-2">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Mail className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold">{t("settings.emailConfirm")}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{t("settings.emailConfirmDesc")}</p>
+                    <p className="text-xs text-muted-foreground mt-2">{t("settings.emailConfirmHint")}</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl mt-3 gap-2"
+                      onClick={() => window.open("https://supabase.com/dashboard/project/hiyzlaiqeygxvpgveadq/auth/providers", "_blank")}
+                    >
+                      {t("settings.emailConfirmManage")} <ExternalLink className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </CardContent>
