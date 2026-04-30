@@ -485,7 +485,7 @@ export default function AgentDetail() {
       system_prompt: editSystemPrompt || null,
       temperature: editTemperature[0],
       max_tokens: parseInt(editMaxTokens) || 2048,
-      tools: withPromptAndSkills(agent.tools as any, parsed.data.userPrompt, parsed.data.skills),
+      tools: withPromptAndSkills(agent.tools as any, parsed.data.userPrompt, parsed.data.skills) as any,
     }, {
       onSuccess: () => setIsEditing(false),
     });
