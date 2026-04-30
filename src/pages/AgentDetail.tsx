@@ -652,6 +652,36 @@ export default function AgentDetail() {
                   <Label className="text-muted-foreground text-xs">{t("detail.systemPrompt")}</Label>
                   <p className="font-medium text-sm whitespace-pre-wrap">{agent.system_prompt || t("dashboard.notSpecified")}</p>
                 </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-muted-foreground text-xs">User Prompt</Label>
+                  {(() => {
+                    const up = (agent.tools as any)?._userPrompt;
+                    return (
+                      <p className="font-medium text-sm whitespace-pre-wrap font-mono">
+                        {up && String(up).trim() ? up : t("dashboard.notSpecified")}
+                      </p>
+                    );
+                  })()}
+                </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-muted-foreground text-xs">Skills</Label>
+                  {(() => {
+                    const sk = (agent.tools as any)?._skills;
+                    const list: string[] = Array.isArray(sk) ? sk : [];
+                    if (list.length === 0) {
+                      return <p className="font-medium text-sm text-muted-foreground">{t("dashboard.notSpecified")}</p>;
+                    }
+                    return (
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {list.map((s) => (
+                          <Badge key={s} variant="secondary" className="rounded-full">
+                            {s}
+                          </Badge>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
               <div className="text-xs text-muted-foreground">
                 {t("detail.createdAt")}: {new Date(agent.created_at).toLocaleString("th-TH")}
