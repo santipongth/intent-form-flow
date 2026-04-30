@@ -128,6 +128,12 @@ export const th: Record<string, string> = {
   "profile.signOutOthersSuccess": "ออกจากระบบอุปกรณ์อื่นทั้งหมดแล้ว",
   "profile.signOutOthersError": "ไม่สามารถออกจากระบบอุปกรณ์อื่นได้",
   "profile.signOutOthersConfirm": "ยืนยันการออกจากระบบอุปกรณ์อื่นทั้งหมด?",
+  "profile.signOutEverywhere": "ออกจากระบบทุกอุปกรณ์",
+  "profile.signOutEverywhereDesc": "ยุติทุกเซสชันรวมถึงเครื่องนี้ คุณจะต้องเข้าสู่ระบบใหม่",
+  "profile.signOutEverywhereBtn": "ออกจากทุกอุปกรณ์",
+  "profile.signOutEverywhereConfirm": "ยืนยันการออกจากระบบทุกอุปกรณ์? คุณจะถูกพากลับไปหน้าเข้าสู่ระบบ",
+  "profile.signOutEverywhereSuccess": "ออกจากระบบทุกอุปกรณ์เรียบร้อยแล้ว",
+  "profile.signOutEverywhereError": "ไม่สามารถออกจากระบบทุกอุปกรณ์ได้",
   "profile.active": "ใช้งานอยู่",
   "verify.resendErrorDesc": "กรุณาตรวจสอบอีเมลและลองใหม่อีกครั้ง",
 
