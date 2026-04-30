@@ -20,6 +20,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useUpdateAgent } from "@/hooks/useUpdateAgent";
 import { useKnowledgeFiles, useUploadKnowledgeFile, useDeleteKnowledgeFile } from "@/hooks/useKnowledge";
 import type { AgentRow } from "@/hooks/useAgents";
+import { ApiKeysSection } from "@/components/agent-detail/ApiKeysSection";
+import { WebhooksSection } from "@/components/agent-detail/WebhooksSection";
+import { ErrorLogsSection } from "@/components/agent-detail/ErrorLogsSection";
 
 function generateApiKey() {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -852,6 +855,13 @@ export default function AgentDetail() {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Production: real API keys, webhooks, error logs */}
+          <div className="space-y-4 pt-4 border-t">
+            <ApiKeysSection agentId={agent.id} />
+            <WebhooksSection agentId={agent.id} />
+            <ErrorLogsSection agentId={agent.id} />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

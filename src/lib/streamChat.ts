@@ -11,6 +11,8 @@ export async function streamChat({
   onDelta,
   onDone,
   onError,
+  signal,
+  maxRetries = 2,
 }: {
   messages: ChatMsg[];
   agentId?: string;
@@ -18,20 +20,49 @@ export async function streamChat({
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError?: (error: string) => void;
+  signal?: AbortSignal;
+  maxRetries?: number;
 }) {
   // Get user session token instead of using anon key
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-  const resp = await fetch(CHAT_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-    },
-    body: JSON.stringify({ messages, agent_id: agentId, conversation_id: conversationId }),
-  });
+  let resp: Response | null = null;
+  let attempt = 0;
+  let lastErr: unknown = null;
+
+  while (attempt <= maxRetries) {
+    try {
+      resp = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ messages, agent_id: agentId, conversation_id: conversationId }),
+        signal,
+      });
+      // Retry only on 5xx (server transient)
+      if (resp.ok || resp.status < 500) break;
+      lastErr = `Server ${resp.status}`;
+    } catch (e) {
+      if ((e as Error).name === "AbortError") {
+        onError?.("aborted");
+        return;
+      }
+      lastErr = e;
+    }
+    attempt++;
+    if (attempt <= maxRetries) {
+      await new Promise((r) => setTimeout(r, 400 * Math.pow(2, attempt - 1))); // backoff: 400, 800
+    }
+  }
+
+  if (!resp) {
+    onError?.(`Network error: ${(lastErr as Error)?.message || "unknown"}`);
+    return;
+  }
 
   if (!resp.ok) {
     const body = await resp.json().catch(() => ({ error: "Unknown error" }));
@@ -51,6 +82,11 @@ export async function streamChat({
   let streamDone = false;
 
   while (!streamDone) {
+    if (signal?.aborted) {
+      try { await reader.cancel(); } catch { /* ignore */ }
+      onError?.("aborted");
+      return;
+    }
     const { done, value } = await reader.read();
     if (done) break;
     textBuffer += decoder.decode(value, { stream: true });
