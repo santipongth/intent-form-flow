@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CheckCircle2, AlertCircle, KeyRound, LogOut, Save, Shield, Settings as SettingsIcon, Monitor, Loader2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, KeyRound, LogOut, Save, Shield, Settings as SettingsIcon, Monitor, Loader2, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +23,7 @@ export default function Profile() {
   const [displayName, setDisplayName] = useState("");
   const [sendingReset, setSendingReset] = useState(false);
   const [signingOutOthers, setSigningOutOthers] = useState(false);
+  const [signingOutAll, setSigningOutAll] = useState(false);
 
   useEffect(() => {
     if (profile?.display_name) setDisplayName(profile.display_name);
@@ -67,6 +68,19 @@ export default function Profile() {
     setSigningOutOthers(false);
     if (error) toast.error(t("profile.signOutOthersError"), { description: error.message });
     else toast.success(t("profile.signOutOthersSuccess"));
+  };
+
+  const handleSignOutEverywhere = async () => {
+    if (!window.confirm(t("profile.signOutEverywhereConfirm"))) return;
+    setSigningOutAll(true);
+    const { error } = await supabase.auth.signOut({ scope: "global" });
+    setSigningOutAll(false);
+    if (error) {
+      toast.error(t("profile.signOutEverywhereError"), { description: error.message });
+      return;
+    }
+    toast.success(t("profile.signOutEverywhereSuccess"));
+    navigate("/auth", { replace: true });
   };
 
   return (
@@ -225,6 +239,26 @@ export default function Profile() {
             >
               {signingOutOthers && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {t("profile.signOutOthersBtn")}
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-xl border border-destructive/30 bg-destructive/5">
+            <div className="flex items-center gap-3 min-w-0">
+              <ShieldOff className="h-5 w-5 text-destructive shrink-0" />
+              <div className="min-w-0">
+                <p className="font-medium text-sm">{t("profile.signOutEverywhere")}</p>
+                <p className="text-xs text-muted-foreground truncate">{t("profile.signOutEverywhereDesc")}</p>
+              </div>
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="rounded-xl shrink-0 gap-2"
+              onClick={handleSignOutEverywhere}
+              disabled={signingOutAll}
+            >
+              {signingOutAll && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {t("profile.signOutEverywhereBtn")}
             </Button>
           </div>
         </CardContent>

@@ -128,6 +128,12 @@ export const en: Record<string, string> = {
   "profile.signOutOthersSuccess": "Signed out of all other devices",
   "profile.signOutOthersError": "Could not sign out other devices",
   "profile.signOutOthersConfirm": "Sign out of all other devices?",
+  "profile.signOutEverywhere": "Sign out everywhere",
+  "profile.signOutEverywhereDesc": "End every active session including this device. You'll need to sign in again.",
+  "profile.signOutEverywhereBtn": "Sign out everywhere",
+  "profile.signOutEverywhereConfirm": "Sign out of every device? You'll be redirected to the sign-in page.",
+  "profile.signOutEverywhereSuccess": "Signed out of all devices",
+  "profile.signOutEverywhereError": "Could not sign out of all devices",
   "profile.active": "Active",
   "verify.resendErrorDesc": "Please check the email and try again.",
 
