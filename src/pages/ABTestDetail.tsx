@@ -115,7 +115,7 @@ export default function ABTestDetail() {
     );
   }
 
-  const renderMessages = (msgs: SideMessage[], agentName: string, endRef: React.RefObject<HTMLDivElement>) => (
+  const renderMessages = (msgs: SideMessage[], _agentName: string, endRef: React.RefObject<HTMLDivElement>) => (
     <div className="flex-1 overflow-y-auto p-3 space-y-3">
       {msgs.map((msg) => (
         <motion.div key={msg.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
