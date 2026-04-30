@@ -39,9 +39,11 @@ export default function AgentBuilder() {
   const [tools, setTools] = useState<Record<string, boolean>>({ "web-search": true });
   const [memoryEnabled, setMemoryEnabled] = useState(true);
   const [systemPrompt, setSystemPrompt] = useState("");
-  const [userPromptTemplate, setUserPromptTemplate] = useState("");
+  const [userPrompt, setUserPrompt] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
+  const [templateSkills, setTemplateSkills] = useState<string[]>([]);
+  const [templateTools, setTemplateTools] = useState<string[]>([]);
   const [temperature, setTemperature] = useState([0.7]);
   const [maxTokens, setMaxTokens] = useState("2048");
   const [templateFromMarketplace, setTemplateFromMarketplace] = useState<string | null>(null);
@@ -57,13 +59,15 @@ export default function AgentBuilder() {
     setName(tmpl.name.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/u, "").trim());
     setObjective(tmpl.description);
     const def = TEMPLATE_DEFAULTS[tmpl.id];
+    const toolList = def?.tools ?? tmpl.tools;
     const newTools: Record<string, boolean> = {};
-    (def?.tools ?? tmpl.tools).forEach((tl) => { newTools[tl] = true; });
+    toolList.forEach((tl) => { newTools[tl] = true; });
     setTools(newTools);
+    setTemplateTools(toolList);
     if (def) {
       setSystemPrompt(def.systemPrompt);
-      setUserPromptTemplate(def.userPromptTemplate);
       setSkills(def.skills);
+      setTemplateSkills(def.skills);
       if (def.outputStyle) setOutputStyle(def.outputStyle);
       if (typeof def.temperature === "number") setTemperature([def.temperature]);
       if (typeof def.maxTokens === "number") setMaxTokens(String(def.maxTokens));
@@ -99,7 +103,7 @@ export default function AgentBuilder() {
       system_prompt: systemPrompt || null,
       temperature: temperature[0],
       max_tokens: parseInt(maxTokens) || 2048,
-      tools: { ...tools, _userPromptTemplate: userPromptTemplate, _skills: skills } as any,
+      tools: { ...tools, _userPrompt: userPrompt, _skills: skills } as any,
       memory_enabled: memoryEnabled,
       knowledge_urls: urls,
     }, {
@@ -158,9 +162,10 @@ export default function AgentBuilder() {
                   setSelectedTemplate("custom");
                   const d = CUSTOM_TEMPLATE_DEFAULTS;
                   setSystemPrompt(d.systemPrompt);
-                  setUserPromptTemplate(d.userPromptTemplate);
                   setSkills(d.skills);
+                  setTemplateSkills(d.skills);
                   const tt: Record<string, boolean> = {}; d.tools.forEach(x => tt[x] = true); setTools(tt);
+                  setTemplateTools(d.tools);
                   if (d.outputStyle) setOutputStyle(d.outputStyle);
                   if (typeof d.temperature === "number") setTemperature([d.temperature]);
                   if (typeof d.maxTokens === "number") setMaxTokens(String(d.maxTokens));
@@ -178,9 +183,10 @@ export default function AgentBuilder() {
                     const d = TEMPLATE_DEFAULTS[tp.id];
                     if (d) {
                       setSystemPrompt(d.systemPrompt);
-                      setUserPromptTemplate(d.userPromptTemplate);
                       setSkills(d.skills);
+                      setTemplateSkills(d.skills);
                       const tt: Record<string, boolean> = {}; d.tools.forEach(x => tt[x] = true); setTools(tt);
+                      setTemplateTools(d.tools);
                       if (d.outputStyle) setOutputStyle(d.outputStyle);
                       if (typeof d.temperature === "number") setTemperature([d.temperature]);
                       if (typeof d.maxTokens === "number") setMaxTokens(String(d.maxTokens));
@@ -269,7 +275,12 @@ export default function AgentBuilder() {
                   {TOOLS_LIST.map((tl) => (
                     <div key={tl.id} className="flex items-center justify-between gap-3 py-2 border-b border-border/50 last:border-0">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium">{tl.name}</p>
+                        <p className="text-sm font-medium flex items-center gap-1.5">
+                          {tl.name}
+                          {templateTools.includes(tl.id) && (
+                            <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[10px] px-1.5 py-0.5 font-normal">from template</span>
+                          )}
+                        </p>
                         <p className="text-xs text-muted-foreground line-clamp-2">{tl.description}</p>
                       </div>
                       <Switch className="shrink-0" checked={!!tools[tl.id]} onCheckedChange={(checked) => setTools({ ...tools, [tl.id]: checked })} />
@@ -306,11 +317,11 @@ export default function AgentBuilder() {
                       <Textarea placeholder="กำหนด System Prompt แบบละเอียด..." value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} className="rounded-xl mt-1 min-h-[120px]" />
                     </div>
                     <div>
-                      <Label>User Prompt Template</Label>
+                      <Label>User Prompt</Label>
                       <Textarea
-                        placeholder="เช่น: คำถาม: {{question}}\nบริบท: {{context}}"
-                        value={userPromptTemplate}
-                        onChange={(e) => setUserPromptTemplate(e.target.value)}
+                        placeholder="พิมพ์ User Prompt ที่ต้องการ (เช่น: คำถาม: {{question}})"
+                        value={userPrompt}
+                        onChange={(e) => setUserPrompt(e.target.value)}
                         className="rounded-xl mt-1 min-h-[100px] font-mono text-xs"
                       />
                       <p className="text-xs text-muted-foreground mt-1">ใช้ <code>{"{{ตัวแปร}}"}</code> เป็น placeholder ที่จะถูกแทนค่าตอนเรียกใช้งาน Agent</p>
@@ -319,8 +330,9 @@ export default function AgentBuilder() {
                       <Label>Skills (ความสามารถเฉพาะทาง)</Label>
                       <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
                         {skills.map((sk) => (
-                          <span key={sk} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-xs px-2.5 py-1">
+                          <span key={sk} className={`inline-flex items-center gap-1 rounded-full text-xs px-2.5 py-1 ${templateSkills.includes(sk) ? "bg-primary/15 text-primary border border-primary/30" : "bg-secondary text-secondary-foreground"}`}>
                             {sk}
+                            {templateSkills.includes(sk) && <span className="text-[9px] opacity-70">• template</span>}
                             <button
                               type="button"
                               onClick={() => setSkills(skills.filter((x) => x !== sk))}
