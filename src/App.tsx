@@ -19,6 +19,8 @@ import SettingsPage from "./pages/SettingsPage";
 import Analytics from "./pages/Analytics";
 import AgentDetail from "./pages/AgentDetail";
 import ResetPassword from "./pages/ResetPassword";
+import VerifyEmail from "./pages/VerifyEmail";
+import Profile from "./pages/Profile";
 import UsageBilling from "./pages/UsageBilling";
 import ABTesting from "./pages/ABTesting";
 import ABTestDetail from "./pages/ABTestDetail";
@@ -43,6 +45,8 @@ const App = () => (
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/profile" element={<ProtectedRoute><AppLayout><Profile /></AppLayout></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
                 <Route path="/agents/new" element={<ProtectedRoute><AppLayout><AgentBuilder /></AppLayout></ProtectedRoute>} />
                 <Route path="/agents/:id" element={<ProtectedRoute><AppLayout><AgentDetail /></AppLayout></ProtectedRoute>} />
