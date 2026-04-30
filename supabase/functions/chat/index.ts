@@ -114,6 +114,14 @@ serve(async (req) => {
           response_time_ms: responseTime,
           metadata: { error_status: response.status },
         });
+        await supabase.from("error_logs").insert({
+          user_id: userId,
+          agent_id,
+          source: "chat",
+          level: "error",
+          message: `AI gateway returned ${response.status}`,
+          context: { status: response.status },
+        });
       }
 
       if (response.status === 429) {
@@ -178,6 +186,46 @@ serve(async (req) => {
             response_time_ms: responseTime,
             tokens_used: totalTokens || null,
           }).then(() => {});
+
+          // Webhook fan-out (fire-and-forget)
+          (async () => {
+            try {
+              const { data: hooks } = await supabase
+                .from("agent_webhooks")
+                .select("id, url, secret, events")
+                .eq("agent_id", agent_id)
+                .eq("enabled", true);
+              if (!hooks || hooks.length === 0) return;
+              const payload = JSON.stringify({
+                event: "chat.completed",
+                agent_id,
+                data: { messages, tokens_used: totalTokens, response_time_ms: responseTime },
+                timestamp: new Date().toISOString(),
+              });
+              await Promise.allSettled(
+                hooks.filter((h: any) => (h.events || []).includes("chat.completed")).map(async (h: any) => {
+                  try {
+                    const sigBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(payload + h.secret));
+                    const sig = Array.from(new Uint8Array(sigBuf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+                    const r = await fetch(h.url, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", "x-tm-signature": sig, "x-tm-event": "chat.completed" },
+                      body: payload,
+                    });
+                    await supabase.from("agent_webhooks").update({
+                      last_triggered_at: new Date().toISOString(),
+                      last_status: `${r.status}`,
+                    }).eq("id", h.id);
+                  } catch (e) {
+                    await supabase.from("agent_webhooks").update({
+                      last_triggered_at: new Date().toISOString(),
+                      last_status: `error: ${(e as Error).message}`,
+                    }).eq("id", h.id);
+                  }
+                })
+              );
+            } catch (_) { /* ignore */ }
+          })();
         }
       },
     });
@@ -189,6 +237,15 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("chat error:", e);
+    try {
+      const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      await supabase.from("error_logs").insert({
+        source: "chat",
+        level: "error",
+        message: (e as Error).message || "unknown",
+        context: {},
+      });
+    } catch (_) { /* ignore */ }
     return new Response(JSON.stringify({ error: "An error occurred. Please try again." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
