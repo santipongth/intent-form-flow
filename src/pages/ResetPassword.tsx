@@ -91,7 +91,7 @@ export default function ResetPassword() {
     }
     setStatus("success");
     toast.success(t("reset.success"));
-    setTimeout(() => navigate("/dashboard", { replace: true }), 1500);
+    setTimeout(() => navigate("/profile", { replace: true }), 1500);
   };
 
   return (
