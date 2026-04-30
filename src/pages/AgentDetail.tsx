@@ -277,7 +277,7 @@ function WidgetPreviewPanel({
   const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const widgetUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${encodeURIComponent(primaryColor)}&brand=${encodeURIComponent(brandName || agentName)}&position=${widgetPosition}&bubble_size=${bubbleSize}&lang=${widgetLang}${welcomeParam}`;
+  const widgetUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${encodeURIComponent(primaryColor)}&brand=${encodeURIComponent(brandName || agentName)}&position=${widgetPosition}&bubble_size=${bubbleSize}&lang=${widgetLang}${welcomeParam}&preview=1`;
 
   useEffect(() => {
     let cancelled = false;
