@@ -390,6 +390,7 @@ export default function AgentDetail() {
   const [editUserPrompt, setEditUserPrompt] = useState("");
   const [editSkills, setEditSkills] = useState<string[]>([]);
   const [editSkillInput, setEditSkillInput] = useState("");
+  const [editErrors, setEditErrors] = useState<{ userPrompt?: string; skills?: string }>({});
 
   useEffect(() => {
     if (agent) {
@@ -457,6 +458,22 @@ export default function AgentDetail() {
 
   const handleSaveEdit = () => {
     if (!agent) return;
+    const parsed = editFormSchema.safeParse({
+      userPrompt: editUserPrompt,
+      skills: editSkills,
+    });
+    if (!parsed.success) {
+      const fieldErrors = parsed.error.flatten().fieldErrors;
+      const next = {
+        userPrompt: fieldErrors.userPrompt?.[0],
+        skills: fieldErrors.skills?.[0],
+      };
+      setEditErrors(next);
+      const first = next.userPrompt || next.skills;
+      if (first) toast.error(first);
+      return;
+    }
+    setEditErrors({});
     const prevTools = (agent.tools as any) || {};
     updateAgent.mutate({
       id: agent.id,
@@ -469,12 +486,36 @@ export default function AgentDetail() {
       max_tokens: parseInt(editMaxTokens) || 2048,
       tools: {
         ...prevTools,
-        _userPrompt: editUserPrompt,
-        _skills: editSkills,
+        _userPrompt: parsed.data.userPrompt,
+        _skills: parsed.data.skills,
       },
     }, {
       onSuccess: () => setIsEditing(false),
     });
+  };
+
+  // Add a skill with inline validation (length / duplicate / max count).
+  // Returns true when added so the input can be cleared.
+  const tryAddSkill = (raw: string): boolean => {
+    const value = raw.trim();
+    if (!value) return false;
+    if (value.length > MAX_SKILL_LEN) {
+      toast.error(`ชื่อ skill ต้องไม่เกิน ${MAX_SKILL_LEN} ตัวอักษร`);
+      return false;
+    }
+    if (editSkills.length >= MAX_SKILLS) {
+      toast.error(`Skills ได้สูงสุด ${MAX_SKILLS} รายการ`);
+      return false;
+    }
+    const dup = editSkills.some((s) => s.toLowerCase() === value.toLowerCase());
+    if (dup) {
+      toast.error(`มี skill "${value}" อยู่แล้ว`);
+      return false;
+    }
+    setEditSkills([...editSkills, value]);
+    // Clear the skills error (if any) since we just made progress
+    setEditErrors((e) => ({ ...e, skills: undefined }));
+    return true;
   };
 
   if (isLoading) {
