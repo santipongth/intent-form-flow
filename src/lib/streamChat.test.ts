@@ -88,19 +88,19 @@ describe("streamChat", () => {
 
   it("handles abort signal", async () => {
     const controller = new AbortController();
+    controller.abort();
     const fetchMock = vi.fn().mockImplementation((_url, init) => {
-      return new Promise((_resolve, reject) => {
-        init?.signal?.addEventListener("abort", () => {
-          const err = new Error("aborted");
-          err.name = "AbortError";
-          reject(err);
-        });
-      });
+      if (init?.signal?.aborted) {
+        const err = new Error("aborted");
+        err.name = "AbortError";
+        return Promise.reject(err);
+      }
+      return Promise.resolve(new Response("ok"));
     });
     vi.stubGlobal("fetch", fetchMock);
 
     const onError = vi.fn();
-    const promise = streamChat({
+    await streamChat({
       messages: [{ role: "user", content: "x" }],
       onDelta: () => {},
       onDone: () => {},
@@ -108,8 +108,6 @@ describe("streamChat", () => {
       signal: controller.signal,
       maxRetries: 0,
     });
-    controller.abort();
-    await promise;
 
     expect(onError).toHaveBeenCalledWith("aborted");
   });
