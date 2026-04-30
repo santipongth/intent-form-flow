@@ -741,10 +741,10 @@ export default function AgentDetail() {
                 <div className="sm:col-span-2">
                   <Label className="text-muted-foreground text-xs">User Prompt</Label>
                   {(() => {
-                    const up = (agent.tools as any)?._userPrompt;
+                    const up = getUserPrompt(agent.tools as any);
                     return (
                       <p className="font-medium text-sm whitespace-pre-wrap font-mono">
-                        {up && String(up).trim() ? up : t("dashboard.notSpecified")}
+                        {up.trim() ? up : t("dashboard.notSpecified")}
                       </p>
                     );
                   })()}
@@ -752,8 +752,7 @@ export default function AgentDetail() {
                 <div className="sm:col-span-2">
                   <Label className="text-muted-foreground text-xs">Skills</Label>
                   {(() => {
-                    const sk = (agent.tools as any)?._skills;
-                    const list: string[] = Array.isArray(sk) ? sk : [];
+                    const list = getSkills(agent.tools as any);
                     if (list.length === 0) {
                       return <p className="font-medium text-sm text-muted-foreground">{t("dashboard.notSpecified")}</p>;
                     }
