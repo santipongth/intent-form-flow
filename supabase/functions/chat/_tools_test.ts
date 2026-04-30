@@ -109,18 +109,14 @@ Deno.test("isToolModelFallbackError: 429/402 do not fall back", () => {
 // ---------- read_knowledge_table with mocked supabase ----------
 
 function mockSupabase(rows: any[]) {
+  // Thenable builder: every chained method returns the same object, and
+  // awaiting it resolves to the canned rows (mimicking @supabase/postgrest-js).
   return {
     from(_table: string) {
-      const builder: any = {
-        _filters: {},
-        select() { return builder; },
-        eq(_k: string, _v: any) { return builder; },
-        async then(resolve: any) { resolve({ data: rows, error: null }); },
-      };
-      // Make the chain awaitable (last .eq() returns promise-like)
-      builder.eq = (_k: string, _v: any) => builder;
-      // Provide thenable terminal
-      builder[Symbol.asyncIterator] = undefined;
+      const builder: any = {};
+      builder.select = () => builder;
+      builder.eq = () => builder;
+      builder.then = (resolve: any) => resolve({ data: rows, error: null });
       return builder;
     },
   };
