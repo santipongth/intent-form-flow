@@ -26,6 +26,14 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(token);
     if (user) userId = user.id;
 
+    // Require authentication
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Get agent config if agent_id provided
     let systemPrompt = "You are a helpful AI assistant. Keep answers clear and concise.";
     let model = "google/gemini-3-flash-preview";
@@ -36,6 +44,7 @@ serve(async (req) => {
         .from("agents")
         .select("system_prompt, model, temperature, name, objective")
         .eq("id", agent_id)
+        .eq("user_id", userId)
         .single();
 
       if (agent) {
@@ -52,6 +61,7 @@ serve(async (req) => {
         .from("knowledge_files")
         .select("file_name, content")
         .eq("agent_id", agent_id)
+        .eq("user_id", userId)
         .eq("status", "ready");
 
       if (knowledgeFiles && knowledgeFiles.length > 0) {
@@ -179,7 +189,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: "An error occurred. Please try again." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

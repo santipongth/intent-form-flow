@@ -104,7 +104,7 @@ export type Database = {
           response_time_ms: number | null
           status: string | null
           tokens_used: number | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           agent_id?: string | null
@@ -115,7 +115,7 @@ export type Database = {
           response_time_ms?: number | null
           status?: string | null
           tokens_used?: number | null
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           agent_id?: string | null
@@ -126,7 +126,7 @@ export type Database = {
           response_time_ms?: number | null
           status?: string | null
           tokens_used?: number | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
