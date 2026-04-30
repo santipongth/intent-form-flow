@@ -15,7 +15,6 @@ export interface WebhookRow {
   agent_id: string;
   user_id: string;
   url: string;
-  secret: string;
   events: string[];
   enabled: boolean;
   last_triggered_at: string | null;
@@ -46,7 +45,7 @@ export function useWebhooks(agentId?: string) {
       if (!agentId) return [];
       const { data, error } = await supabase
         .from("agent_webhooks")
-        .select("*")
+        .select("id, agent_id, user_id, url, events, enabled, last_triggered_at, last_status, created_at")
         .eq("agent_id", agentId)
         .order("created_at", { ascending: false });
       if (error) throw error;
