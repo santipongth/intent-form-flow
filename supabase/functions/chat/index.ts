@@ -245,6 +245,9 @@ serve(async (req) => {
     // Agent config
     let systemPrompt = "You are a helpful AI assistant. Keep answers clear and concise.";
     let model = "google/gemini-2.5-flash";
+    // Tool-calling needs a model that supports OpenAI-style function calling reliably.
+    // gemini-3-flash-preview returns MALFORMED_FUNCTION_CALL, so we pin a stable one for tool turns.
+    const TOOL_MODEL = "google/gemini-2.5-flash";
     let temperature = 0.7;
     let memoryEnabled = true;
     let toolsEnabled: Record<string, boolean> = {};
@@ -321,7 +324,7 @@ serve(async (req) => {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model, messages: baseMessages, temperature,
+          model: TOOL_MODEL, messages: baseMessages, temperature,
           tools: activeTools, tool_choice: "auto", stream: false,
         }),
       });
