@@ -236,6 +236,37 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Server-side validation: confirm record exists and check size
+    const { data: fileInfo, error: infoError } = await supabase
+      .from("knowledge_files")
+      .select("file_size, file_name, file_path")
+      .eq("id", knowledge_file_id)
+      .single();
+
+    if (infoError || !fileInfo) {
+      return new Response(JSON.stringify({ error: "File record not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const MAX_SIZE = 50 * 1024 * 1024; // 50 MB
+    if (fileInfo.file_size > MAX_SIZE) {
+      await supabase.from("knowledge_files").update({ status: "error" }).eq("id", knowledge_file_id);
+      return new Response(JSON.stringify({ error: "File exceeds size limit" }), {
+        status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Allowlist extensions
+    const allowedExt = ["pdf", "txt", "md", "csv", "json", "docx", "xlsx", "xls"];
+    const ext = (fileInfo.file_name.split(".").pop() || "").toLowerCase();
+    if (!allowedExt.includes(ext)) {
+      await supabase.from("knowledge_files").update({ status: "error" }).eq("id", knowledge_file_id);
+      return new Response(JSON.stringify({ error: "File type not allowed" }), {
+        status: 415, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Download file from storage
     const { data: fileData, error: downloadError } = await supabase.storage
       .from("knowledge-files")
@@ -245,6 +276,30 @@ serve(async (req) => {
       await supabase.from("knowledge_files").update({ status: "error" }).eq("id", knowledge_file_id);
       console.error("Download failed:", downloadError);
       throw new Error("Failed to download file");
+    }
+
+    // Magic-byte validation for binary formats
+    const head = new Uint8Array(await fileData.slice(0, 8).arrayBuffer());
+    const isPDF = head[0] === 0x25 && head[1] === 0x50 && head[2] === 0x44 && head[3] === 0x46;
+    const isZip = head[0] === 0x50 && head[1] === 0x4b && (head[2] === 0x03 || head[2] === 0x05); // docx/xlsx
+    const isOleXls = head[0] === 0xd0 && head[1] === 0xcf && head[2] === 0x11 && head[3] === 0xe0; // legacy .xls
+    if (ext === "pdf" && !isPDF) {
+      await supabase.from("knowledge_files").update({ status: "error" }).eq("id", knowledge_file_id);
+      return new Response(JSON.stringify({ error: "File contents do not match type" }), {
+        status: 415, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if ((ext === "docx" || ext === "xlsx") && !isZip) {
+      await supabase.from("knowledge_files").update({ status: "error" }).eq("id", knowledge_file_id);
+      return new Response(JSON.stringify({ error: "File contents do not match type" }), {
+        status: 415, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (ext === "xls" && !isOleXls && !isZip) {
+      await supabase.from("knowledge_files").update({ status: "error" }).eq("id", knowledge_file_id);
+      return new Response(JSON.stringify({ error: "File contents do not match type" }), {
+        status: 415, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     let textContent = "";
