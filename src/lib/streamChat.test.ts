@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
@@ -22,8 +22,7 @@ function makeStreamResponse(chunks: string[]): Response {
 }
 
 describe("streamChat", () => {
-  beforeEach(() => { vi.restoreAllMocks(); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  afterEach(() => { vi.unstubAllGlobals(); });
 
   it("parses delta tokens and calls onDone", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
