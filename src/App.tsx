@@ -21,7 +21,6 @@ import AgentDetail from "./pages/AgentDetail";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import Profile from "./pages/Profile";
-import UsageBilling from "./pages/UsageBilling";
 import ABTesting from "./pages/ABTesting";
 import ABTestDetail from "./pages/ABTestDetail";
 import ABTestResults from "./pages/ABTestResults";
@@ -55,7 +54,6 @@ const App = () => (
                 <Route path="/chat/:conversationId" element={<ProtectedRoute><AppLayout><ChatConsole /></AppLayout></ProtectedRoute>} />
                 <Route path="/monitor" element={<ProtectedRoute><AppLayout><Monitor /></AppLayout></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><AppLayout><Analytics /></AppLayout></ProtectedRoute>} />
-                <Route path="/usage" element={<ProtectedRoute><AppLayout><UsageBilling /></AppLayout></ProtectedRoute>} />
                 <Route path="/ab-testing" element={<ProtectedRoute><AppLayout><ABTesting /></AppLayout></ProtectedRoute>} />
                 <Route path="/ab-testing/results" element={<ProtectedRoute><AppLayout><ABTestResults /></AppLayout></ProtectedRoute>} />
                 <Route path="/ab-testing/:id" element={<ProtectedRoute><AppLayout><ABTestDetail /></AppLayout></ProtectedRoute>} />
