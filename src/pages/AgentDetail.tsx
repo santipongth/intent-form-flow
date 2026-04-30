@@ -23,6 +23,33 @@ import type { AgentRow } from "@/hooks/useAgents";
 import { ApiKeysSection } from "@/components/agent-detail/ApiKeysSection";
 import { WebhooksSection } from "@/components/agent-detail/WebhooksSection";
 import { ErrorLogsSection } from "@/components/agent-detail/ErrorLogsSection";
+import { z } from "zod";
+
+// ---- Validation rules for the edit form (User Prompt + Skills) ----
+const MAX_SKILLS = 15;
+const MAX_SKILL_LEN = 40;
+const MAX_USER_PROMPT_LEN = 4000;
+
+const skillSchema = z
+  .string()
+  .trim()
+  .min(1, { message: "ชื่อ skill ห้ามว่าง" })
+  .max(MAX_SKILL_LEN, { message: `ชื่อ skill ต้องไม่เกิน ${MAX_SKILL_LEN} ตัวอักษร` });
+
+const editFormSchema = z.object({
+  userPrompt: z
+    .string()
+    .trim()
+    .min(1, { message: "User Prompt ห้ามว่าง" })
+    .max(MAX_USER_PROMPT_LEN, { message: `User Prompt ต้องไม่เกิน ${MAX_USER_PROMPT_LEN} ตัวอักษร` }),
+  skills: z
+    .array(skillSchema)
+    .max(MAX_SKILLS, { message: `Skills ได้สูงสุด ${MAX_SKILLS} รายการ` })
+    .refine(
+      (arr) => new Set(arr.map((s) => s.toLowerCase())).size === arr.length,
+      { message: "มี skill ซ้ำ — กรุณาลบรายการที่ซ้ำ" },
+    ),
+});
 
 function generateApiKey() {
   const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -363,6 +390,7 @@ export default function AgentDetail() {
   const [editUserPrompt, setEditUserPrompt] = useState("");
   const [editSkills, setEditSkills] = useState<string[]>([]);
   const [editSkillInput, setEditSkillInput] = useState("");
+  const [editErrors, setEditErrors] = useState<{ userPrompt?: string; skills?: string }>({});
 
   useEffect(() => {
     if (agent) {
@@ -430,6 +458,22 @@ export default function AgentDetail() {
 
   const handleSaveEdit = () => {
     if (!agent) return;
+    const parsed = editFormSchema.safeParse({
+      userPrompt: editUserPrompt,
+      skills: editSkills,
+    });
+    if (!parsed.success) {
+      const fieldErrors = parsed.error.flatten().fieldErrors;
+      const next = {
+        userPrompt: fieldErrors.userPrompt?.[0],
+        skills: fieldErrors.skills?.[0],
+      };
+      setEditErrors(next);
+      const first = next.userPrompt || next.skills;
+      if (first) toast.error(first);
+      return;
+    }
+    setEditErrors({});
     const prevTools = (agent.tools as any) || {};
     updateAgent.mutate({
       id: agent.id,
@@ -442,12 +486,36 @@ export default function AgentDetail() {
       max_tokens: parseInt(editMaxTokens) || 2048,
       tools: {
         ...prevTools,
-        _userPrompt: editUserPrompt,
-        _skills: editSkills,
+        _userPrompt: parsed.data.userPrompt,
+        _skills: parsed.data.skills,
       },
     }, {
       onSuccess: () => setIsEditing(false),
     });
+  };
+
+  // Add a skill with inline validation (length / duplicate / max count).
+  // Returns true when added so the input can be cleared.
+  const tryAddSkill = (raw: string): boolean => {
+    const value = raw.trim();
+    if (!value) return false;
+    if (value.length > MAX_SKILL_LEN) {
+      toast.error(`ชื่อ skill ต้องไม่เกิน ${MAX_SKILL_LEN} ตัวอักษร`);
+      return false;
+    }
+    if (editSkills.length >= MAX_SKILLS) {
+      toast.error(`Skills ได้สูงสุด ${MAX_SKILLS} รายการ`);
+      return false;
+    }
+    const dup = editSkills.some((s) => s.toLowerCase() === value.toLowerCase());
+    if (dup) {
+      toast.error(`มี skill "${value}" อยู่แล้ว`);
+      return false;
+    }
+    setEditSkills([...editSkills, value]);
+    // Clear the skills error (if any) since we just made progress
+    setEditErrors((e) => ({ ...e, skills: undefined }));
+    return true;
   };
 
   if (isLoading) {
@@ -529,15 +597,32 @@ export default function AgentDetail() {
               <Textarea
                 placeholder="พิมพ์ User Prompt ที่ต้องการ (เช่น: คำถาม: {{question}})"
                 value={editUserPrompt}
-                onChange={(e) => setEditUserPrompt(e.target.value)}
-                className="rounded-xl mt-1 min-h-[100px] font-mono text-xs"
+                onChange={(e) => {
+                  setEditUserPrompt(e.target.value);
+                  if (editErrors.userPrompt) setEditErrors((er) => ({ ...er, userPrompt: undefined }));
+                }}
+                maxLength={MAX_USER_PROMPT_LEN}
+                aria-invalid={!!editErrors.userPrompt}
+                className={`rounded-xl mt-1 min-h-[100px] font-mono text-xs ${editErrors.userPrompt ? "border-destructive focus-visible:ring-destructive" : ""}`}
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                ใช้ <code>{"{{ตัวแปร}}"}</code> เป็น placeholder ที่จะถูกแทนค่าตอนเรียกใช้งาน Agent
-              </p>
+              <div className="flex items-start justify-between gap-2 mt-1">
+                {editErrors.userPrompt ? (
+                  <p className="text-xs text-destructive">{editErrors.userPrompt}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    ใช้ <code>{"{{ตัวแปร}}"}</code> เป็น placeholder ที่จะถูกแทนค่าตอนเรียกใช้งาน Agent
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground shrink-0">
+                  {editUserPrompt.length}/{MAX_USER_PROMPT_LEN}
+                </p>
+              </div>
             </div>
             <div>
-              <Label>Skills (ความสามารถเฉพาะทาง)</Label>
+              <div className="flex items-center justify-between">
+                <Label>Skills (ความสามารถเฉพาะทาง)</Label>
+                <span className="text-xs text-muted-foreground">{editSkills.length}/{MAX_SKILLS}</span>
+              </div>
               <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
                 {editSkills.map((sk) => (
                   <span
@@ -547,7 +632,10 @@ export default function AgentDetail() {
                     {sk}
                     <button
                       type="button"
-                      onClick={() => setEditSkills(editSkills.filter((x) => x !== sk))}
+                      onClick={() => {
+                        setEditSkills(editSkills.filter((x) => x !== sk));
+                        if (editErrors.skills) setEditErrors((er) => ({ ...er, skills: undefined }));
+                      }}
                       className="hover:text-destructive"
                       aria-label={`Remove ${sk}`}
                     >
@@ -564,29 +652,30 @@ export default function AgentDetail() {
                   placeholder="เช่น Document parsing, Sentiment analysis"
                   value={editSkillInput}
                   onChange={(e) => setEditSkillInput(e.target.value)}
+                  maxLength={MAX_SKILL_LEN}
+                  aria-invalid={!!editErrors.skills}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      const v = editSkillInput.trim();
-                      if (v && !editSkills.includes(v)) setEditSkills([...editSkills, v]);
-                      setEditSkillInput("");
+                      if (tryAddSkill(editSkillInput)) setEditSkillInput("");
                     }
                   }}
-                  className="rounded-xl"
+                  className={`rounded-xl ${editErrors.skills ? "border-destructive focus-visible:ring-destructive" : ""}`}
                 />
                 <Button
                   type="button"
                   variant="outline"
                   className="rounded-xl"
                   onClick={() => {
-                    const v = editSkillInput.trim();
-                    if (v && !editSkills.includes(v)) setEditSkills([...editSkills, v]);
-                    setEditSkillInput("");
+                    if (tryAddSkill(editSkillInput)) setEditSkillInput("");
                   }}
                 >
                   เพิ่ม
                 </Button>
               </div>
+              {editErrors.skills && (
+                <p className="text-xs text-destructive mt-1">{editErrors.skills}</p>
+              )}
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" className="rounded-xl" onClick={() => setIsEditing(false)}>{t("common.cancel")}</Button>
