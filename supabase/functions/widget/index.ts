@@ -31,6 +31,7 @@ serve(async (req) => {
   const bubbleSize = parseInt(url.searchParams.get("bubble_size") || "60", 10) || 60;
   const welcomeMessage = url.searchParams.get("welcome_message") || "";
   const lang = url.searchParams.get("lang") || "th";
+  const preview = url.searchParams.get("preview") === "1";
 
   const i18n: Record<string, Record<string, string>> = {
     th: {
@@ -58,15 +59,18 @@ serve(async (req) => {
 
   // Fetch agent info
   const supabase = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-  const { data: agent } = await supabase
+  let q = supabase
     .from("agents")
-    .select("name, avatar, objective")
-    .eq("id", agentId)
-    .eq("status", "published")
-    .single();
+    .select("name, avatar, objective, status")
+    .eq("id", agentId);
+  if (!preview) q = q.eq("status", "published");
+  const { data: agent } = await q.maybeSingle();
 
   if (!agent) {
-    return new Response("Not found", { status: 404, headers: corsHeaders });
+    const msg = preview
+      ? "Agent not found"
+      : "This agent is not published yet. Owner: open the agent page and toggle Publish.";
+    return new Response(msg, { status: 404, headers: { ...corsHeaders, "Content-Type": "text/plain; charset=utf-8" } });
   }
 
   const agentName = agent?.name || "AI Assistant";
