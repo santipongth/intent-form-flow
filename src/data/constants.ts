@@ -98,11 +98,11 @@ export const MARKETPLACE_TEMPLATES: MarketplaceTemplate[] = [
 ];
 
 export const TOOLS_LIST = [
-  { id: "web-search", name: "🌐 ค้นหาเว็บ", description: "ค้นหาข้อมูลจากอินเทอร์เน็ต" },
-  { id: "read-excel", name: "📊 อ่าน Excel/CSV", description: "อ่านและวิเคราะห์ไฟล์ตาราง" },
-  { id: "calculator", name: "🔢 คำนวณ", description: "คำนวณตัวเลขและสูตร" },
-  { id: "code-exec", name: "💻 รันโค้ด", description: "เรียกใช้ Python code" },
-  { id: "email", name: "📧 ส่งอีเมล", description: "ส่งอีเมลอัตโนมัติ" },
+  { id: "web-search", name: "🌐 ค้นหาเว็บ", description: "ค้นหาข้อมูลจากอินเทอร์เน็ต", comingSoon: false },
+  { id: "read-excel", name: "📊 อ่าน Excel/CSV", description: "อ่านและวิเคราะห์ไฟล์ตารางจาก knowledge", comingSoon: false },
+  { id: "calculator", name: "🔢 คำนวณ", description: "คำนวณตัวเลขและสูตร", comingSoon: false },
+  { id: "code-exec", name: "💻 รันโค้ด", description: "เรียกใช้ Python code (เร็ว ๆ นี้)", comingSoon: true },
+  { id: "email", name: "📧 ส่งอีเมล", description: "ส่งอีเมลอัตโนมัติ (เร็ว ๆ นี้)", comingSoon: true },
 ];
 
 /**

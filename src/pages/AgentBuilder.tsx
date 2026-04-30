@@ -284,10 +284,21 @@ export default function AgentBuilder() {
                           {templateTools.includes(tl.id) && (
                             <span className="inline-flex items-center rounded-full bg-primary/10 text-primary text-[10px] px-1.5 py-0.5 font-normal">from template</span>
                           )}
+                          {tl.comingSoon && (
+                            <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground text-[10px] px-1.5 py-0.5 font-normal">เร็ว ๆ นี้</span>
+                          )}
                         </p>
                         <p className="text-xs text-muted-foreground line-clamp-2">{tl.description}</p>
                       </div>
-                      <Switch className="shrink-0" checked={!!tools[tl.id]} onCheckedChange={(checked) => setTools({ ...tools, [tl.id]: checked })} />
+                      <Switch
+                        className="shrink-0"
+                        checked={!!tools[tl.id] && !tl.comingSoon}
+                        disabled={tl.comingSoon}
+                        onCheckedChange={(checked) => {
+                          if (tl.comingSoon) return;
+                          setTools({ ...tools, [tl.id]: checked });
+                        }}
+                      />
                     </div>
                   ))}
                 </CardContent>

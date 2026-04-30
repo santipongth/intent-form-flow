@@ -349,6 +349,8 @@ export type Database = {
           agent_id: string | null
           created_at: string | null
           id: string
+          memory_summary: string | null
+          summary_message_count: number
           title: string | null
           updated_at: string | null
           user_id: string
@@ -357,6 +359,8 @@ export type Database = {
           agent_id?: string | null
           created_at?: string | null
           id?: string
+          memory_summary?: string | null
+          summary_message_count?: number
           title?: string | null
           updated_at?: string | null
           user_id: string
@@ -365,6 +369,8 @@ export type Database = {
           agent_id?: string | null
           created_at?: string | null
           id?: string
+          memory_summary?: string | null
+          summary_message_count?: number
           title?: string | null
           updated_at?: string | null
           user_id?: string
