@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { Copy, Eye, EyeOff, RefreshCw, Globe, Code, Monitor, Key, AlertTriangle, Send, Bot, User, ArrowLeft, Info, Pencil, Upload, Trash2, FileText, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Copy, Eye, EyeOff, RefreshCw, Globe, Code, Monitor, Key, AlertTriangle, ArrowLeft, Info, Pencil, Upload, Trash2, FileText, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -59,10 +59,9 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
   }, [files, refetch]);
 
   const startUpload = (file: File) => {
-    const idx = uploadQueue.length;
     setUploadQueue(prev => [...prev, { name: file.name, progress: 0 }]);
     const progressInterval = setInterval(() => {
-      setUploadQueue(prev => prev.map((item, i) =>
+      setUploadQueue(prev => prev.map((item) =>
         item.name === file.name && item.progress < 90
           ? { ...item, progress: Math.min(item.progress + Math.random() * 20, 90) }
           : item
@@ -388,7 +387,6 @@ export default function AgentDetail() {
   const [welcomeMessage, setWelcomeMessage] = useState("");
   const [widgetLang, setWidgetLang] = useState<"th" | "en">("th");
 
-  const agentName = agent?.name || "Agent";
   const agentId = agent?.id || "unknown";
   const endpoint = `https://api.thoughtmind.ai/v1/agents/${agentId}/chat`;
 

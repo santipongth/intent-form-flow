@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Send, Bot, ThumbsUp, Trash2 } from "lucide-react";
+import { ArrowLeft, Send, ThumbsUp, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useABTest, useABTestVotes, useCastVote } from "@/hooks/useABTesting";
@@ -115,7 +115,7 @@ export default function ABTestDetail() {
     );
   }
 
-  const renderMessages = (msgs: SideMessage[], agentName: string, endRef: React.RefObject<HTMLDivElement>) => (
+  const renderMessages = (msgs: SideMessage[], _agentName: string, endRef: React.RefObject<HTMLDivElement>) => (
     <div className="flex-1 overflow-y-auto p-3 space-y-3">
       {msgs.map((msg) => (
         <motion.div key={msg.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>

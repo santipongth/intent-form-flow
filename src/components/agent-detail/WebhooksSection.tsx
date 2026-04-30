@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Webhook, Trash2, Plus, Send, Loader2, CheckCircle2, XCircle, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
