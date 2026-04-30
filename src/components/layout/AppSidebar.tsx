@@ -1,4 +1,4 @@
-import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, Settings, Plus, LogOut, FlaskConical, ChevronUp } from "lucide-react";
+import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, Settings, LogOut, FlaskConical, ChevronUp } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -94,24 +94,6 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-3 space-y-2">
-        {/* Create Agent CTA */}
-        <div className="px-1">
-          {!collapsed ?
-          <Button className="w-full gradient-primary text-primary-foreground rounded-xl gap-2 h-10 shadow-md hover:shadow-lg transition-shadow" asChild>
-              <NavLink to="/agents/new">
-                <Plus className="h-4 w-4" />
-                {t("sidebar.createAgent")}
-              </NavLink>
-            </Button> :
-
-          <Button size="icon" className="w-full gradient-primary text-primary-foreground rounded-xl shadow-md hover:shadow-lg transition-shadow" asChild>
-              <NavLink to="/agents/new">
-                <Plus className="h-4 w-4" />
-              </NavLink>
-            </Button>
-          }
-        </div>
-
         {/* User card */}
         <div className={`rounded-xl border border-sidebar-border bg-sidebar-accent/40 backdrop-blur-sm transition-all ${collapsed ? "p-2 flex flex-col items-center gap-2" : "p-3"}`}>
           <div className={`flex items-center ${collapsed ? "flex-col gap-2" : "gap-3"}`}>
