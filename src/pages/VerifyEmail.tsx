@@ -83,7 +83,7 @@ export default function VerifyEmail() {
     });
     setResending(false);
     if (error) {
-      toast.error(t("verify.resendError"), { description: error.message });
+      toast.error(t("verify.resendError"), { description: error.message || t("verify.resendErrorDesc") });
     } else {
       toast.success(t("verify.resendSuccess"), { description: t("verify.resendSuccessDesc") });
       setStatus("pending");
