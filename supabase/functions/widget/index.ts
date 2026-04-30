@@ -62,7 +62,12 @@ serve(async (req) => {
     .from("agents")
     .select("name, avatar, objective")
     .eq("id", agentId)
+    .eq("status", "published")
     .single();
+
+  if (!agent) {
+    return new Response("Not found", { status: 404, headers: corsHeaders });
+  }
 
   const agentName = agent?.name || "AI Assistant";
   const agentAvatar = agent?.avatar || "🤖";
