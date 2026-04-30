@@ -50,6 +50,39 @@ export default function AgentBuilder() {
 
   const progress = ((step + 1) / STEPS_KEYS.length) * 100;
 
+  /**
+   * Sync skills + tools เมื่อเปลี่ยน template:
+   *   - ลบของ template เก่าออก (เฉพาะที่ user ไม่ได้แก้)
+   *   - merge ของ template ใหม่เข้าไป
+   *   - อัปเดต templateSkills/templateTools เพื่อให้ badge "from template" ถูกต้องเสมอ
+   */
+  const applyTemplate = (def: typeof CUSTOM_TEMPLATE_DEFAULTS) => {
+    setSystemPrompt(def.systemPrompt);
+    if (def.outputStyle) setOutputStyle(def.outputStyle);
+    if (typeof def.temperature === "number") setTemperature([def.temperature]);
+    if (typeof def.maxTokens === "number") setMaxTokens(String(def.maxTokens));
+
+    // Skills: เก็บ user-added (ที่ไม่ได้มาจาก template เก่า) + เพิ่มของ template ใหม่
+    setSkills((prev) => {
+      const userAdded = prev.filter((s) => !templateSkills.includes(s));
+      const merged = [...def.skills];
+      userAdded.forEach((s) => { if (!merged.includes(s)) merged.push(s); });
+      return merged;
+    });
+    setTemplateSkills(def.skills);
+
+    // Tools: ปิดของ template เก่า (เฉพาะที่ไม่ได้อยู่ใน template ใหม่), เปิดของ template ใหม่, คงค่า user toggle อื่น ๆ
+    setTools((prev) => {
+      const next = { ...prev };
+      templateTools.forEach((tl) => {
+        if (!def.tools.includes(tl)) next[tl] = false;
+      });
+      def.tools.forEach((tl) => { next[tl] = true; });
+      return next;
+    });
+    setTemplateTools(def.tools);
+  };
+
   useEffect(() => {
     const templateId = searchParams.get("template");
     if (!templateId) return;
@@ -58,20 +91,8 @@ export default function AgentBuilder() {
     setSelectedTemplate(tmpl.id);
     setName(tmpl.name.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/u, "").trim());
     setObjective(tmpl.description);
-    const def = TEMPLATE_DEFAULTS[tmpl.id];
-    const toolList = def?.tools ?? tmpl.tools;
-    const newTools: Record<string, boolean> = {};
-    toolList.forEach((tl) => { newTools[tl] = true; });
-    setTools(newTools);
-    setTemplateTools(toolList);
-    if (def) {
-      setSystemPrompt(def.systemPrompt);
-      setSkills(def.skills);
-      setTemplateSkills(def.skills);
-      if (def.outputStyle) setOutputStyle(def.outputStyle);
-      if (typeof def.temperature === "number") setTemperature([def.temperature]);
-      if (typeof def.maxTokens === "number") setMaxTokens(String(def.maxTokens));
-    }
+    const def = TEMPLATE_DEFAULTS[tmpl.id] ?? { ...CUSTOM_TEMPLATE_DEFAULTS, tools: tmpl.tools, skills: [] };
+    applyTemplate(def);
     for (const provider of LLM_MODELS) {
       if (provider.models.includes(tmpl.recommendedModel)) {
         setSelectedProvider(provider.id);
@@ -160,15 +181,7 @@ export default function AgentBuilder() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <Card className={`rounded-2xl cursor-pointer transition-all border-2 ${selectedTemplate === "custom" ? "border-primary shadow-md" : "border-transparent hover:border-border"}`} onClick={() => {
                   setSelectedTemplate("custom");
-                  const d = CUSTOM_TEMPLATE_DEFAULTS;
-                  setSystemPrompt(d.systemPrompt);
-                  setSkills(d.skills);
-                  setTemplateSkills(d.skills);
-                  const tt: Record<string, boolean> = {}; d.tools.forEach(x => tt[x] = true); setTools(tt);
-                  setTemplateTools(d.tools);
-                  if (d.outputStyle) setOutputStyle(d.outputStyle);
-                  if (typeof d.temperature === "number") setTemperature([d.temperature]);
-                  if (typeof d.maxTokens === "number") setMaxTokens(String(d.maxTokens));
+                  applyTemplate(CUSTOM_TEMPLATE_DEFAULTS);
                 }}>
                   <CardContent className="p-4 sm:p-5 text-center">
                     <div className="text-3xl mb-2">🎨</div>
@@ -181,16 +194,7 @@ export default function AgentBuilder() {
                     setSelectedTemplate(tp.id);
                     setObjective(tp.description);
                     const d = TEMPLATE_DEFAULTS[tp.id];
-                    if (d) {
-                      setSystemPrompt(d.systemPrompt);
-                      setSkills(d.skills);
-                      setTemplateSkills(d.skills);
-                      const tt: Record<string, boolean> = {}; d.tools.forEach(x => tt[x] = true); setTools(tt);
-                      setTemplateTools(d.tools);
-                      if (d.outputStyle) setOutputStyle(d.outputStyle);
-                      if (typeof d.temperature === "number") setTemperature([d.temperature]);
-                      if (typeof d.maxTokens === "number") setMaxTokens(String(d.maxTokens));
-                    }
+                    if (d) applyTemplate(d);
                   }}>
                     <CardContent className="p-4 sm:p-5">
                       <div className={`h-1.5 w-12 rounded-full bg-gradient-to-r ${tp.color} mb-3`} />
