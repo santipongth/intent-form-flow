@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import StatsRow from "@/components/dashboard/StatsRow";
 import AgentFilters from "@/components/dashboard/AgentFilters";
 import AgentCard from "@/components/dashboard/AgentCard";
+import { getSkills } from "@/lib/agentTools";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -65,6 +66,7 @@ export default function Dashboard() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [modelFilter, setModelFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("newest");
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
 
   const availableModels = useMemo(() => {
     if (!agents) return [];
@@ -72,15 +74,40 @@ export default function Dashboard() {
     return Array.from(models) as string[];
   }, [agents]);
 
+  // Union of skills across all agents, sorted alphabetically (case-insensitive).
+  const availableSkills = useMemo(() => {
+    if (!agents) return [];
+    const set = new Map<string, string>(); // lowercased key → display value
+    for (const a of agents) {
+      for (const s of getSkills((a as any).tools)) {
+        const key = s.toLowerCase();
+        if (!set.has(key)) set.set(key, s);
+      }
+    }
+    return Array.from(set.values()).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    );
+  }, [agents]);
+
   const filteredAgents = useMemo(() => {
     if (!agents) return [];
     const filtered = agents.filter(agent => {
-      const matchesSearch = !searchQuery ||
-        agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (agent.objective || "").toLowerCase().includes(searchQuery.toLowerCase());
+      const agentSkills = getSkills((agent as any).tools);
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch = !q ||
+        agent.name.toLowerCase().includes(q) ||
+        (agent.objective || "").toLowerCase().includes(q) ||
+        agentSkills.some((s) => s.toLowerCase().includes(q));
       const matchesStatus = statusFilter === "all" || agent.status === statusFilter;
       const matchesModel = modelFilter === "all" || agent.model === modelFilter;
-      return matchesSearch && matchesStatus && matchesModel;
+      // Skill filter: agent must have ALL selected skills (AND semantics
+      // — common UX for capability filters).
+      const matchesSkills =
+        selectedSkills.length === 0 ||
+        selectedSkills.every((sel) =>
+          agentSkills.some((have) => have.toLowerCase() === sel.toLowerCase()),
+        );
+      return matchesSearch && matchesStatus && matchesModel && matchesSkills;
     });
 
     return [...filtered].sort((a, b) => {
@@ -93,10 +120,21 @@ export default function Dashboard() {
         default: return 0;
       }
     });
-  }, [agents, searchQuery, statusFilter, modelFilter, sortBy]);
+  }, [agents, searchQuery, statusFilter, modelFilter, sortBy, selectedSkills]);
 
-  const hasActiveFilters = searchQuery || statusFilter !== "all" || modelFilter !== "all" || sortBy !== "newest";
-  const clearFilters = () => { setSearchQuery(""); setStatusFilter("all"); setModelFilter("all"); setSortBy("newest"); };
+  const hasActiveFilters =
+    !!searchQuery ||
+    statusFilter !== "all" ||
+    modelFilter !== "all" ||
+    sortBy !== "newest" ||
+    selectedSkills.length > 0;
+  const clearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setModelFilter("all");
+    setSortBy("newest");
+    setSelectedSkills([]);
+  };
 
   const agentCount = agents?.length ?? 0;
   const messagesToday = analyticsStats?.messagesToday ?? 0;
@@ -129,6 +167,9 @@ export default function Dashboard() {
           modelFilter={modelFilter} setModelFilter={setModelFilter}
           sortBy={sortBy} setSortBy={setSortBy}
           availableModels={availableModels}
+          availableSkills={availableSkills}
+          selectedSkills={selectedSkills}
+          setSelectedSkills={setSelectedSkills}
           hasActiveFilters={!!hasActiveFilters}
           clearFilters={clearFilters}
         />
