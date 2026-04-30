@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { TEMPLATES, LLM_MODELS, TOOLS_LIST, MARKETPLACE_TEMPLATES } from "@/data/constants";
+import { TEMPLATES, LLM_MODELS, TOOLS_LIST, MARKETPLACE_TEMPLATES, TEMPLATE_DEFAULTS, CUSTOM_TEMPLATE_DEFAULTS } from "@/data/constants";
 import { ArrowLeft, ArrowRight, Sparkles, Store } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,6 +39,9 @@ export default function AgentBuilder() {
   const [tools, setTools] = useState<Record<string, boolean>>({ "web-search": true });
   const [memoryEnabled, setMemoryEnabled] = useState(true);
   const [systemPrompt, setSystemPrompt] = useState("");
+  const [userPromptTemplate, setUserPromptTemplate] = useState("");
+  const [skills, setSkills] = useState<string[]>([]);
+  const [skillInput, setSkillInput] = useState("");
   const [temperature, setTemperature] = useState([0.7]);
   const [maxTokens, setMaxTokens] = useState("2048");
   const [templateFromMarketplace, setTemplateFromMarketplace] = useState<string | null>(null);
@@ -53,9 +56,18 @@ export default function AgentBuilder() {
     setSelectedTemplate(tmpl.id);
     setName(tmpl.name.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/u, "").trim());
     setObjective(tmpl.description);
+    const def = TEMPLATE_DEFAULTS[tmpl.id];
     const newTools: Record<string, boolean> = {};
-    tmpl.tools.forEach((tl) => { newTools[tl] = true; });
+    (def?.tools ?? tmpl.tools).forEach((tl) => { newTools[tl] = true; });
     setTools(newTools);
+    if (def) {
+      setSystemPrompt(def.systemPrompt);
+      setUserPromptTemplate(def.userPromptTemplate);
+      setSkills(def.skills);
+      if (def.outputStyle) setOutputStyle(def.outputStyle);
+      if (typeof def.temperature === "number") setTemperature([def.temperature]);
+      if (typeof def.maxTokens === "number") setMaxTokens(String(def.maxTokens));
+    }
     for (const provider of LLM_MODELS) {
       if (provider.models.includes(tmpl.recommendedModel)) {
         setSelectedProvider(provider.id);
@@ -87,7 +99,7 @@ export default function AgentBuilder() {
       system_prompt: systemPrompt || null,
       temperature: temperature[0],
       max_tokens: parseInt(maxTokens) || 2048,
-      tools: tools as any,
+      tools: { ...tools, _userPromptTemplate: userPromptTemplate, _skills: skills } as any,
       memory_enabled: memoryEnabled,
       knowledge_urls: urls,
     }, {
