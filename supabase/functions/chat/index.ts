@@ -11,6 +11,20 @@ serve(async (req) => {
 
   try {
     const { messages, agent_id, conversation_id } = await req.json();
+
+    // Basic input validation
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return new Response(JSON.stringify({ error: "messages must be a non-empty array" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (messages.length > 100) {
+      return new Response(JSON.stringify({ error: "Too many messages (max 100)" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -26,12 +40,31 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser(token);
     if (user) userId = user.id;
 
-    // Require authentication
+    // Public access path: allow unauthenticated chat ONLY when targeting a
+    // published agent (used by the embeddable widget). Anonymous calls cannot
+    // persist conversations and are scoped to the agent owner.
+    let isPublicSession = false;
     if (!userId) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (!agent_id) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: pub } = await supabase
+        .from("agents")
+        .select("user_id, status")
+        .eq("id", agent_id)
+        .eq("status", "published")
+        .maybeSingle();
+      if (!pub) {
+        return new Response(JSON.stringify({ error: "Agent not available" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      userId = pub.user_id; // analytics/knowledge scoped to owner
+      isPublicSession = true;
     }
 
     // Get agent config if agent_id provided

@@ -89,11 +89,54 @@ serve(async (req) => {
 
     supabase.from("agent_api_keys").update({ last_used_at: new Date().toISOString() }).eq("id", keyRow.id).then(() => {});
 
-    const body = await req.json().catch(() => null);
+    // Rate limit: 60 req/min per API key (atomic counter via RPC)
+    const RATE_LIMIT = 60;
+    const now = new Date();
+    const windowStart = new Date(Math.floor(now.getTime() / 60000) * 60000).toISOString();
+    const { data: usageCount, error: rlErr } = await supabase.rpc("increment_api_key_usage", {
+      _api_key_id: keyRow.id,
+      _user_id: keyRow.user_id,
+      _window: windowStart,
+    });
+    if (!rlErr && typeof usageCount === "number" && usageCount > RATE_LIMIT) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded", limit: RATE_LIMIT, window: "60s" }),
+        {
+          status: 429,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+            "Retry-After": "60",
+            "X-RateLimit-Limit": String(RATE_LIMIT),
+            "X-RateLimit-Remaining": "0",
+          },
+        },
+      );
+    }
+
+    // Validate body size & shape
+    const rawText = await req.text();
+    if (rawText.length > 256_000) {
+      return new Response(JSON.stringify({ error: "Request body too large (max 256KB)" }), {
+        status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    let body: any = null;
+    try { body = rawText ? JSON.parse(rawText) : null; } catch { body = null; }
     const message = body?.message;
     const messages = body?.messages;
     if (!message && !messages) {
       return new Response(JSON.stringify({ error: "Provide 'message' (string) or 'messages' (array)" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (messages !== undefined && (!Array.isArray(messages) || messages.length === 0 || messages.length > 100)) {
+      return new Response(JSON.stringify({ error: "messages must be an array of 1-100 items" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (message !== undefined && (typeof message !== "string" || message.length === 0 || message.length > 32_000)) {
+      return new Response(JSON.stringify({ error: "message must be a non-empty string up to 32000 chars" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -197,11 +240,12 @@ serve(async (req) => {
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("agent-api error:", e);
+    // We don't always have keyRow here; best-effort log without user_id
     await logError(supabase, {
       source: "agent-api",
       level: "error",
       message: (e as Error).message,
-      context: {},
+      context: { phase: "top-level" },
     });
     return new Response(JSON.stringify({ error: "Internal error" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },

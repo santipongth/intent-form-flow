@@ -279,6 +279,33 @@ export type Database = {
         }
         Relationships: []
       }
+      api_key_usage: {
+        Row: {
+          api_key_id: string
+          count: number
+          created_at: string
+          id: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          api_key_id: string
+          count?: number
+          created_at?: string
+          id?: string
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          api_key_id?: string
+          count?: number
+          created_at?: string
+          id?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           content: string
@@ -491,6 +518,10 @@ export type Database = {
     }
     Functions: {
       get_platform_stats: { Args: never; Returns: Json }
+      increment_api_key_usage: {
+        Args: { _api_key_id: string; _user_id: string; _window: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
