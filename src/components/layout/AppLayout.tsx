@@ -1,6 +1,5 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
-import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -8,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Sun, Moon, Globe } from "lucide-react";
 
 export function AppLayout({ children }: {children: React.ReactNode;}) {
-  const { user } = useAuth();
   const { locale, setLocale } = useLanguage();
   const { theme, toggleTheme } = useTheme();
 
