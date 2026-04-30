@@ -1,0 +1,4 @@
+REVOKE EXECUTE ON FUNCTION public.increment_api_key_usage(UUID, UUID, TIMESTAMP WITH TIME ZONE) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.increment_api_key_usage(UUID, UUID, TIMESTAMP WITH TIME ZONE) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.increment_api_key_usage(UUID, UUID, TIMESTAMP WITH TIME ZONE) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.increment_api_key_usage(UUID, UUID, TIMESTAMP WITH TIME ZONE) TO service_role;
