@@ -597,15 +597,32 @@ export default function AgentDetail() {
               <Textarea
                 placeholder="พิมพ์ User Prompt ที่ต้องการ (เช่น: คำถาม: {{question}})"
                 value={editUserPrompt}
-                onChange={(e) => setEditUserPrompt(e.target.value)}
-                className="rounded-xl mt-1 min-h-[100px] font-mono text-xs"
+                onChange={(e) => {
+                  setEditUserPrompt(e.target.value);
+                  if (editErrors.userPrompt) setEditErrors((er) => ({ ...er, userPrompt: undefined }));
+                }}
+                maxLength={MAX_USER_PROMPT_LEN}
+                aria-invalid={!!editErrors.userPrompt}
+                className={`rounded-xl mt-1 min-h-[100px] font-mono text-xs ${editErrors.userPrompt ? "border-destructive focus-visible:ring-destructive" : ""}`}
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                ใช้ <code>{"{{ตัวแปร}}"}</code> เป็น placeholder ที่จะถูกแทนค่าตอนเรียกใช้งาน Agent
-              </p>
+              <div className="flex items-start justify-between gap-2 mt-1">
+                {editErrors.userPrompt ? (
+                  <p className="text-xs text-destructive">{editErrors.userPrompt}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    ใช้ <code>{"{{ตัวแปร}}"}</code> เป็น placeholder ที่จะถูกแทนค่าตอนเรียกใช้งาน Agent
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground shrink-0">
+                  {editUserPrompt.length}/{MAX_USER_PROMPT_LEN}
+                </p>
+              </div>
             </div>
             <div>
-              <Label>Skills (ความสามารถเฉพาะทาง)</Label>
+              <div className="flex items-center justify-between">
+                <Label>Skills (ความสามารถเฉพาะทาง)</Label>
+                <span className="text-xs text-muted-foreground">{editSkills.length}/{MAX_SKILLS}</span>
+              </div>
               <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
                 {editSkills.map((sk) => (
                   <span
@@ -615,7 +632,10 @@ export default function AgentDetail() {
                     {sk}
                     <button
                       type="button"
-                      onClick={() => setEditSkills(editSkills.filter((x) => x !== sk))}
+                      onClick={() => {
+                        setEditSkills(editSkills.filter((x) => x !== sk));
+                        if (editErrors.skills) setEditErrors((er) => ({ ...er, skills: undefined }));
+                      }}
                       className="hover:text-destructive"
                       aria-label={`Remove ${sk}`}
                     >
@@ -632,29 +652,30 @@ export default function AgentDetail() {
                   placeholder="เช่น Document parsing, Sentiment analysis"
                   value={editSkillInput}
                   onChange={(e) => setEditSkillInput(e.target.value)}
+                  maxLength={MAX_SKILL_LEN}
+                  aria-invalid={!!editErrors.skills}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      const v = editSkillInput.trim();
-                      if (v && !editSkills.includes(v)) setEditSkills([...editSkills, v]);
-                      setEditSkillInput("");
+                      if (tryAddSkill(editSkillInput)) setEditSkillInput("");
                     }
                   }}
-                  className="rounded-xl"
+                  className={`rounded-xl ${editErrors.skills ? "border-destructive focus-visible:ring-destructive" : ""}`}
                 />
                 <Button
                   type="button"
                   variant="outline"
                   className="rounded-xl"
                   onClick={() => {
-                    const v = editSkillInput.trim();
-                    if (v && !editSkills.includes(v)) setEditSkills([...editSkills, v]);
-                    setEditSkillInput("");
+                    if (tryAddSkill(editSkillInput)) setEditSkillInput("");
                   }}
                 >
                   เพิ่ม
                 </Button>
               </div>
+              {editErrors.skills && (
+                <p className="text-xs text-destructive mt-1">{editErrors.skills}</p>
+              )}
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" className="rounded-xl" onClick={() => setIsEditing(false)}>{t("common.cancel")}</Button>
