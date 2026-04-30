@@ -360,6 +360,9 @@ export default function AgentDetail() {
   const [editSystemPrompt, setEditSystemPrompt] = useState("");
   const [editTemperature, setEditTemperature] = useState([0.7]);
   const [editMaxTokens, setEditMaxTokens] = useState("2048");
+  const [editUserPrompt, setEditUserPrompt] = useState("");
+  const [editSkills, setEditSkills] = useState<string[]>([]);
+  const [editSkillInput, setEditSkillInput] = useState("");
 
   useEffect(() => {
     if (agent) {
@@ -370,6 +373,9 @@ export default function AgentDetail() {
       setEditSystemPrompt(agent.system_prompt || "");
       setEditTemperature([agent.temperature]);
       setEditMaxTokens(String(agent.max_tokens));
+      const tools = (agent.tools as any) || {};
+      setEditUserPrompt(typeof tools._userPrompt === "string" ? tools._userPrompt : "");
+      setEditSkills(Array.isArray(tools._skills) ? tools._skills : []);
     }
   }, [agent]);
 
