@@ -1,5 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  TOOL_SCHEMAS,
+  runTool,
+  chooseToolChoice,
+  TOOL_MODEL_CHAIN,
+  isToolModelFallbackError,
+} from "./_tools.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,145 +15,6 @@ const corsHeaders = {
 };
 
 const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-
-// ---------- Tool definitions exposed to the model ----------
-const TOOL_SCHEMAS: Record<string, any> = {
-  "web-search": {
-    type: "function",
-    function: {
-      name: "web_search",
-      description: "ค้นหาข้อมูลล่าสุดจากอินเทอร์เน็ต ใช้เมื่อต้องการข้อมูลปัจจุบัน ข่าว ข้อเท็จจริงที่อาจไม่ได้อยู่ในความรู้ของโมเดล",
-      parameters: {
-        type: "object",
-        properties: {
-          query: { type: "string", description: "คำค้นเป็นภาษาธรรมชาติ" },
-          max_results: { type: "number", description: "จำนวนผลลัพธ์ (1-5)", default: 3 },
-        },
-        required: ["query"],
-        additionalProperties: false,
-      },
-    },
-  },
-  calculator: {
-    type: "function",
-    function: {
-      name: "calculator",
-      description: "คำนวณนิพจน์คณิตศาสตร์อย่างปลอดภัย รองรับ +,-,*,/,(),%,**,sqrt,sin,cos,tan,log,ln,abs,min,max,round",
-      parameters: {
-        type: "object",
-        properties: { expression: { type: "string", description: "นิพจน์เช่น '2*(3+4)' หรือ 'sqrt(144)+5'" } },
-        required: ["expression"],
-        additionalProperties: false,
-      },
-    },
-  },
-  "read-excel": {
-    type: "function",
-    function: {
-      name: "read_knowledge_table",
-      description: "อ่านและสรุปข้อมูลจากไฟล์ Excel/CSV ที่ผู้ใช้อัปโหลดไว้ใน knowledge base ของ agent นี้",
-      parameters: {
-        type: "object",
-        properties: {
-          file_name: { type: "string", description: "ชื่อไฟล์ที่ต้องการอ่าน (ถ้าไม่ระบุจะใช้ไฟล์ Excel/CSV ตัวแรก)" },
-          max_rows: { type: "number", description: "จำนวนแถวสูงสุดที่จะคืน (default 50)", default: 50 },
-        },
-        additionalProperties: false,
-      },
-    },
-  },
-};
-
-// ---------- Tool implementations ----------
-async function execWebSearch(args: any): Promise<string> {
-  const TAVILY = Deno.env.get("TAVILY_API_KEY");
-  if (!TAVILY) return JSON.stringify({ error: "Web search not configured (missing TAVILY_API_KEY)" });
-  try {
-    const r = await fetch("https://api.tavily.com/search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        api_key: TAVILY,
-        query: String(args.query || "").slice(0, 400),
-        max_results: Math.min(Math.max(Number(args.max_results) || 3, 1), 5),
-        search_depth: "basic",
-        include_answer: true,
-      }),
-    });
-    if (!r.ok) return JSON.stringify({ error: `web search failed: ${r.status}` });
-    const data = await r.json();
-    return JSON.stringify({
-      answer: data.answer || null,
-      results: (data.results || []).map((x: any) => ({
-        title: x.title, url: x.url, content: (x.content || "").slice(0, 600),
-      })),
-    });
-  } catch (e) {
-    return JSON.stringify({ error: (e as Error).message });
-  }
-}
-
-function execCalculator(args: any): string {
-  const expr = String(args.expression || "");
-  // whitelist: digits, operators, parens, dot, comma, whitespace, ** %, allowed function names
-  const allowed = /^[\s0-9+\-*/().,%]+$|^[A-Za-z0-9_+\-*/().,%\s]+$/;
-  if (!allowed.test(expr)) return JSON.stringify({ error: "invalid characters" });
-  const allowedNames = ["sqrt","sin","cos","tan","log","ln","abs","min","max","round","pow","PI","E"];
-  // Reject any identifier not in allowedNames
-  const idents = expr.match(/[A-Za-z_]+/g) || [];
-  for (const id of idents) {
-    if (!allowedNames.includes(id)) return JSON.stringify({ error: `disallowed identifier: ${id}` });
-  }
-  try {
-    const ctx = {
-      sqrt: Math.sqrt, sin: Math.sin, cos: Math.cos, tan: Math.tan,
-      log: Math.log10, ln: Math.log, abs: Math.abs, min: Math.min, max: Math.max,
-      round: Math.round, pow: Math.pow, PI: Math.PI, E: Math.E,
-    };
-    // eslint-disable-next-line no-new-func
-    const fn = new Function(...Object.keys(ctx), `"use strict"; return (${expr});`);
-    const result = fn(...Object.values(ctx));
-    if (typeof result !== "number" || !isFinite(result)) {
-      return JSON.stringify({ error: "non-numeric result" });
-    }
-    return JSON.stringify({ result });
-  } catch (e) {
-    return JSON.stringify({ error: (e as Error).message });
-  }
-}
-
-async function execReadTable(args: any, ctx: { supabase: any; agentId: string; userId: string }): Promise<string> {
-  if (!ctx.agentId) return JSON.stringify({ error: "no agent context" });
-  const { data: files } = await ctx.supabase
-    .from("knowledge_files")
-    .select("file_name, content, file_type")
-    .eq("agent_id", ctx.agentId)
-    .eq("user_id", ctx.userId)
-    .eq("status", "ready");
-  if (!files || files.length === 0) return JSON.stringify({ error: "no knowledge files" });
-
-  const tabular = files.filter((f: any) =>
-    /(csv|excel|spreadsheet|sheet)/i.test(f.file_type || "") || /\.(csv|xlsx|xls)$/i.test(f.file_name || "")
-  );
-  const pool = tabular.length > 0 ? tabular : files;
-  const target = args.file_name
-    ? pool.find((f: any) => f.file_name?.toLowerCase().includes(String(args.file_name).toLowerCase()))
-    : pool[0];
-  if (!target) return JSON.stringify({ error: "file not found", available: pool.map((f: any) => f.file_name) });
-
-  const max = Math.min(Math.max(Number(args.max_rows) || 50, 1), 200);
-  const content = (target.content || "").split("\n").slice(0, max + 1).join("\n");
-  return JSON.stringify({ file_name: target.file_name, preview: content, truncated: (target.content || "").length > content.length });
-}
-
-async function runTool(name: string, argsJson: string, ctx: any): Promise<string> {
-  let args: any = {};
-  try { args = JSON.parse(argsJson || "{}"); } catch { /* keep empty */ }
-  if (name === "web_search") return execWebSearch(args);
-  if (name === "calculator") return execCalculator(args);
-  if (name === "read_knowledge_table") return execReadTable(args, ctx);
-  return JSON.stringify({ error: `unknown tool: ${name}` });
-}
 
 // ---------- Memory: build history with rolling summary ----------
 async function loadHistory(supabase: any, conversationId: string) {
@@ -245,10 +113,6 @@ serve(async (req) => {
     // Agent config
     let systemPrompt = "You are a helpful AI assistant. Keep answers clear and concise.";
     let model = "google/gemini-2.5-flash";
-    // Tool-calling needs a model that supports OpenAI-style function calling reliably.
-    // gemini-3-flash-preview returns MALFORMED_FUNCTION_CALL with our schema.
-    // openai/gpt-5-mini reliably emits tool_calls.
-    const TOOL_MODEL = "openai/gpt-5-mini";
     let temperature = 0.7;
     let memoryEnabled = true;
     let toolsEnabled: Record<string, boolean> = {};
@@ -319,31 +183,83 @@ serve(async (req) => {
     // ---------- Tool-calling loop (non-streaming for tool steps, stream final answer) ----------
     let toolIterations = 0;
     const MAX_TOOL_ITERATIONS = 4;
+    // Track which tool model is currently working. We try models in order and
+    // remember the working one so subsequent iterations don't re-fall-back.
+    let toolModelIdx = 0;
 
     while (toolIterations < MAX_TOOL_ITERATIONS && activeTools.length > 0) {
-      const probeRes = await fetch(AI_GATEWAY, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: TOOL_MODEL, messages: baseMessages, temperature,
-          tools: activeTools, tool_choice: "auto", stream: false,
-        }),
-      });
+      const toolChoice = chooseToolChoice(
+        baseMessages,
+        { calculator: !!toolsEnabled["calculator"], webSearch: !!toolsEnabled["web-search"] },
+        toolIterations,
+      );
 
-      if (!probeRes.ok) {
-        if (probeRes.status === 429 || probeRes.status === 402) {
-          const msg = probeRes.status === 429 ? "Rate limit exceeded. Please try again later." : "Payment required. Please add credits to your workspace.";
-          return new Response(JSON.stringify({ error: msg }), { status: probeRes.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      // Try tool models in chain until one succeeds (handles gateway model
+      // mapping issues that occasionally return 4xx for unsupported tools).
+      let probeRes: Response | null = null;
+      let probeErrBody = "";
+      while (toolModelIdx < TOOL_MODEL_CHAIN.length) {
+        const candidate = TOOL_MODEL_CHAIN[toolModelIdx];
+        const r = await fetch(AI_GATEWAY, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: candidate,
+            messages: baseMessages,
+            temperature,
+            tools: activeTools,
+            tool_choice: toolChoice,
+            stream: false,
+          }),
+        });
+        if (r.ok) {
+          probeRes = r;
+          if (toolModelIdx > 0) {
+            console.log("[chat] tool model fallback in use:", candidate);
+          }
+          break;
         }
-        const t = await probeRes.text();
-        console.error("AI gateway tool-loop error:", probeRes.status, t);
-        return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (r.status === 429 || r.status === 402) {
+          const msg = r.status === 429
+            ? "Rate limit exceeded. Please try again later."
+            : "Payment required. Please add credits to your workspace.";
+          return new Response(JSON.stringify({ error: msg }), {
+            status: r.status,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        probeErrBody = await r.text();
+        const shouldFallback = isToolModelFallbackError(r.status, probeErrBody);
+        console.error(
+          "[chat] tool probe failed",
+          { model: candidate, status: r.status, fallback: shouldFallback, body: probeErrBody.slice(0, 300) },
+        );
+        if (!shouldFallback) {
+          return new Response(JSON.stringify({ error: "AI gateway error" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        toolModelIdx++;
+      }
+      if (!probeRes) {
+        console.error("[chat] all tool models exhausted", probeErrBody.slice(0, 300));
+        return new Response(JSON.stringify({ error: "No tool-capable model available" }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       const probe = await probeRes.json();
       const choice = probe.choices?.[0];
       const toolCalls = choice?.message?.tool_calls;
-      console.log("[chat] tool probe iter", toolIterations, "finish:", choice?.finish_reason, "tool_calls:", toolCalls?.length || 0);
+      console.log(
+        "[chat] tool probe iter", toolIterations,
+        "model:", TOOL_MODEL_CHAIN[toolModelIdx],
+        "tool_choice:", typeof toolChoice === "string" ? toolChoice : `forced:${toolChoice.function.name}`,
+        "finish:", choice?.finish_reason,
+        "tool_calls:", toolCalls?.length || 0,
+      );
       if (!toolCalls || toolCalls.length === 0) {
         // No tool needed → break and stream final answer in next phase
         break;
