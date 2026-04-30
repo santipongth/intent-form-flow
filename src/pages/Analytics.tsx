@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, Activity, Users, CheckCircle, TrendingUp, TrendingDown, MessageSquare, Download, FileText, ThumbsUp, ThumbsDown } from "lucide-react";
+import { BarChart3, Activity, Users, CheckCircle, MessageSquare, Download, FileText, ThumbsUp, ThumbsDown } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { exportCSV, exportPDF } from "@/lib/exportAnalytics";
 import { motion } from "framer-motion";

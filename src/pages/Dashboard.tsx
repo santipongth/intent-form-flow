@@ -7,7 +7,6 @@ import { useAgents, useDeleteAgent } from "@/hooks/useAgents";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProfile } from "@/hooks/useProfile";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,7 +20,6 @@ export default function Dashboard() {
   const deleteAgent = useDeleteAgent();
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { data: profile } = useProfile();
 
   const { data: knowledgeStats } = useQuery({
     queryKey: ["knowledge_stats"],

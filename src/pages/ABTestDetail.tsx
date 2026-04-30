@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Send, Bot, ThumbsUp, Trash2 } from "lucide-react";
+import { ArrowLeft, Send, ThumbsUp, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useABTest, useABTestVotes, useCastVote } from "@/hooks/useABTesting";
