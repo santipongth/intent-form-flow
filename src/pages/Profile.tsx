@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CheckCircle2, AlertCircle, KeyRound, LogOut, Save, Shield, Settings as SettingsIcon } from "lucide-react";
+import { CheckCircle2, AlertCircle, KeyRound, LogOut, Save, Shield, Settings as SettingsIcon, Monitor, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,6 +22,7 @@ export default function Profile() {
 
   const [displayName, setDisplayName] = useState("");
   const [sendingReset, setSendingReset] = useState(false);
+  const [signingOutOthers, setSigningOutOthers] = useState(false);
 
   useEffect(() => {
     if (profile?.display_name) setDisplayName(profile.display_name);
@@ -49,7 +50,7 @@ export default function Profile() {
       { display_name: displayName },
       {
         onSuccess: () => toast.success(t("settings.saved")),
-        onError: () => toast.error("Failed to update profile"),
+        onError: () => toast.error(t("profile.updateError")),
       },
     );
   };
@@ -57,6 +58,15 @@ export default function Profile() {
   const handleSignOut = async () => {
     await signOut();
     navigate("/auth");
+  };
+
+  const handleSignOutOthers = async () => {
+    if (!window.confirm(t("profile.signOutOthersConfirm"))) return;
+    setSigningOutOthers(true);
+    const { error } = await supabase.auth.signOut({ scope: "others" });
+    setSigningOutOthers(false);
+    if (error) toast.error(t("profile.signOutOthersError"), { description: error.message });
+    else toast.success(t("profile.signOutOthersSuccess"));
   };
 
   return (
