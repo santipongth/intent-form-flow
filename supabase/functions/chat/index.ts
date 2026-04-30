@@ -246,8 +246,9 @@ serve(async (req) => {
     let systemPrompt = "You are a helpful AI assistant. Keep answers clear and concise.";
     let model = "google/gemini-2.5-flash";
     // Tool-calling needs a model that supports OpenAI-style function calling reliably.
-    // gemini-3-flash-preview returns MALFORMED_FUNCTION_CALL, so we pin a stable one for tool turns.
-    const TOOL_MODEL = "google/gemini-2.5-flash";
+    // gemini-3-flash-preview returns MALFORMED_FUNCTION_CALL with our schema.
+    // openai/gpt-5-mini reliably emits tool_calls.
+    const TOOL_MODEL = "openai/gpt-5-mini";
     let temperature = 0.7;
     let memoryEnabled = true;
     let toolsEnabled: Record<string, boolean> = {};
@@ -342,6 +343,7 @@ serve(async (req) => {
       const probe = await probeRes.json();
       const choice = probe.choices?.[0];
       const toolCalls = choice?.message?.tool_calls;
+      console.log("[chat] tool probe iter", toolIterations, "finish:", choice?.finish_reason, "tool_calls:", toolCalls?.length || 0);
       if (!toolCalls || toolCalls.length === 0) {
         // No tool needed → break and stream final answer in next phase
         break;
