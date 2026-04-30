@@ -24,6 +24,7 @@ import { ApiKeysSection } from "@/components/agent-detail/ApiKeysSection";
 import { WebhooksSection } from "@/components/agent-detail/WebhooksSection";
 import { ErrorLogsSection } from "@/components/agent-detail/ErrorLogsSection";
 import { z } from "zod";
+import { getUserPrompt, getSkills, withPromptAndSkills } from "@/lib/agentTools";
 
 // ---- Validation rules for the edit form (User Prompt + Skills) ----
 const MAX_SKILLS = 15;
@@ -401,9 +402,10 @@ export default function AgentDetail() {
       setEditSystemPrompt(agent.system_prompt || "");
       setEditTemperature([agent.temperature]);
       setEditMaxTokens(String(agent.max_tokens));
-      const tools = (agent.tools as any) || {};
-      setEditUserPrompt(typeof tools._userPrompt === "string" ? tools._userPrompt : "");
-      setEditSkills(Array.isArray(tools._skills) ? tools._skills : []);
+      // Always go through safe helpers — `agent.tools` may be null, missing
+      // the embedded fields, or contain wrong-typed items from older rows.
+      setEditUserPrompt(getUserPrompt(agent.tools as any));
+      setEditSkills(getSkills(agent.tools as any));
     }
   }, [agent]);
 
