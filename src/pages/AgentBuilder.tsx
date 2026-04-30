@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { TEMPLATES, LLM_MODELS, TOOLS_LIST, MARKETPLACE_TEMPLATES } from "@/data/constants";
+import { TEMPLATES, LLM_MODELS, TOOLS_LIST, MARKETPLACE_TEMPLATES, TEMPLATE_DEFAULTS, CUSTOM_TEMPLATE_DEFAULTS } from "@/data/constants";
 import { ArrowLeft, ArrowRight, Sparkles, Store } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,6 +39,9 @@ export default function AgentBuilder() {
   const [tools, setTools] = useState<Record<string, boolean>>({ "web-search": true });
   const [memoryEnabled, setMemoryEnabled] = useState(true);
   const [systemPrompt, setSystemPrompt] = useState("");
+  const [userPromptTemplate, setUserPromptTemplate] = useState("");
+  const [skills, setSkills] = useState<string[]>([]);
+  const [skillInput, setSkillInput] = useState("");
   const [temperature, setTemperature] = useState([0.7]);
   const [maxTokens, setMaxTokens] = useState("2048");
   const [templateFromMarketplace, setTemplateFromMarketplace] = useState<string | null>(null);
@@ -53,9 +56,18 @@ export default function AgentBuilder() {
     setSelectedTemplate(tmpl.id);
     setName(tmpl.name.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/u, "").trim());
     setObjective(tmpl.description);
+    const def = TEMPLATE_DEFAULTS[tmpl.id];
     const newTools: Record<string, boolean> = {};
-    tmpl.tools.forEach((tl) => { newTools[tl] = true; });
+    (def?.tools ?? tmpl.tools).forEach((tl) => { newTools[tl] = true; });
     setTools(newTools);
+    if (def) {
+      setSystemPrompt(def.systemPrompt);
+      setUserPromptTemplate(def.userPromptTemplate);
+      setSkills(def.skills);
+      if (def.outputStyle) setOutputStyle(def.outputStyle);
+      if (typeof def.temperature === "number") setTemperature([def.temperature]);
+      if (typeof def.maxTokens === "number") setMaxTokens(String(def.maxTokens));
+    }
     for (const provider of LLM_MODELS) {
       if (provider.models.includes(tmpl.recommendedModel)) {
         setSelectedProvider(provider.id);
@@ -87,7 +99,7 @@ export default function AgentBuilder() {
       system_prompt: systemPrompt || null,
       temperature: temperature[0],
       max_tokens: parseInt(maxTokens) || 2048,
-      tools: tools as any,
+      tools: { ...tools, _userPromptTemplate: userPromptTemplate, _skills: skills } as any,
       memory_enabled: memoryEnabled,
       knowledge_urls: urls,
     }, {
@@ -142,7 +154,17 @@ export default function AgentBuilder() {
                 </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                <Card className={`rounded-2xl cursor-pointer transition-all border-2 ${selectedTemplate === "custom" ? "border-primary shadow-md" : "border-transparent hover:border-border"}`} onClick={() => setSelectedTemplate("custom")}>
+                <Card className={`rounded-2xl cursor-pointer transition-all border-2 ${selectedTemplate === "custom" ? "border-primary shadow-md" : "border-transparent hover:border-border"}`} onClick={() => {
+                  setSelectedTemplate("custom");
+                  const d = CUSTOM_TEMPLATE_DEFAULTS;
+                  setSystemPrompt(d.systemPrompt);
+                  setUserPromptTemplate(d.userPromptTemplate);
+                  setSkills(d.skills);
+                  const tt: Record<string, boolean> = {}; d.tools.forEach(x => tt[x] = true); setTools(tt);
+                  if (d.outputStyle) setOutputStyle(d.outputStyle);
+                  if (typeof d.temperature === "number") setTemperature([d.temperature]);
+                  if (typeof d.maxTokens === "number") setMaxTokens(String(d.maxTokens));
+                }}>
                   <CardContent className="p-4 sm:p-5 text-center">
                     <div className="text-3xl mb-2">🎨</div>
                     <h3 className="font-semibold">{t("builder.custom")}</h3>
@@ -150,7 +172,20 @@ export default function AgentBuilder() {
                   </CardContent>
                 </Card>
                 {TEMPLATES.map((tp) => (
-                  <Card key={tp.id} className={`rounded-2xl cursor-pointer transition-all border-2 ${selectedTemplate === tp.id ? "border-primary shadow-md" : "border-transparent hover:border-border"}`} onClick={() => { setSelectedTemplate(tp.id); setObjective(tp.description); }}>
+                  <Card key={tp.id} className={`rounded-2xl cursor-pointer transition-all border-2 ${selectedTemplate === tp.id ? "border-primary shadow-md" : "border-transparent hover:border-border"}`} onClick={() => {
+                    setSelectedTemplate(tp.id);
+                    setObjective(tp.description);
+                    const d = TEMPLATE_DEFAULTS[tp.id];
+                    if (d) {
+                      setSystemPrompt(d.systemPrompt);
+                      setUserPromptTemplate(d.userPromptTemplate);
+                      setSkills(d.skills);
+                      const tt: Record<string, boolean> = {}; d.tools.forEach(x => tt[x] = true); setTools(tt);
+                      if (d.outputStyle) setOutputStyle(d.outputStyle);
+                      if (typeof d.temperature === "number") setTemperature([d.temperature]);
+                      if (typeof d.maxTokens === "number") setMaxTokens(String(d.maxTokens));
+                    }
+                  }}>
                     <CardContent className="p-4 sm:p-5">
                       <div className={`h-1.5 w-12 rounded-full bg-gradient-to-r ${tp.color} mb-3`} />
                       <h3 className="font-semibold text-sm">{tp.name}</h3>
@@ -269,6 +304,61 @@ export default function AgentBuilder() {
                     <div>
                       <Label>{t("builder.systemPrompt")}</Label>
                       <Textarea placeholder="กำหนด System Prompt แบบละเอียด..." value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} className="rounded-xl mt-1 min-h-[120px]" />
+                    </div>
+                    <div>
+                      <Label>User Prompt Template</Label>
+                      <Textarea
+                        placeholder="เช่น: คำถาม: {{question}}\nบริบท: {{context}}"
+                        value={userPromptTemplate}
+                        onChange={(e) => setUserPromptTemplate(e.target.value)}
+                        className="rounded-xl mt-1 min-h-[100px] font-mono text-xs"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">ใช้ <code>{"{{ตัวแปร}}"}</code> เป็น placeholder ที่จะถูกแทนค่าตอนเรียกใช้งาน Agent</p>
+                    </div>
+                    <div>
+                      <Label>Skills (ความสามารถเฉพาะทาง)</Label>
+                      <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
+                        {skills.map((sk) => (
+                          <span key={sk} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-xs px-2.5 py-1">
+                            {sk}
+                            <button
+                              type="button"
+                              onClick={() => setSkills(skills.filter((x) => x !== sk))}
+                              className="hover:text-destructive"
+                              aria-label={`Remove ${sk}`}
+                            >×</button>
+                          </span>
+                        ))}
+                        {skills.length === 0 && (
+                          <span className="text-xs text-muted-foreground">ยังไม่มี skill — เพิ่มได้ด้านล่าง</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="เช่น Document parsing, Sentiment analysis"
+                          value={skillInput}
+                          onChange={(e) => setSkillInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              const v = skillInput.trim();
+                              if (v && !skills.includes(v)) setSkills([...skills, v]);
+                              setSkillInput("");
+                            }
+                          }}
+                          className="rounded-xl"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="rounded-xl"
+                          onClick={() => {
+                            const v = skillInput.trim();
+                            if (v && !skills.includes(v)) setSkills([...skills, v]);
+                            setSkillInput("");
+                          }}
+                        >เพิ่ม</Button>
+                      </div>
                     </div>
                     <div>
                       <Label>{t("builder.temperature")}: {temperature[0]}</Label>
