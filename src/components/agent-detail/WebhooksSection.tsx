@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Webhook, Trash2, Plus, Send, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Webhook, Trash2, Plus, Send, Loader2, CheckCircle2, XCircle, Eye } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   useWebhooks, useCreateWebhook, useToggleWebhook, useDeleteWebhook,
   useUpdateWebhookEvents, useTestWebhook, WEBHOOK_EVENTS,
@@ -20,6 +21,21 @@ export function WebhooksSection({ agentId }: { agentId: string }) {
   const testHook = useTestWebhook();
   const [url, setUrl] = useState("");
   const [testingId, setTestingId] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState<Record<string, string>>({});
+
+  const revealSecret = async (id: string) => {
+    if (revealed[id]) {
+      const { [id]: _, ...rest } = revealed;
+      setRevealed(rest);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("agent_webhooks")
+      .select("secret")
+      .eq("id", id)
+      .maybeSingle();
+    if (!error && data?.secret) setRevealed((r) => ({ ...r, [id]: data.secret }));
+  };
 
   const handleAdd = () => {
     if (!url.startsWith("http")) return;
@@ -121,13 +137,20 @@ export function WebhooksSection({ agentId }: { agentId: string }) {
                   </div>
                 )}
 
-                <details className="text-[10px]">
-                  <summary className="cursor-pointer text-muted-foreground">Show signing secret</summary>
-                  <code className="block mt-1 p-2 bg-muted rounded break-all">{h.secret}</code>
-                  <p className="mt-1 text-muted-foreground">
-                    Verify: SHA-256 of <code>(body + secret)</code> matches header <code>x-tm-signature</code>
-                  </p>
-                </details>
+                <div className="text-[10px]">
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => revealSecret(h.id)}>
+                    <Eye className="h-3 w-3 mr-1" />
+                    {revealed[h.id] ? "Hide signing secret" : "Show signing secret"}
+                  </Button>
+                  {revealed[h.id] && (
+                    <>
+                      <code className="block mt-1 p-2 bg-muted rounded break-all">{revealed[h.id]}</code>
+                      <p className="mt-1 text-muted-foreground">
+                        Verify: SHA-256 of <code>(body + secret)</code> matches header <code>x-tm-signature</code>
+                      </p>
+                    </>
+                  )}
+                </div>
               </div>
             );
           })}
