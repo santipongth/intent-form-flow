@@ -154,7 +154,17 @@ export default function AgentBuilder() {
                 </div>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                <Card className={`rounded-2xl cursor-pointer transition-all border-2 ${selectedTemplate === "custom" ? "border-primary shadow-md" : "border-transparent hover:border-border"}`} onClick={() => setSelectedTemplate("custom")}>
+                <Card className={`rounded-2xl cursor-pointer transition-all border-2 ${selectedTemplate === "custom" ? "border-primary shadow-md" : "border-transparent hover:border-border"}`} onClick={() => {
+                  setSelectedTemplate("custom");
+                  const d = CUSTOM_TEMPLATE_DEFAULTS;
+                  setSystemPrompt(d.systemPrompt);
+                  setUserPromptTemplate(d.userPromptTemplate);
+                  setSkills(d.skills);
+                  const tt: Record<string, boolean> = {}; d.tools.forEach(x => tt[x] = true); setTools(tt);
+                  if (d.outputStyle) setOutputStyle(d.outputStyle);
+                  if (typeof d.temperature === "number") setTemperature([d.temperature]);
+                  if (typeof d.maxTokens === "number") setMaxTokens(String(d.maxTokens));
+                }}>
                   <CardContent className="p-4 sm:p-5 text-center">
                     <div className="text-3xl mb-2">🎨</div>
                     <h3 className="font-semibold">{t("builder.custom")}</h3>
@@ -162,7 +172,20 @@ export default function AgentBuilder() {
                   </CardContent>
                 </Card>
                 {TEMPLATES.map((tp) => (
-                  <Card key={tp.id} className={`rounded-2xl cursor-pointer transition-all border-2 ${selectedTemplate === tp.id ? "border-primary shadow-md" : "border-transparent hover:border-border"}`} onClick={() => { setSelectedTemplate(tp.id); setObjective(tp.description); }}>
+                  <Card key={tp.id} className={`rounded-2xl cursor-pointer transition-all border-2 ${selectedTemplate === tp.id ? "border-primary shadow-md" : "border-transparent hover:border-border"}`} onClick={() => {
+                    setSelectedTemplate(tp.id);
+                    setObjective(tp.description);
+                    const d = TEMPLATE_DEFAULTS[tp.id];
+                    if (d) {
+                      setSystemPrompt(d.systemPrompt);
+                      setUserPromptTemplate(d.userPromptTemplate);
+                      setSkills(d.skills);
+                      const tt: Record<string, boolean> = {}; d.tools.forEach(x => tt[x] = true); setTools(tt);
+                      if (d.outputStyle) setOutputStyle(d.outputStyle);
+                      if (typeof d.temperature === "number") setTemperature([d.temperature]);
+                      if (typeof d.maxTokens === "number") setMaxTokens(String(d.maxTokens));
+                    }
+                  }}>
                     <CardContent className="p-4 sm:p-5">
                       <div className={`h-1.5 w-12 rounded-full bg-gradient-to-r ${tp.color} mb-3`} />
                       <h3 className="font-semibold text-sm">{tp.name}</h3>
