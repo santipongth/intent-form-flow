@@ -4,15 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Webhook, Trash2, Plus } from "lucide-react";
-import { useWebhooks, useCreateWebhook, useToggleWebhook, useDeleteWebhook } from "@/hooks/useWebhooks";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Webhook, Trash2, Plus, Send, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import {
+  useWebhooks, useCreateWebhook, useToggleWebhook, useDeleteWebhook,
+  useUpdateWebhookEvents, useTestWebhook, WEBHOOK_EVENTS,
+} from "@/hooks/useWebhooks";
 
 export function WebhooksSection({ agentId }: { agentId: string }) {
   const { data: hooks = [], isLoading } = useWebhooks(agentId);
   const create = useCreateWebhook();
   const toggle = useToggleWebhook();
   const del = useDeleteWebhook();
+  const updateEvents = useUpdateWebhookEvents();
+  const testHook = useTestWebhook();
   const [url, setUrl] = useState("");
+  const [testingId, setTestingId] = useState<string | null>(null);
 
   const handleAdd = () => {
     if (!url.startsWith("http")) return;
@@ -47,29 +54,83 @@ export function WebhooksSection({ agentId }: { agentId: string }) {
           {!isLoading && hooks.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">No webhooks configured.</p>
           )}
-          {hooks.map((h) => (
-            <div key={h.id} className="p-3 rounded-xl border bg-card space-y-2">
-              <div className="flex items-center gap-2">
-                <code className="text-xs flex-1 truncate">{h.url}</code>
-                <Switch
-                  checked={h.enabled}
-                  onCheckedChange={(v) => toggle.mutate({ id: h.id, enabled: v, agent_id: agentId })}
-                />
-                <Button size="icon" variant="ghost" className="rounded-lg text-destructive"
-                  onClick={() => del.mutate({ id: h.id, agent_id: agentId })}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+          {hooks.map((h) => {
+            const isTesting = testingId === h.id && testHook.isPending;
+            const lastOk = h.last_status?.match(/\b2\d\d\b/) || h.last_status?.includes("OK");
+            const lastBad = h.last_status?.includes("error") || h.last_status?.match(/\b[45]\d\d\b/);
+            return (
+              <div key={h.id} className="p-3 rounded-xl border bg-card space-y-3">
+                <div className="flex items-center gap-2">
+                  <code className="text-xs flex-1 truncate">{h.url}</code>
+                  <Switch
+                    checked={h.enabled}
+                    onCheckedChange={(v) => toggle.mutate({ id: h.id, enabled: v, agent_id: agentId })}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-lg gap-1.5"
+                    disabled={isTesting}
+                    onClick={() => {
+                      setTestingId(h.id);
+                      testHook.mutate({ webhook_id: h.id });
+                    }}
+                  >
+                    {isTesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                    Test
+                  </Button>
+                  <Button size="icon" variant="ghost" className="rounded-lg text-destructive"
+                    onClick={() => del.mutate({ id: h.id, agent_id: agentId })}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Event selection */}
+                <div className="space-y-1.5">
+                  <p className="text-[11px] font-medium text-muted-foreground">Events</p>
+                  <div className="flex flex-wrap gap-3">
+                    {WEBHOOK_EVENTS.map((evt) => {
+                      const checked = h.events?.includes(evt) ?? false;
+                      return (
+                        <label key={evt} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(v) => {
+                              const next = v
+                                ? Array.from(new Set([...(h.events || []), evt]))
+                                : (h.events || []).filter((x) => x !== evt);
+                              updateEvents.mutate({ id: h.id, events: next, agent_id: agentId });
+                            }}
+                          />
+                          <code className="text-[11px]">{evt}</code>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Last status */}
+                {h.last_status && (
+                  <div className="flex items-center gap-1.5 text-[11px]">
+                    {lastOk && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />}
+                    {lastBad && <XCircle className="h-3.5 w-3.5 text-destructive" />}
+                    <span className="text-muted-foreground">
+                      Last: {h.last_status}
+                      {h.last_triggered_at && ` · ${new Date(h.last_triggered_at).toLocaleString()}`}
+                    </span>
+                  </div>
+                )}
+
+                <details className="text-[10px]">
+                  <summary className="cursor-pointer text-muted-foreground">Show signing secret</summary>
+                  <code className="block mt-1 p-2 bg-muted rounded break-all">{h.secret}</code>
+                  <p className="mt-1 text-muted-foreground">
+                    Verify: SHA-256 of <code>(body + secret)</code> matches header <code>x-tm-signature</code>
+                  </p>
+                </details>
               </div>
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                {h.events.map((e) => <Badge key={e} variant="secondary" className="text-[10px]">{e}</Badge>)}
-                {h.last_status && <span>· last: {h.last_status}</span>}
-              </div>
-              <details className="text-[10px]">
-                <summary className="cursor-pointer text-muted-foreground">Show signing secret</summary>
-                <code className="block mt-1 p-2 bg-muted rounded break-all">{h.secret}</code>
-              </details>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
