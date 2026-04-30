@@ -179,6 +179,56 @@ export default function Profile() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Sessions card */}
+      <Card className="rounded-2xl">
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Monitor className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold">{t("profile.sessions")}</h3>
+              <p className="text-sm text-muted-foreground">{t("profile.sessionsDesc")}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-xl border bg-muted/30">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="font-medium text-sm flex items-center gap-2">
+                  {t("profile.currentSession")}
+                  <Badge variant="secondary" className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20 text-[10px] px-1.5 py-0">
+                    {t("profile.active")}
+                  </Badge>
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{t("profile.currentSessionDesc")}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-xl border border-destructive/20">
+            <div className="flex items-center gap-3 min-w-0">
+              <LogOut className="h-5 w-5 text-destructive shrink-0" />
+              <div className="min-w-0">
+                <p className="font-medium text-sm">{t("profile.signOutOthers")}</p>
+                <p className="text-xs text-muted-foreground truncate">{t("profile.signOutOthersDesc")}</p>
+              </div>
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="rounded-xl shrink-0 gap-2"
+              onClick={handleSignOutOthers}
+              disabled={signingOutOthers}
+            >
+              {signingOutOthers && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {t("profile.signOutOthersBtn")}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
