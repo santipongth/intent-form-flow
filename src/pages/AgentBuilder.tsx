@@ -306,6 +306,61 @@ export default function AgentBuilder() {
                       <Textarea placeholder="กำหนด System Prompt แบบละเอียด..." value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} className="rounded-xl mt-1 min-h-[120px]" />
                     </div>
                     <div>
+                      <Label>User Prompt Template</Label>
+                      <Textarea
+                        placeholder="เช่น: คำถาม: {{question}}\nบริบท: {{context}}"
+                        value={userPromptTemplate}
+                        onChange={(e) => setUserPromptTemplate(e.target.value)}
+                        className="rounded-xl mt-1 min-h-[100px] font-mono text-xs"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">ใช้ <code>{"{{ตัวแปร}}"}</code> เป็น placeholder ที่จะถูกแทนค่าตอนเรียกใช้งาน Agent</p>
+                    </div>
+                    <div>
+                      <Label>Skills (ความสามารถเฉพาะทาง)</Label>
+                      <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
+                        {skills.map((sk) => (
+                          <span key={sk} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-xs px-2.5 py-1">
+                            {sk}
+                            <button
+                              type="button"
+                              onClick={() => setSkills(skills.filter((x) => x !== sk))}
+                              className="hover:text-destructive"
+                              aria-label={`Remove ${sk}`}
+                            >×</button>
+                          </span>
+                        ))}
+                        {skills.length === 0 && (
+                          <span className="text-xs text-muted-foreground">ยังไม่มี skill — เพิ่มได้ด้านล่าง</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="เช่น Document parsing, Sentiment analysis"
+                          value={skillInput}
+                          onChange={(e) => setSkillInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              const v = skillInput.trim();
+                              if (v && !skills.includes(v)) setSkills([...skills, v]);
+                              setSkillInput("");
+                            }
+                          }}
+                          className="rounded-xl"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="rounded-xl"
+                          onClick={() => {
+                            const v = skillInput.trim();
+                            if (v && !skills.includes(v)) setSkills([...skills, v]);
+                            setSkillInput("");
+                          }}
+                        >เพิ่ม</Button>
+                      </div>
+                    </div>
+                    <div>
                       <Label>{t("builder.temperature")}: {temperature[0]}</Label>
                       <Slider value={temperature} onValueChange={setTemperature} max={2} step={0.1} className="mt-2" />
                       <p className="text-xs text-muted-foreground mt-1">{t("builder.temperatureDesc")}</p>
