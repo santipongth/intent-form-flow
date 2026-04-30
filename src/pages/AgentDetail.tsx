@@ -430,6 +430,7 @@ export default function AgentDetail() {
 
   const handleSaveEdit = () => {
     if (!agent) return;
+    const prevTools = (agent.tools as any) || {};
     updateAgent.mutate({
       id: agent.id,
       name: editName,
@@ -439,6 +440,11 @@ export default function AgentDetail() {
       system_prompt: editSystemPrompt || null,
       temperature: editTemperature[0],
       max_tokens: parseInt(editMaxTokens) || 2048,
+      tools: {
+        ...prevTools,
+        _userPrompt: editUserPrompt,
+        _skills: editSkills,
+      },
     }, {
       onSuccess: () => setIsEditing(false),
     });
