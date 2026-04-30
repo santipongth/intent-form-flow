@@ -113,10 +113,6 @@ serve(async (req) => {
     // Agent config
     let systemPrompt = "You are a helpful AI assistant. Keep answers clear and concise.";
     let model = "google/gemini-2.5-flash";
-    // Tool-calling needs a model that supports OpenAI-style function calling reliably.
-    // gemini-3-flash-preview returns MALFORMED_FUNCTION_CALL with our schema.
-    // openai/gpt-5-mini reliably emits tool_calls.
-    const TOOL_MODEL = "openai/gpt-5-mini";
     let temperature = 0.7;
     let memoryEnabled = true;
     let toolsEnabled: Record<string, boolean> = {};
@@ -187,31 +183,83 @@ serve(async (req) => {
     // ---------- Tool-calling loop (non-streaming for tool steps, stream final answer) ----------
     let toolIterations = 0;
     const MAX_TOOL_ITERATIONS = 4;
+    // Track which tool model is currently working. We try models in order and
+    // remember the working one so subsequent iterations don't re-fall-back.
+    let toolModelIdx = 0;
 
     while (toolIterations < MAX_TOOL_ITERATIONS && activeTools.length > 0) {
-      const probeRes = await fetch(AI_GATEWAY, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: TOOL_MODEL, messages: baseMessages, temperature,
-          tools: activeTools, tool_choice: "auto", stream: false,
-        }),
-      });
+      const toolChoice = chooseToolChoice(
+        baseMessages,
+        { calculator: !!toolsEnabled["calculator"], webSearch: !!toolsEnabled["web-search"] },
+        toolIterations,
+      );
 
-      if (!probeRes.ok) {
-        if (probeRes.status === 429 || probeRes.status === 402) {
-          const msg = probeRes.status === 429 ? "Rate limit exceeded. Please try again later." : "Payment required. Please add credits to your workspace.";
-          return new Response(JSON.stringify({ error: msg }), { status: probeRes.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      // Try tool models in chain until one succeeds (handles gateway model
+      // mapping issues that occasionally return 4xx for unsupported tools).
+      let probeRes: Response | null = null;
+      let probeErrBody = "";
+      while (toolModelIdx < TOOL_MODEL_CHAIN.length) {
+        const candidate = TOOL_MODEL_CHAIN[toolModelIdx];
+        const r = await fetch(AI_GATEWAY, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: candidate,
+            messages: baseMessages,
+            temperature,
+            tools: activeTools,
+            tool_choice: toolChoice,
+            stream: false,
+          }),
+        });
+        if (r.ok) {
+          probeRes = r;
+          if (toolModelIdx > 0) {
+            console.log("[chat] tool model fallback in use:", candidate);
+          }
+          break;
         }
-        const t = await probeRes.text();
-        console.error("AI gateway tool-loop error:", probeRes.status, t);
-        return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (r.status === 429 || r.status === 402) {
+          const msg = r.status === 429
+            ? "Rate limit exceeded. Please try again later."
+            : "Payment required. Please add credits to your workspace.";
+          return new Response(JSON.stringify({ error: msg }), {
+            status: r.status,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        probeErrBody = await r.text();
+        const shouldFallback = isToolModelFallbackError(r.status, probeErrBody);
+        console.error(
+          "[chat] tool probe failed",
+          { model: candidate, status: r.status, fallback: shouldFallback, body: probeErrBody.slice(0, 300) },
+        );
+        if (!shouldFallback) {
+          return new Response(JSON.stringify({ error: "AI gateway error" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        toolModelIdx++;
+      }
+      if (!probeRes) {
+        console.error("[chat] all tool models exhausted", probeErrBody.slice(0, 300));
+        return new Response(JSON.stringify({ error: "No tool-capable model available" }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       const probe = await probeRes.json();
       const choice = probe.choices?.[0];
       const toolCalls = choice?.message?.tool_calls;
-      console.log("[chat] tool probe iter", toolIterations, "finish:", choice?.finish_reason, "tool_calls:", toolCalls?.length || 0);
+      console.log(
+        "[chat] tool probe iter", toolIterations,
+        "model:", TOOL_MODEL_CHAIN[toolModelIdx],
+        "tool_choice:", typeof toolChoice === "string" ? toolChoice : `forced:${toolChoice.function.name}`,
+        "finish:", choice?.finish_reason,
+        "tool_calls:", toolCalls?.length || 0,
+      );
       if (!toolCalls || toolCalls.length === 0) {
         // No tool needed → break and stream final answer in next phase
         break;
