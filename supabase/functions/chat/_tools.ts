@@ -171,10 +171,11 @@ export async function runTool(name: string, argsJson: string, ctx: any): Promise
 
 // ---------- Heuristic: force tool choice when the query clearly needs it ----------
 
+// JS \b only anchors on ASCII, so do NOT use \b around Thai keywords.
 const MATH_HINT =
-  /(\bcalc(ulate)?\b|\bคำนวณ\b|\bผลรวม\b|\bเท่ากับเท่าไร\b|\bกี่บาท\b|\d[\d.,\s]*[+\-*\/×÷%][\d.,\s]*\d|\bsqrt\b|\bsin\b|\bcos\b|\btan\b|\^|\*\*)/i;
+  /(\bcalc(ulate)?\b|คำนวณ|ผลรวม|เท่ากับเท่าไร|กี่บาท|\d[\d.,\s]*[+\-*\/×÷%][\d.,\s]*\d|\bsqrt\b|\bsin\b|\bcos\b|\btan\b|\^|\*\*)/i;
 const NEWS_HINT =
-  /(\bข่าว\b|\bล่าสุด\b|\bวันนี้\b|\bเมื่อวาน\b|\bnews\b|\blatest\b|\btoday\b|\byesterday\b|\bcurrent\b|\bปัจจุบัน\b|\bราคา\b.*\b(หุ้น|ทอง|น้ำมัน|bitcoin|btc|eth)\b|\bweather\b|\bอากาศ\b)/i;
+  /(ข่าว|ล่าสุด|วันนี้|เมื่อวาน|ปัจจุบัน|อากาศ|\bnews\b|\blatest\b|\btoday\b|\byesterday\b|\bcurrent\b|\bweather\b|ราคา.*(หุ้น|ทอง|น้ำมัน|bitcoin|btc|eth))/i;
 
 /**
  * Inspect the latest user message and decide whether to force a specific tool.
