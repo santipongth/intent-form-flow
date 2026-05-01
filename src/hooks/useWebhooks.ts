@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -24,20 +23,6 @@ export interface WebhookRow {
 
 export function useWebhooks(agentId?: string) {
   const qc = useQueryClient();
-
-  // Realtime: invalidate query on any change
-  useEffect(() => {
-    if (!agentId) return;
-    const channel = supabase
-      .channel(`webhooks-${agentId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "agent_webhooks", filter: `agent_id=eq.${agentId}` },
-        () => qc.invalidateQueries({ queryKey: ["webhooks", agentId] })
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [agentId, qc]);
 
   return useQuery({
     queryKey: ["webhooks", agentId],
