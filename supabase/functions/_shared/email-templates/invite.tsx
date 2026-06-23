@@ -1,0 +1,79 @@
+/// <reference types="npm:@types/react@18.3.1" />
+
+import * as React from 'npm:react@18.3.1'
+
+import {
+  Body,
+  Button,
+  Container,
+  Head,
+  Heading,
+  Html,
+  Link,
+  Preview,
+  Text,
+} from 'npm:@react-email/components@0.0.22'
+
+interface InviteEmailProps {
+  siteName: string
+  siteUrl: string
+  confirmationUrl: string
+}
+
+export const InviteEmail = ({
+  siteName,
+  siteUrl,
+  confirmationUrl,
+}: InviteEmailProps) => (
+  <Html lang="en" dir="ltr">
+    <Head />
+    <Preview>You've been invited to join {siteName}</Preview>
+    <Body style={main}>
+      <Container style={container}>
+        <Heading style={h1}>You've been invited</Heading>
+        <Text style={text}>
+          You've been invited to join{' '}
+          <Link href={siteUrl} style={link}>
+            <strong>{siteName}</strong>
+          </Link>
+          . Click the button below to accept the invitation and create your
+          account.
+        </Text>
+        <Button style={button} href={confirmationUrl}>
+          Accept Invitation
+        </Button>
+        <Text style={footer}>
+          If you weren't expecting this invitation, you can safely ignore this
+          email.
+        </Text>
+      </Container>
+    </Body>
+  </Html>
+)
+
+export default InviteEmail
+
+const main = { backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif" }
+const container = { padding: '40px 32px', maxWidth: '560px' }
+const h1 = {
+  fontSize: '26px',
+  fontWeight: 'bold' as const,
+  color: 'hsl(250, 25%, 15%)',
+  margin: '0 0 20px',
+}
+const text = {
+  fontSize: '14px',
+  color: 'hsl(250, 10%, 35%)',
+  lineHeight: '1.5',
+  margin: '0 0 25px',
+}
+const link = { color: 'inherit', textDecoration: 'underline' }
+const button = {
+  backgroundColor: 'hsl(262, 83%, 58%)',
+  color: '#ffffff',
+  fontSize: '14px',
+  borderRadius: '12px',
+  padding: '14px 28px', fontWeight: 600 as const,
+  textDecoration: 'none',
+}
+const footer = { fontSize: '12px', color: 'hsl(250, 10%, 50%)', margin: '30px 0 0' }
