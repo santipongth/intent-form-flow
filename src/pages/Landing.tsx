@@ -85,6 +85,7 @@ export default function Landing() {
         </section>
       </header>
 
+      <main>
       {/* How it Works */}
       <section className="max-w-5xl mx-auto px-6 py-20">
         <motion.div className="text-center mb-14" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
@@ -142,6 +143,7 @@ export default function Landing() {
           ))}
         </div>
       </section>
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-border py-8">
