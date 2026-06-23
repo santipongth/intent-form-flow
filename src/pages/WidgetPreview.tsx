@@ -8,6 +8,7 @@ export default function WidgetPreview() {
 
   return (
     <div className="w-full h-screen bg-muted/30 flex items-center justify-center">
+      <h1 className="sr-only">Agent Widget Preview</h1>
       <iframe
         src={src}
         className="w-full h-full border-none"

@@ -78,7 +78,10 @@ export default function Auth() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md relative z-10">
         <div className="text-center mb-10">
           <img src={tmLogo} alt="ThoughtMind" className="w-24 h-24 rounded-2xl object-contain mx-auto mb-5 shadow-lg" />
-          <h1 className="font-display text-3xl font-bold">{t("auth.title")}</h1>
+          <h1 className="font-display text-3xl font-bold">
+            {t("auth.title")}
+            <span className="sr-only"> — Sign in to manage your AI agents</span>
+          </h1>
           <p className="text-muted-foreground text-sm mt-2">{t("auth.subtitle")}</p>
         </div>
 
