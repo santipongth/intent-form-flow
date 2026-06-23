@@ -25,6 +25,7 @@ import { WebhooksSection } from "@/components/agent-detail/WebhooksSection";
 import { ErrorLogsSection } from "@/components/agent-detail/ErrorLogsSection";
 import { z } from "zod";
 import { getUserPrompt, getSkills, withPromptAndSkills } from "@/lib/agentTools";
+import { SkillSelector } from "@/components/SkillSelector";
 
 // ---- Validation rules for the edit form (User Prompt + Skills) ----
 const MAX_SKILLS = 15;
