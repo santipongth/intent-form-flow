@@ -17,6 +17,7 @@ import { useCreateAgent } from "@/hooks/useAgents";
 import { useUploadKnowledgeFile } from "@/hooks/useKnowledge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import KnowledgeStep from "@/components/agent-builder/KnowledgeStep";
+import { SkillSelector } from "@/components/SkillSelector";
 
 const STEPS_KEYS = ["Intent & Type", "Identity & Model", "Knowledge", "Tools & Memory", "Review & Create"];
 
