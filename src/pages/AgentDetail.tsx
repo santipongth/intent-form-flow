@@ -620,55 +620,15 @@ export default function AgentDetail() {
                 <Label>Skills (ความสามารถเฉพาะทาง)</Label>
                 <span className="text-xs text-muted-foreground">{editSkills.length}/{MAX_SKILLS}</span>
               </div>
-              <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
-                {editSkills.map((sk) => (
-                  <span
-                    key={sk}
-                    className="inline-flex items-center gap-1 rounded-full text-xs px-2.5 py-1 bg-secondary text-secondary-foreground"
-                  >
-                    {sk}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditSkills(editSkills.filter((x) => x !== sk));
-                        if (editErrors.skills) setEditErrors((er) => ({ ...er, skills: undefined }));
-                      }}
-                      className="hover:text-destructive"
-                      aria-label={`Remove ${sk}`}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-                {editSkills.length === 0 && (
-                  <span className="text-xs text-muted-foreground">ยังไม่มี skill — เพิ่มได้ด้านล่าง</span>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="เช่น Document parsing, Sentiment analysis"
-                  value={editSkillInput}
-                  onChange={(e) => setEditSkillInput(e.target.value)}
-                  maxLength={MAX_SKILL_LEN}
-                  aria-invalid={!!editErrors.skills}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      if (tryAddSkill(editSkillInput)) setEditSkillInput("");
-                    }
+              <div className="mt-2">
+                <SkillSelector
+                  value={editSkills}
+                  onChange={(next) => {
+                    setEditSkills(next);
+                    if (editErrors.skills) setEditErrors((er) => ({ ...er, skills: undefined }));
                   }}
-                  className={`rounded-xl ${editErrors.skills ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                  max={MAX_SKILLS}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="rounded-xl"
-                  onClick={() => {
-                    if (tryAddSkill(editSkillInput)) setEditSkillInput("");
-                  }}
-                >
-                  เพิ่ม
-                </Button>
               </div>
               {editErrors.skills && (
                 <p className="text-xs text-destructive mt-1">{editErrors.skills}</p>
