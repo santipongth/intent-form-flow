@@ -27,6 +27,7 @@ import ABTestResults from "./pages/ABTestResults";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import WidgetPreview from "./pages/WidgetPreview";
+import Skills from "./pages/Skills";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
                 <Route path="/ab-testing" element={<ProtectedRoute><AppLayout><ABTesting /></AppLayout></ProtectedRoute>} />
                 <Route path="/ab-testing/results" element={<ProtectedRoute><AppLayout><ABTestResults /></AppLayout></ProtectedRoute>} />
                 <Route path="/ab-testing/:id" element={<ProtectedRoute><AppLayout><ABTestDetail /></AppLayout></ProtectedRoute>} />
+                <Route path="/skills" element={<ProtectedRoute><AppLayout><Skills /></AppLayout></ProtectedRoute>} />
                 <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
                 <Route path="/widget-preview/:agentId" element={<WidgetPreview />} />
                 <Route path="*" element={<NotFound />} />

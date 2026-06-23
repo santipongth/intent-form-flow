@@ -23,6 +23,7 @@ export const en: Record<string, string> = {
   "sidebar.analytics": "Analytics",
   "sidebar.usage": "Usage & Billing",
   "sidebar.abTesting": "A/B Testing",
+  "sidebar.skills": "Skills",
   "sidebar.settings": "Settings",
   "sidebar.createAgent": "Create Agent",
   "sidebar.signOut": "Sign Out",

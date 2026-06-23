@@ -23,6 +23,7 @@ export const th: Record<string, string> = {
   "sidebar.analytics": "Analytics",
   "sidebar.usage": "Usage & Billing",
   "sidebar.abTesting": "A/B Testing",
+  "sidebar.skills": "Skills",
   "sidebar.settings": "Settings",
   "sidebar.createAgent": "สร้าง Agent",
   "sidebar.signOut": "ออกจากระบบ",

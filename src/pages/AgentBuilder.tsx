@@ -17,6 +17,7 @@ import { useCreateAgent } from "@/hooks/useAgents";
 import { useUploadKnowledgeFile } from "@/hooks/useKnowledge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import KnowledgeStep from "@/components/agent-builder/KnowledgeStep";
+import { SkillSelector } from "@/components/SkillSelector";
 
 const STEPS_KEYS = ["Intent & Type", "Identity & Model", "Knowledge", "Tools & Memory", "Review & Create"];
 
@@ -41,7 +42,6 @@ export default function AgentBuilder() {
   const [systemPrompt, setSystemPrompt] = useState("");
   const [userPrompt, setUserPrompt] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
-  const [skillInput, setSkillInput] = useState("");
   const [templateSkills, setTemplateSkills] = useState<string[]>([]);
   const [templateTools, setTemplateTools] = useState<string[]>([]);
   const [temperature, setTemperature] = useState([0.7]);
@@ -343,48 +343,12 @@ export default function AgentBuilder() {
                     </div>
                     <div>
                       <Label>Skills (ความสามารถเฉพาะทาง)</Label>
-                      <div className="flex flex-wrap gap-1.5 mt-2 mb-2">
-                        {skills.map((sk) => (
-                          <span key={sk} className={`inline-flex items-center gap-1 rounded-full text-xs px-2.5 py-1 ${templateSkills.includes(sk) ? "bg-primary/15 text-primary border border-primary/30" : "bg-secondary text-secondary-foreground"}`}>
-                            {sk}
-                            {templateSkills.includes(sk) && <span className="text-[9px] opacity-70">• template</span>}
-                            <button
-                              type="button"
-                              onClick={() => setSkills(skills.filter((x) => x !== sk))}
-                              className="hover:text-destructive"
-                              aria-label={`Remove ${sk}`}
-                            >×</button>
-                          </span>
-                        ))}
-                        {skills.length === 0 && (
-                          <span className="text-xs text-muted-foreground">ยังไม่มี skill — เพิ่มได้ด้านล่าง</span>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="เช่น Document parsing, Sentiment analysis"
-                          value={skillInput}
-                          onChange={(e) => setSkillInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              const v = skillInput.trim();
-                              if (v && !skills.includes(v)) setSkills([...skills, v]);
-                              setSkillInput("");
-                            }
-                          }}
-                          className="rounded-xl"
+                      <div className="mt-2">
+                        <SkillSelector
+                          value={skills}
+                          onChange={setSkills}
+                          templateSkills={templateSkills}
                         />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="rounded-xl"
-                          onClick={() => {
-                            const v = skillInput.trim();
-                            if (v && !skills.includes(v)) setSkills([...skills, v]);
-                            setSkillInput("");
-                          }}
-                        >เพิ่ม</Button>
                       </div>
                     </div>
                     <div>
