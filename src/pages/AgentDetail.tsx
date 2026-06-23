@@ -391,7 +391,6 @@ export default function AgentDetail() {
   const [editMaxTokens, setEditMaxTokens] = useState("2048");
   const [editUserPrompt, setEditUserPrompt] = useState("");
   const [editSkills, setEditSkills] = useState<string[]>([]);
-  const [editSkillInput, setEditSkillInput] = useState("");
   const [editErrors, setEditErrors] = useState<{ userPrompt?: string; skills?: string }>({});
 
   useEffect(() => {
@@ -490,30 +489,6 @@ export default function AgentDetail() {
     }, {
       onSuccess: () => setIsEditing(false),
     });
-  };
-
-  // Add a skill with inline validation (length / duplicate / max count).
-  // Returns true when added so the input can be cleared.
-  const tryAddSkill = (raw: string): boolean => {
-    const value = raw.trim();
-    if (!value) return false;
-    if (value.length > MAX_SKILL_LEN) {
-      toast.error(`ชื่อ skill ต้องไม่เกิน ${MAX_SKILL_LEN} ตัวอักษร`);
-      return false;
-    }
-    if (editSkills.length >= MAX_SKILLS) {
-      toast.error(`Skills ได้สูงสุด ${MAX_SKILLS} รายการ`);
-      return false;
-    }
-    const dup = editSkills.some((s) => s.toLowerCase() === value.toLowerCase());
-    if (dup) {
-      toast.error(`มี skill "${value}" อยู่แล้ว`);
-      return false;
-    }
-    setEditSkills([...editSkills, value]);
-    // Clear the skills error (if any) since we just made progress
-    setEditErrors((e) => ({ ...e, skills: undefined }));
-    return true;
   };
 
   if (isLoading) {
