@@ -51,7 +51,7 @@ export default function Landing() {
               <Globe className="h-4 w-4" />
               {locale === "th" ? "TH" : "EN"}
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-xl" onClick={toggleTheme}>
+            <Button variant="ghost" size="icon" className="rounded-xl" onClick={toggleTheme} aria-label="Toggle theme">
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
             <Button onClick={() => navigate(dashTarget)} variant="outline" className="rounded-xl">
