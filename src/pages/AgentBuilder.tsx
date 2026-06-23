@@ -42,7 +42,6 @@ export default function AgentBuilder() {
   const [systemPrompt, setSystemPrompt] = useState("");
   const [userPrompt, setUserPrompt] = useState("");
   const [skills, setSkills] = useState<string[]>([]);
-  const [skillInput, setSkillInput] = useState("");
   const [templateSkills, setTemplateSkills] = useState<string[]>([]);
   const [templateTools, setTemplateTools] = useState<string[]>([]);
   const [temperature, setTemperature] = useState([0.7]);
