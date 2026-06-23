@@ -1,0 +1,15 @@
+# ThoughtMind
+
+> Build, deploy, and monitor AI agents without writing code. ThoughtMind is an intent-first agentic platform with wizards instead of node-graphs.
+
+ThoughtMind helps anyone create AI agents through a guided wizard: pick an intent, give the agent identity and tools, add knowledge, then test and deploy. The platform includes a marketplace of agent templates, a chat console for testing, analytics, and A/B testing.
+
+## Pages
+
+- [Home](/): Product overview and getting started.
+- [Sign in](/auth): Sign in or create a ThoughtMind account.
+
+## Optional
+
+- [Reset password](/reset-password): Password recovery flow.
+- [Verify email](/verify-email): Email confirmation flow.
