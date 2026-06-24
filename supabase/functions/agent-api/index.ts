@@ -6,6 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Expose-Headers": "X-RateLimit-Limit, X-RateLimit-Remaining, Retry-After",
 };
 
 async function sha256(text: string): Promise<string> {
@@ -125,6 +126,10 @@ serve(async (req) => {
     try { body = rawText ? JSON.parse(rawText) : null; } catch { body = null; }
     const message = body?.message;
     const messages = body?.messages;
+    const sessionId: string | undefined = typeof body?.session_id === "string" && body.session_id.trim().length > 0
+      ? body.session_id.trim().slice(0, 128)
+      : undefined;
+    const wantStream = body?.stream === true;
     if (!message && !messages) {
       return new Response(JSON.stringify({ error: "Provide 'message' (string) or 'messages' (array)" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -147,7 +152,7 @@ serve(async (req) => {
 
     const { data: agent } = await supabase
       .from("agents")
-      .select("name, objective, system_prompt, model, temperature")
+      .select("name, objective, system_prompt, model, temperature, status")
       .eq("id", keyRow.agent_id)
       .eq("user_id", keyRow.user_id)
       .maybeSingle();
@@ -155,6 +160,11 @@ serve(async (req) => {
     if (!agent) {
       return new Response(JSON.stringify({ error: "Agent not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (agent.status !== "published") {
+      return new Response(JSON.stringify({ error: "Agent is not published. Toggle Publish in the agent's Deploy tab." }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -181,7 +191,163 @@ serve(async (req) => {
       systemPrompt += ctx + "---";
     }
 
+    // ---------- Optional session memory ----------
+    let conversationId: string | null = null;
+    let historyMessages: Array<{ role: string; content: string }> = [];
+    if (sessionId) {
+      const { data: existing } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("user_id", keyRow.user_id)
+        .eq("agent_id", keyRow.agent_id)
+        .eq("external_session_id", sessionId)
+        .maybeSingle();
+      if (existing) {
+        conversationId = existing.id;
+      } else {
+        const { data: created } = await supabase
+          .from("conversations")
+          .insert({
+            user_id: keyRow.user_id,
+            agent_id: keyRow.agent_id,
+            external_session_id: sessionId,
+            title: `API session ${sessionId.substring(0, 24)}`,
+          })
+          .select("id")
+          .single();
+        conversationId = created?.id ?? null;
+      }
+      if (conversationId) {
+        const { data: rows } = await supabase
+          .from("chat_messages")
+          .select("role, content")
+          .eq("conversation_id", conversationId)
+          .order("created_at", { ascending: true })
+          .limit(40);
+        historyMessages = (rows || []).map((r: any) => ({ role: r.role, content: r.content }));
+      }
+    }
+
+    const persistMessages = async (userMsg: string, assistantMsg: string, tokens: number | null, respMs: number) => {
+      if (!conversationId) return;
+      try {
+        await supabase.from("chat_messages").insert([
+          { conversation_id: conversationId, role: "user", content: userMsg },
+          { conversation_id: conversationId, role: "assistant", content: assistantMsg, tokens_used: tokens ?? 0, response_time_ms: respMs },
+        ]);
+        await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+      } catch (_) { /* ignore */ }
+    };
+
+    // Last user message text for persistence (works whether they sent `message` or `messages`)
+    const lastUserText = (() => {
+      for (let i = finalMessages.length - 1; i >= 0; i--) {
+        const m: any = finalMessages[i];
+        if (m?.role === "user" && typeof m?.content === "string") return m.content;
+      }
+      return typeof message === "string" ? message : "";
+    })();
+
+    const gatewayMessages = [
+      { role: "system", content: systemPrompt },
+      ...historyMessages,
+      ...finalMessages,
+    ];
+
     const startTime = Date.now();
+
+    // ---------- Streaming branch ----------
+    if (wantStream) {
+      const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: agent.model || "google/gemini-2.5-flash",
+          messages: gatewayMessages,
+          temperature: agent.temperature ?? 0.7,
+          stream: true,
+        }),
+      });
+      if (!upstream.ok || !upstream.body) {
+        const errText = await upstream.text().catch(() => "");
+        const status = upstream.status === 429 ? 429 : upstream.status === 402 ? 402 : 502;
+        return new Response(JSON.stringify({ error: "AI provider error", status: upstream.status, detail: errText.substring(0, 300) }), {
+          status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      let assembled = "";
+      const reader = upstream.body.getReader();
+      const decoder = new TextDecoder();
+      const encoder = new TextEncoder();
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          let buffer = "";
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              const chunk = decoder.decode(value, { stream: true });
+              buffer += chunk;
+              controller.enqueue(encoder.encode(chunk));
+              let idx;
+              while ((idx = buffer.indexOf("\n")) !== -1) {
+                const line = buffer.slice(0, idx).replace(/\r$/, "");
+                buffer = buffer.slice(idx + 1);
+                if (!line.startsWith("data: ")) continue;
+                const payload = line.slice(6).trim();
+                if (payload === "[DONE]") continue;
+                try {
+                  const j = JSON.parse(payload);
+                  const delta = j.choices?.[0]?.delta?.content;
+                  if (delta) assembled += delta;
+                } catch { /* ignore */ }
+              }
+            }
+          } catch (e) {
+            controller.error(e);
+            return;
+          }
+          controller.close();
+
+          const respMs = Date.now() - startTime;
+          try {
+            await supabase.from("agent_analytics_events").insert({
+              agent_id: keyRow.agent_id,
+              user_id: keyRow.user_id,
+              event_type: "api_chat_stream",
+              status: "success",
+              response_time_ms: respMs,
+              tokens_used: null,
+            });
+          } catch (_) { /* ignore */ }
+          await persistMessages(lastUserText, assembled, null, respMs);
+          dispatchWebhooks(supabase, keyRow.agent_id, "chat.completed", {
+            messages: finalMessages,
+            reply: assembled,
+            tokens_used: null,
+            response_time_ms: respMs,
+            session_id: sessionId ?? null,
+            stream: true,
+          });
+        },
+        cancel() { try { reader.cancel(); } catch (_) { /* ignore */ } },
+      });
+
+      return new Response(stream, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          "X-Session-Id": sessionId ?? "",
+        },
+      });
+    }
+
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -190,7 +356,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: agent.model || "google/gemini-2.5-flash",
-        messages: [{ role: "system", content: systemPrompt }, ...finalMessages],
+        messages: gatewayMessages,
         temperature: agent.temperature ?? 0.7,
       }),
     });
@@ -225,11 +391,14 @@ serve(async (req) => {
       tokens_used: tokens,
     });
 
+    await persistMessages(lastUserText, reply, tokens, responseTime);
+
     dispatchWebhooks(supabase, keyRow.agent_id, "chat.completed", {
       messages: finalMessages,
       reply,
       tokens_used: tokens,
       response_time_ms: responseTime,
+      session_id: sessionId ?? null,
     });
 
     return new Response(JSON.stringify({
@@ -237,6 +406,8 @@ serve(async (req) => {
       tokens_used: tokens,
       response_time_ms: responseTime,
       model: agent.model,
+      session_id: sessionId ?? null,
+      conversation_id: conversationId,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("agent-api error:", e);
