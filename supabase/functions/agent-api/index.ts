@@ -17,6 +17,36 @@ async function sha256(text: string): Promise<string> {
     .join("");
 }
 
+// Map legacy/friendly model names to Lovable AI Gateway model ids.
+function normalizeModel(input: string | null | undefined): string {
+  const fallback = "google/gemini-2.5-flash";
+  if (!input) return fallback;
+  const raw = String(input).trim();
+  if (!raw) return fallback;
+  if (raw.includes("/")) return raw; // already vendor/model
+  const key = raw.toLowerCase().replace(/\s+/g, "");
+  const map: Record<string, string> = {
+    "gpt-4o": "openai/gpt-5",
+    "gpt4o": "openai/gpt-5",
+    "gpt-4o-mini": "openai/gpt-5-mini",
+    "gpt-4": "openai/gpt-5",
+    "gpt-4-turbo": "openai/gpt-5",
+    "gpt-3.5-turbo": "openai/gpt-5-nano",
+    "gpt-5": "openai/gpt-5",
+    "gpt-5-mini": "openai/gpt-5-mini",
+    "gpt-5-nano": "openai/gpt-5-nano",
+    "gemini-pro": "google/gemini-2.5-pro",
+    "gemini-2.5-pro": "google/gemini-2.5-pro",
+    "gemini-2.5-flash": "google/gemini-2.5-flash",
+    "gemini-flash": "google/gemini-2.5-flash",
+    "gemini-3-flash": "google/gemini-3-flash-preview",
+    "claude-3-opus": "openai/gpt-5",
+    "claude-3-sonnet": "openai/gpt-5-mini",
+    "claude-3-haiku": "openai/gpt-5-nano",
+  };
+  return map[key] || fallback;
+}
+
 async function logError(supabase: any, payload: Record<string, unknown>) {
   try {
     await supabase.from("error_logs").insert(payload);
