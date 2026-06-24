@@ -42,8 +42,9 @@ const editFormSchema = z.object({
   userPrompt: z
     .string()
     .trim()
-    .min(1, { message: "User Prompt ห้ามว่าง" })
-    .max(MAX_USER_PROMPT_LEN, { message: `User Prompt ต้องไม่เกิน ${MAX_USER_PROMPT_LEN} ตัวอักษร` }),
+    .max(MAX_USER_PROMPT_LEN, { message: `User Prompt ต้องไม่เกิน ${MAX_USER_PROMPT_LEN} ตัวอักษร` })
+    .optional()
+    .default(""),
   skills: z
     .array(skillSchema)
     .max(MAX_SKILLS, { message: `Skills ได้สูงสุด ${MAX_SKILLS} รายการ` })
@@ -610,7 +611,7 @@ print(r.json()["reply"])`;
               <Textarea value={editSystemPrompt} onChange={(e) => setEditSystemPrompt(e.target.value)} className="rounded-xl mt-1 min-h-[100px]" />
             </div>
             <div>
-              <Label>User Prompt</Label>
+              <Label>User Prompt <span className="text-xs text-muted-foreground font-normal">(ไม่บังคับ)</span></Label>
               <Textarea
                 placeholder="พิมพ์ User Prompt ที่ต้องการ (เช่น: คำถาม: {{question}})"
                 value={editUserPrompt}

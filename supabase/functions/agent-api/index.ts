@@ -2,6 +2,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Models that only accept the default temperature (=1). For these we must
+// omit `temperature` entirely or the AI gateway returns 400.
+function supportsCustomTemperature(model: string): boolean {
+  const m = model.toLowerCase();
+  if (m.startsWith("openai/gpt-5")) return false;
+  return true;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
@@ -214,7 +222,7 @@ serve(async (req) => {
 
     const { data: agent } = await supabase
       .from("agents")
-      .select("name, objective, system_prompt, model, temperature, status")
+      .select("name, objective, system_prompt, model, temperature, status, tools")
       .eq("id", keyRow.agent_id)
       .eq("user_id", keyRow.user_id)
       .maybeSingle();
@@ -232,6 +240,16 @@ serve(async (req) => {
 
     let systemPrompt = agent.system_prompt
       || (agent.objective ? `You are ${agent.name}. Objective: ${agent.objective}.` : "You are a helpful assistant.");
+
+    // Inject the agent's User Prompt template (configured in the UI) if any.
+    const userPromptTemplate = (() => {
+      const t: any = agent.tools;
+      const v = t && typeof t === "object" ? t._userPrompt : undefined;
+      return typeof v === "string" ? v.trim() : "";
+    })();
+    if (userPromptTemplate) {
+      systemPrompt += `\n\n---\nUser Prompt Template (apply when responding):\n${userPromptTemplate}\n---`;
+    }
 
     const { data: knowledge } = await supabase
       .from("knowledge_files")
@@ -319,6 +337,8 @@ serve(async (req) => {
     const startTime = Date.now();
 
     const gatewayModel = normalizeModel(agent.model);
+    const allowTemp = supportsCustomTemperature(gatewayModel);
+    const tempValue = agent.temperature ?? 0.7;
 
     // ---------- Streaming branch ----------
     if (wantStream) {
@@ -331,7 +351,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: gatewayModel,
           messages: gatewayMessages,
-          temperature: agent.temperature ?? 0.7,
+          ...(allowTemp ? { temperature: tempValue } : {}),
           stream: true,
         }),
       });
@@ -421,7 +441,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: gatewayModel,
         messages: gatewayMessages,
-        temperature: agent.temperature ?? 0.7,
+        ...(allowTemp ? { temperature: tempValue } : {}),
       }),
     });
 
