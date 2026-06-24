@@ -1061,46 +1061,6 @@ print(r.json()["reply"])`;
                 widgetHeight={widgetHeight}
               />
             </TabsContent>
-
-            <TabsContent value="apikey">
-              <Card className="rounded-2xl">
-                <CardHeader>
-                  <CardTitle className="text-lg">{t("detail.apiKey")}</CardTitle>
-                  <CardDescription>{t("detail.apiKeyDesc")}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>{t("detail.secretKey")}</Label>
-                    <div className="flex gap-2">
-                      <code className="flex-1 bg-muted rounded-xl px-4 py-2.5 text-sm font-mono break-all">
-                        {showKey ? apiKey : maskedKey}
-                      </code>
-                      <Button size="icon" variant="outline" className="shrink-0 rounded-xl" onClick={() => setShowKey(!showKey)}>
-                        {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                      <Button size="icon" variant="outline" className="shrink-0 rounded-xl" onClick={() => copyToClipboard(apiKey, "API Key")}>
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    className="gap-2 rounded-xl"
-                    onClick={() => {
-                      setApiKey(generateApiKey());
-                      setShowKey(false);
-                      toast.success(t("detail.keyRegenerated"));
-                    }}
-                  >
-                    <RefreshCw className="h-4 w-4" /> {t("detail.regenerateKey")}
-                  </Button>
-                  <div className="flex items-start gap-2 bg-destructive/10 text-destructive rounded-xl px-4 py-3 text-sm">
-                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-                    <span>{t("detail.keyWarning")}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
 
           {/* Production: real API keys, webhooks, error logs */}
