@@ -424,12 +424,54 @@ export default function AgentDetail() {
   const [widgetLang, setWidgetLang] = useState<"th" | "en">("th");
 
   const agentId = agent?.id || "unknown";
-  const endpoint = `https://api.thoughtmind.ai/v1/agents/${agentId}/chat`;
+  const endpoint = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-api`;
 
   const curlSnippet = `curl -X POST "${endpoint}" \\
-  -H "Authorization: Bearer ${apiKey}" \\
+  -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{"message": "สวัสดี", "session_id": "user-123"}'`;
+  -d '{
+    "message": "สวัสดี",
+    "session_id": "user-123"
+  }'`;
+
+  const curlStreamSnippet = `curl -N -X POST "${endpoint}" \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "message": "เล่าเรื่องสั้น ๆ ให้ฟังหน่อย", "stream": true }'`;
+
+  const jsSnippet = `const res = await fetch("${endpoint}", {
+  method: "POST",
+  headers: {
+    "x-api-key": "YOUR_API_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    message: "สวัสดี",
+    session_id: "user-123", // optional — same id keeps conversation memory
+  }),
+});
+const data = await res.json();
+console.log(data.reply);`;
+
+  const pySnippet = `import requests
+
+r = requests.post(
+    "${endpoint}",
+    headers={"x-api-key": "YOUR_API_KEY"},
+    json={"message": "สวัสดี", "session_id": "user-123"},
+    timeout=60,
+)
+r.raise_for_status()
+print(r.json()["reply"])`;
+
+  const responseExample = `{
+  "reply": "สวัสดีค่ะ! มีอะไรให้ช่วยไหมคะ?",
+  "tokens_used": 128,
+  "response_time_ms": 842,
+  "model": "google/gemini-2.5-flash",
+  "session_id": "user-123",
+  "conversation_id": "5f0e..."
+}`;
 
   const widgetBaseUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/widget`;
   const colorParam = encodeURIComponent(primaryColor);
