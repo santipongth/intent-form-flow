@@ -32,6 +32,10 @@ serve(async (req) => {
   const welcomeMessage = url.searchParams.get("welcome_message") || "";
   const lang = url.searchParams.get("lang") || "th";
   const preview = url.searchParams.get("preview") === "1";
+  const autoOpen = url.searchParams.get("auto_open") === "true";
+  const hideBranding = url.searchParams.get("hide_branding") === "true";
+  const openWidth = Math.min(Math.max(parseInt(url.searchParams.get("open_width") || "420", 10) || 420, 280), 600);
+  const openHeight = Math.min(Math.max(parseInt(url.searchParams.get("open_height") || "640", 10) || 640, 360), 900);
 
   const i18n: Record<string, Record<string, string>> = {
     th: {
@@ -86,21 +90,24 @@ serve(async (req) => {
     const encodedBrand = encodeURIComponent(customBrand);
     const posAlign = position === "bottom-left" ? "left:0" : "right:0";
     const collapsedSize = bubbleSize + 32; // bubble + breathing room
+    const initiallyOpen = autoOpen;
+    const initW = initiallyOpen ? openWidth : collapsedSize;
+    const initH = initiallyOpen ? openHeight + 40 : collapsedSize;
     const scriptJs = `
 (function(){
   if(document.getElementById('tm-widget-frame'))return;
   var f=document.createElement('iframe');
   f.id='tm-widget-frame';
-  f.src='${SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&theme=${theme}&mode=fullpage&color=${encodedColor}&brand=${encodedBrand}&position=${position}&bubble_size=${bubbleSize}&lang=${lang}${welcomeMessage ? `&welcome_message=${encodeURIComponent(welcomeMessage)}` : ""}';
-  f.style.cssText='position:fixed;bottom:0;${posAlign};width:${collapsedSize}px;height:${collapsedSize}px;border:none;z-index:999999;background:transparent;transition:width .2s,height .2s;';
+  f.src='${SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&theme=${theme}&mode=fullpage&color=${encodedColor}&brand=${encodedBrand}&position=${position}&bubble_size=${bubbleSize}&lang=${lang}&auto_open=${initiallyOpen}&hide_branding=${hideBranding}&open_width=${openWidth}&open_height=${openHeight}${welcomeMessage ? `&welcome_message=${encodeURIComponent(welcomeMessage)}` : ""}';
+  f.style.cssText='position:fixed;bottom:0;${posAlign};width:${initW}px;height:${initH}px;border:none;z-index:999999;background:transparent;transition:width .2s,height .2s;';
   f.allow='microphone';
   document.body.appendChild(f);
   window.addEventListener('message',function(e){
     if(!e||!e.data||e.data.source!=='tm-widget')return;
     if(e.data.type==='resize'){
       if(e.data.open){
-        f.style.width='420px';
-        f.style.height='700px';
+        f.style.width='${openWidth}px';
+        f.style.height='${openHeight + 40}px';
       }else{
         f.style.width='${collapsedSize}px';
         f.style.height='${collapsedSize}px';
@@ -140,7 +147,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 #widget-root{position:fixed;bottom:24px;${position === "bottom-left" ? "left:24px" : "right:24px"};z-index:99999;display:flex;flex-direction:column;align-items:${position === "bottom-left" ? "flex-start" : "flex-end"};gap:12px}
 #bubble{width:${bubbleSize}px;height:${bubbleSize}px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;border:none;cursor:pointer;font-size:${Math.round(bubbleSize * 0.47)}px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(99,102,241,0.4);transition:transform .2s}
 #bubble:hover{transform:scale(1.08)}
-#chat-window{width:380px;max-width:calc(100vw - 32px);height:520px;max-height:calc(100vh - 100px);background:var(--bg);border-radius:16px;box-shadow:var(--shadow);border:1px solid var(--border);display:none;flex-direction:column;overflow:hidden;animation:slideUp .25s ease}
+#chat-window{width:${openWidth - 40}px;max-width:calc(100vw - 32px);height:${openHeight - 80}px;max-height:calc(100vh - 100px);background:var(--bg);border-radius:16px;box-shadow:var(--shadow);border:1px solid var(--border);display:none;flex-direction:column;overflow:hidden;animation:slideUp .25s ease}
 #chat-window.open{display:flex}
 @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 .header{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--bg2)}
@@ -192,7 +199,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
       </button>
     </div>
-    <div class="powered">Powered by ${brandName}</div>
+    ${hideBranding ? "" : `<div class="powered">Powered by ${brandName}</div>`}
   </div>
   <button id="bubble" onclick="toggleChat()" aria-label="Open chat">${agentAvatar}</button>
 </div>
@@ -325,10 +332,13 @@ document.getElementById('user-input').addEventListener('keydown',function(e){
   if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
 });
 
-// Auto-open if fullpage mode in iframe
-if(window.self!==window.top||new URLSearchParams(location.search).get('auto_open')==='true'){
-  toggleChat();
-}
+// Auto-open when requested or when embedded as fullpage iframe (preview)
+(function(){
+  var p=new URLSearchParams(location.search);
+  var auto=p.get('auto_open')==='true';
+  var isPreview=p.get('preview')==='1';
+  if(auto||isPreview){ toggleChat(); }
+})();
 </script>
 </body>
 </html>`;
