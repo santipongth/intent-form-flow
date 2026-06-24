@@ -611,7 +611,7 @@ print(r.json()["reply"])`;
               <Textarea value={editSystemPrompt} onChange={(e) => setEditSystemPrompt(e.target.value)} className="rounded-xl mt-1 min-h-[100px]" />
             </div>
             <div>
-              <Label>User Prompt</Label>
+              <Label>User Prompt <span className="text-xs text-muted-foreground font-normal">(ไม่บังคับ)</span></Label>
               <Textarea
                 placeholder="พิมพ์ User Prompt ที่ต้องการ (เช่น: คำถาม: {{question}})"
                 value={editUserPrompt}
