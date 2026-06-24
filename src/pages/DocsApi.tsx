@@ -1,9 +1,9 @@
-import { Helmet } from "react-helmet-async";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Copy, ArrowLeft, Key, Zap, RefreshCw, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 const endpoint = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-api`;
@@ -139,14 +139,23 @@ const errors: Array<[string, string]> = [
 ];
 
 export default function DocsApi() {
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = "API Docs — ThoughtMind Agent API";
+    const desc = document.querySelector('meta[name="description"]');
+    const prevDesc = desc?.getAttribute("content") || "";
+    desc?.setAttribute(
+      "content",
+      "Developer reference for the ThoughtMind Agent API: authentication, endpoints, streaming, session memory and error codes.",
+    );
+    return () => {
+      document.title = prevTitle;
+      desc?.setAttribute("content", prevDesc);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>API Docs — ThoughtMind Agent API</title>
-        <meta name="description" content="Developer reference for the ThoughtMind Agent API: authentication, endpoints, streaming, session memory and error codes." />
-        <link rel="canonical" href="/docs/api" />
-      </Helmet>
-
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <Button asChild variant="ghost" size="sm" className="rounded-xl gap-1.5">
