@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { Copy, Eye, EyeOff, RefreshCw, Globe, Code, Monitor, Key, AlertTriangle, ArrowLeft, Info, Pencil, Upload, Trash2, FileText, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Copy, Globe, Code, Monitor, Key, ArrowLeft, Info, Pencil, Upload, Trash2, FileText, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -53,11 +53,7 @@ const editFormSchema = z.object({
     ),
 });
 
-function generateApiKey() {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  const rand = (n: number) => Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  return `sk-tm-${rand(8)}-${rand(8)}-${rand(8)}-${rand(8)}`;
-}
+// (removed legacy fake-key generator — real keys are issued by the issue-api-key edge function)
 
 const MAX_FILES = 10;
 const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB
@@ -411,8 +407,6 @@ export default function AgentDetail() {
 
   // Deploy state (published is derived from agent.status in DB)
   const published = agent?.status === "published";
-  const [showKey, setShowKey] = useState(false);
-  const [apiKey, setApiKey] = useState(() => generateApiKey());
   const [widgetWidth, setWidgetWidth] = useState("400");
   const [widgetHeight, setWidgetHeight] = useState("600");
   const [previewTheme, setPreviewTheme] = useState<"light" | "dark">("light");
@@ -492,8 +486,6 @@ print(r.json()["reply"])`;
   allow="microphone"
   style="border: none; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.12);"
 ></iframe>`;
-
-  const maskedKey = useMemo(() => apiKey.slice(0, 8) + "••••••••••••••••" + apiKey.slice(-4), [apiKey]);
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
