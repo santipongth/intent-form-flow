@@ -416,6 +416,10 @@ export default function AgentDetail() {
   const [bubbleSize, setBubbleSize] = useState([60]);
   const [welcomeMessage, setWelcomeMessage] = useState("");
   const [widgetLang, setWidgetLang] = useState<"th" | "en">("th");
+  const [autoOpen, setAutoOpen] = useState(false);
+  const [hideBranding, setHideBranding] = useState(false);
+  const [openWidth, setOpenWidth] = useState("420");
+  const [openHeight, setOpenHeight] = useState("640");
 
   const agentId = agent?.id || "unknown";
   const endpoint = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-api`;
@@ -432,6 +436,11 @@ export default function AgentDetail() {
   -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{ "message": "เล่าเรื่องสั้น ๆ ให้ฟังหน่อย", "stream": true }'`;
+
+  const curlResetSnippet = `curl -X POST "${endpoint}" \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "session_id": "user-123", "reset": true }'`;
 
   const jsSnippet = `const res = await fetch("${endpoint}", {
   method: "POST",
@@ -475,11 +484,12 @@ print(r.json()["reply"])`;
   const bubbleSizeParam = bubbleSize[0];
 
   const welcomeParam = welcomeMessage ? `&welcome_message=${encodeURIComponent(welcomeMessage)}` : "";
+  const extraWidgetParams = `&auto_open=${autoOpen}&hide_branding=${hideBranding}&open_width=${openWidth}&open_height=${openHeight}`;
 
-  const scriptEmbedCode = `<script src="${widgetBaseUrl}?agent_id=${agentId}&theme=${previewTheme}&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}&lang=${widgetLang}${welcomeParam}" defer><\/script>`;
+  const scriptEmbedCode = `<script src="${widgetBaseUrl}?agent_id=${agentId}&theme=${previewTheme}&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}&lang=${widgetLang}${extraWidgetParams}${welcomeParam}" defer><\/script>`;
 
   const iframeEmbedCode = `<iframe
-  src="${widgetBaseUrl}?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}&lang=${widgetLang}${welcomeParam}"
+  src="${widgetBaseUrl}?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&hide_branding=${hideBranding}&open_width=${openWidth}&open_height=${openHeight}&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}&lang=${widgetLang}${welcomeParam}"
   width="${widgetWidth}"
   height="${widgetHeight}"
   frameborder="0"
