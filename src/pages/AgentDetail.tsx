@@ -1010,6 +1010,28 @@ print(r.json()["reply"])`;
                       />
                       <p className="text-xs text-muted-foreground">ข้อความที่แสดงเมื่อเปิด widget (เว้นว่างเพื่อใช้ค่าเริ่มต้น)</p>
                     </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">⚡ เปิดหน้าต่างทันทีเมื่อโหลด</Label>
+                      <div className="flex items-center gap-3 h-10">
+                        <Switch checked={autoOpen} onCheckedChange={setAutoOpen} />
+                        <span className="text-xs text-muted-foreground">{autoOpen ? "ขยายอัตโนมัติ ไม่ต้องคลิก bubble" : "เริ่มต้นเป็น bubble (ผู้ใช้ต้องคลิกเปิด)"}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">🙈 ซ่อนข้อความ "Powered by"</Label>
+                      <div className="flex items-center gap-3 h-10">
+                        <Switch checked={hideBranding} onCheckedChange={setHideBranding} />
+                        <span className="text-xs text-muted-foreground">{hideBranding ? "ไม่แสดง footer" : "แสดง footer แบรนด์"}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">📐 ความกว้างหน้าต่างเปิด (px)</Label>
+                      <Input type="number" min={280} max={600} value={openWidth} onChange={(e) => setOpenWidth(e.target.value)} className="rounded-xl" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">📏 ความสูงหน้าต่างเปิด (px)</Label>
+                      <Input type="number" min={360} max={900} value={openHeight} onChange={(e) => setOpenHeight(e.target.value)} className="rounded-xl" />
+                    </div>
                   </div>
                   {/* Script embed */}
                   <div className="space-y-2">
