@@ -85,15 +85,28 @@ serve(async (req) => {
     const encodedColor = encodeURIComponent(primaryColor);
     const encodedBrand = encodeURIComponent(customBrand);
     const posAlign = position === "bottom-left" ? "left:0" : "right:0";
+    const collapsedSize = bubbleSize + 32; // bubble + breathing room
     const scriptJs = `
 (function(){
   if(document.getElementById('tm-widget-frame'))return;
   var f=document.createElement('iframe');
   f.id='tm-widget-frame';
   f.src='${SUPABASE_URL}/functions/v1/widget?agent_id=${agentId}&theme=${theme}&mode=fullpage&color=${encodedColor}&brand=${encodedBrand}&position=${position}&bubble_size=${bubbleSize}&lang=${lang}${welcomeMessage ? `&welcome_message=${encodeURIComponent(welcomeMessage)}` : ""}';
-  f.style.cssText='position:fixed;bottom:0;${posAlign};width:420px;height:700px;border:none;z-index:999999;background:transparent;';
+  f.style.cssText='position:fixed;bottom:0;${posAlign};width:${collapsedSize}px;height:${collapsedSize}px;border:none;z-index:999999;background:transparent;transition:width .2s,height .2s;';
   f.allow='microphone';
   document.body.appendChild(f);
+  window.addEventListener('message',function(e){
+    if(!e||!e.data||e.data.source!=='tm-widget')return;
+    if(e.data.type==='resize'){
+      if(e.data.open){
+        f.style.width='420px';
+        f.style.height='700px';
+      }else{
+        f.style.width='${collapsedSize}px';
+        f.style.height='${collapsedSize}px';
+      }
+    }
+  });
 })();
 `;
     return new Response(scriptJs, {
