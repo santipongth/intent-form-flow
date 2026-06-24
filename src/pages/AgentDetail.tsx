@@ -42,8 +42,9 @@ const editFormSchema = z.object({
   userPrompt: z
     .string()
     .trim()
-    .min(1, { message: "User Prompt ห้ามว่าง" })
-    .max(MAX_USER_PROMPT_LEN, { message: `User Prompt ต้องไม่เกิน ${MAX_USER_PROMPT_LEN} ตัวอักษร` }),
+    .max(MAX_USER_PROMPT_LEN, { message: `User Prompt ต้องไม่เกิน ${MAX_USER_PROMPT_LEN} ตัวอักษร` })
+    .optional()
+    .default(""),
   skills: z
     .array(skillSchema)
     .max(MAX_SKILLS, { message: `Skills ได้สูงสุด ${MAX_SKILLS} รายการ` })
