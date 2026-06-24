@@ -318,6 +318,8 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
+    const gatewayModel = normalizeModel(agent.model);
+
     // ---------- Streaming branch ----------
     if (wantStream) {
       const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -327,7 +329,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: agent.model || "google/gemini-2.5-flash",
+          model: gatewayModel,
           messages: gatewayMessages,
           temperature: agent.temperature ?? 0.7,
           stream: true,
@@ -417,7 +419,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: agent.model || "google/gemini-2.5-flash",
+        model: gatewayModel,
         messages: gatewayMessages,
         temperature: agent.temperature ?? 0.7,
       }),
@@ -467,7 +469,7 @@ serve(async (req) => {
       reply,
       tokens_used: tokens,
       response_time_ms: responseTime,
-      model: agent.model,
+      model: gatewayModel,
       session_id: sessionId ?? null,
       conversation_id: conversationId,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
