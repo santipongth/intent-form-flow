@@ -416,6 +416,10 @@ export default function AgentDetail() {
   const [bubbleSize, setBubbleSize] = useState([60]);
   const [welcomeMessage, setWelcomeMessage] = useState("");
   const [widgetLang, setWidgetLang] = useState<"th" | "en">("th");
+  const [autoOpen, setAutoOpen] = useState(false);
+  const [hideBranding, setHideBranding] = useState(false);
+  const [openWidth, setOpenWidth] = useState("420");
+  const [openHeight, setOpenHeight] = useState("640");
 
   const agentId = agent?.id || "unknown";
   const endpoint = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-api`;
@@ -432,6 +436,11 @@ export default function AgentDetail() {
   -H "x-api-key: YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{ "message": "เล่าเรื่องสั้น ๆ ให้ฟังหน่อย", "stream": true }'`;
+
+  const curlResetSnippet = `curl -X POST "${endpoint}" \\
+  -H "x-api-key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "session_id": "user-123", "reset": true }'`;
 
   const jsSnippet = `const res = await fetch("${endpoint}", {
   method: "POST",
@@ -475,11 +484,12 @@ print(r.json()["reply"])`;
   const bubbleSizeParam = bubbleSize[0];
 
   const welcomeParam = welcomeMessage ? `&welcome_message=${encodeURIComponent(welcomeMessage)}` : "";
+  const extraWidgetParams = `&auto_open=${autoOpen}&hide_branding=${hideBranding}&open_width=${openWidth}&open_height=${openHeight}`;
 
-  const scriptEmbedCode = `<script src="${widgetBaseUrl}?agent_id=${agentId}&theme=${previewTheme}&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}&lang=${widgetLang}${welcomeParam}" defer><\/script>`;
+  const scriptEmbedCode = `<script src="${widgetBaseUrl}?agent_id=${agentId}&theme=${previewTheme}&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}&lang=${widgetLang}${extraWidgetParams}${welcomeParam}" defer><\/script>`;
 
   const iframeEmbedCode = `<iframe
-  src="${widgetBaseUrl}?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}&lang=${widgetLang}${welcomeParam}"
+  src="${widgetBaseUrl}?agent_id=${agentId}&mode=fullpage&theme=${previewTheme}&auto_open=true&hide_branding=${hideBranding}&open_width=${openWidth}&open_height=${openHeight}&color=${colorParam}&brand=${brandParam}&position=${positionParam}&bubble_size=${bubbleSizeParam}&lang=${widgetLang}${welcomeParam}"
   width="${widgetWidth}"
   height="${widgetHeight}"
   frameborder="0"
@@ -803,6 +813,13 @@ print(r.json()["reply"])`;
                       Header: <code className="bg-muted px-1 rounded">x-api-key: YOUR_API_KEY</code> ·
                       Body: JSON · Agent ต้องอยู่สถานะ <b>Published</b>
                     </p>
+                    <div className="pt-1">
+                      <Button asChild size="sm" variant="outline" className="rounded-xl gap-1.5">
+                        <a href="/docs/api" target="_blank" rel="noreferrer">
+                          <FileText className="h-3.5 w-3.5" /> เปิดเอกสารฉบับเต็มสำหรับนักพัฒนา
+                        </a>
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -822,6 +839,20 @@ print(r.json()["reply"])`;
                       </Button>
                     </div>
                     <pre className="bg-muted rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{curlStreamSnippet}</pre>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>cURL — reset session memory</Label>
+                      <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => copyToClipboard(curlResetSnippet, "cURL reset")}>
+                        <Copy className="h-3.5 w-3.5" /> {t("common.copy")}
+                      </Button>
+                    </div>
+                    <pre className="bg-muted rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{curlResetSnippet}</pre>
+                    <p className="text-xs text-muted-foreground">
+                      ส่ง <code>{"{ reset: true }"}</code> พร้อม <code>session_id</code> เพื่อล้างประวัติบทสนทนา — สะดวกสำหรับทดสอบ multi-turn ใหม่หมด.
+                      ใส่ <code>message</code> มาด้วยได้ในคำขอเดียวเพื่อเริ่ม session ใหม่ทันที.
+                    </p>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">
@@ -862,6 +893,7 @@ print(r.json()["reply"])`;
                           <tr className="border-t"><td className="p-2 font-mono">messages</td><td className="p-2">array</td><td className="p-2">รายการบทสนทนาแบบ multi-turn <code>{`{role,content}`}</code> (1–100 รายการ)</td></tr>
                           <tr className="border-t"><td className="p-2 font-mono">session_id</td><td className="p-2">string?</td><td className="p-2">เลือกใส่ — ใส่ค่าเดียวกันเพื่อให้ memory ต่อเนื่องระหว่าง request</td></tr>
                           <tr className="border-t"><td className="p-2 font-mono">stream</td><td className="p-2">boolean?</td><td className="p-2">ตั้ง <code>true</code> เพื่อรับ Server-Sent Events</td></tr>
+                          <tr className="border-t"><td className="p-2 font-mono">reset</td><td className="p-2">boolean?</td><td className="p-2">ตั้ง <code>true</code> พร้อม <code>session_id</code> เพื่อลบ memory ของ session นั้น</td></tr>
                         </tbody>
                       </table>
                     </div>
@@ -999,6 +1031,28 @@ print(r.json()["reply"])`;
                         placeholder="สวัสดีค่ะ! 👋 มีอะไรให้ช่วยไหมคะ?"
                       />
                       <p className="text-xs text-muted-foreground">ข้อความที่แสดงเมื่อเปิด widget (เว้นว่างเพื่อใช้ค่าเริ่มต้น)</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">⚡ เปิดหน้าต่างทันทีเมื่อโหลด</Label>
+                      <div className="flex items-center gap-3 h-10">
+                        <Switch checked={autoOpen} onCheckedChange={setAutoOpen} />
+                        <span className="text-xs text-muted-foreground">{autoOpen ? "ขยายอัตโนมัติ ไม่ต้องคลิก bubble" : "เริ่มต้นเป็น bubble (ผู้ใช้ต้องคลิกเปิด)"}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">🙈 ซ่อนข้อความ "Powered by"</Label>
+                      <div className="flex items-center gap-3 h-10">
+                        <Switch checked={hideBranding} onCheckedChange={setHideBranding} />
+                        <span className="text-xs text-muted-foreground">{hideBranding ? "ไม่แสดง footer" : "แสดง footer แบรนด์"}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">📐 ความกว้างหน้าต่างเปิด (px)</Label>
+                      <Input type="number" min={280} max={600} value={openWidth} onChange={(e) => setOpenWidth(e.target.value)} className="rounded-xl" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">📏 ความสูงหน้าต่างเปิด (px)</Label>
+                      <Input type="number" min={360} max={900} value={openHeight} onChange={(e) => setOpenHeight(e.target.value)} className="rounded-xl" />
                     </div>
                   </div>
                   {/* Script embed */}

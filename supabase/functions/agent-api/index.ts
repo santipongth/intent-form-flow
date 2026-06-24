@@ -130,6 +130,38 @@ serve(async (req) => {
       ? body.session_id.trim().slice(0, 128)
       : undefined;
     const wantStream = body?.stream === true;
+    const wantReset = body?.reset === true || body?.action === "reset";
+
+    // ---------- Session reset endpoint ----------
+    // POST { "session_id": "...", "reset": true }  -> deletes conversation + chat history
+    // Optionally combined with `message` to start fresh in the same call.
+    if (wantReset) {
+      if (!sessionId) {
+        return new Response(JSON.stringify({ error: "reset requires a session_id" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: existing } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("user_id", keyRow.user_id)
+        .eq("agent_id", keyRow.agent_id)
+        .eq("external_session_id", sessionId)
+        .maybeSingle();
+      let deleted = false;
+      if (existing) {
+        await supabase.from("chat_messages").delete().eq("conversation_id", existing.id);
+        await supabase.from("conversations").delete().eq("id", existing.id);
+        deleted = true;
+      }
+      if (!message && !messages) {
+        return new Response(JSON.stringify({ ok: true, session_id: sessionId, deleted }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // fall through: continue with a fresh session if message provided
+    }
+
     if (!message && !messages) {
       return new Response(JSON.stringify({ error: "Provide 'message' (string) or 'messages' (array)" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
