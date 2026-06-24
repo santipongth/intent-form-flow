@@ -209,6 +209,7 @@ function toggleChat(){
   isOpen=!isOpen;
   document.getElementById('chat-window').classList.toggle('open',isOpen);
   document.getElementById('bubble').style.display=isOpen?'none':'flex';
+  try{window.parent&&window.parent.postMessage({source:'tm-widget',type:'resize',open:isOpen},'*');}catch(e){}
   if(isOpen&&messages.length===0){
     addBotMessage(${welcomeMessage ? `"${welcomeMessage.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"` : `"${txt.defaultWelcome}"`});
   }
