@@ -337,6 +337,8 @@ serve(async (req) => {
     const startTime = Date.now();
 
     const gatewayModel = normalizeModel(agent.model);
+    const allowTemp = supportsCustomTemperature(gatewayModel);
+    const tempValue = agent.temperature ?? 0.7;
 
     // ---------- Streaming branch ----------
     if (wantStream) {
@@ -349,7 +351,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: gatewayModel,
           messages: gatewayMessages,
-          temperature: agent.temperature ?? 0.7,
+          ...(allowTemp ? { temperature: tempValue } : {}),
           stream: true,
         }),
       });
@@ -439,7 +441,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: gatewayModel,
         messages: gatewayMessages,
-        temperature: agent.temperature ?? 0.7,
+        ...(allowTemp ? { temperature: tempValue } : {}),
       }),
     });
 
