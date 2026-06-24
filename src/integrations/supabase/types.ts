@@ -348,6 +348,7 @@ export type Database = {
         Row: {
           agent_id: string | null
           created_at: string | null
+          external_session_id: string | null
           id: string
           memory_summary: string | null
           summary_message_count: number
@@ -358,6 +359,7 @@ export type Database = {
         Insert: {
           agent_id?: string | null
           created_at?: string | null
+          external_session_id?: string | null
           id?: string
           memory_summary?: string | null
           summary_message_count?: number
@@ -368,6 +370,7 @@ export type Database = {
         Update: {
           agent_id?: string | null
           created_at?: string | null
+          external_session_id?: string | null
           id?: string
           memory_summary?: string | null
           summary_message_count?: number

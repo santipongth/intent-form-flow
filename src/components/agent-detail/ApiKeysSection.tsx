@@ -69,6 +69,21 @@ export function ApiKeysSection({ agentId }: { agentId: string }) {
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
+                <div className="mt-3 space-y-1">
+                  <p className="text-xs font-medium text-amber-900 dark:text-amber-200">Quick start (cURL):</p>
+                  <div className="flex items-start gap-2">
+                    <pre className="flex-1 text-[11px] p-2 bg-background rounded-lg overflow-x-auto whitespace-pre-wrap break-all">{`curl -X POST "${apiUrl}" \\
+  -H "x-api-key: ${newlyCreated}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"message":"สวัสดี","session_id":"user-123"}'`}</pre>
+                    <Button size="icon" variant="outline" className="rounded-lg shrink-0" onClick={() => copy(`curl -X POST "${apiUrl}" \\
+  -H "x-api-key: ${newlyCreated}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"message":"สวัสดี","session_id":"user-123"}'`)}>
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
                 <Button size="sm" variant="ghost" className="mt-2" onClick={() => setNewlyCreated(null)}>
                   I have saved it
                 </Button>
