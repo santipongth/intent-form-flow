@@ -813,6 +813,13 @@ print(r.json()["reply"])`;
                       Header: <code className="bg-muted px-1 rounded">x-api-key: YOUR_API_KEY</code> ·
                       Body: JSON · Agent ต้องอยู่สถานะ <b>Published</b>
                     </p>
+                    <div className="pt-1">
+                      <Button asChild size="sm" variant="outline" className="rounded-xl gap-1.5">
+                        <a href="/docs/api" target="_blank" rel="noreferrer">
+                          <FileText className="h-3.5 w-3.5" /> เปิดเอกสารฉบับเต็มสำหรับนักพัฒนา
+                        </a>
+                      </Button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -832,6 +839,20 @@ print(r.json()["reply"])`;
                       </Button>
                     </div>
                     <pre className="bg-muted rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{curlStreamSnippet}</pre>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>cURL — reset session memory</Label>
+                      <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => copyToClipboard(curlResetSnippet, "cURL reset")}>
+                        <Copy className="h-3.5 w-3.5" /> {t("common.copy")}
+                      </Button>
+                    </div>
+                    <pre className="bg-muted rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{curlResetSnippet}</pre>
+                    <p className="text-xs text-muted-foreground">
+                      ส่ง <code>{"{ reset: true }"}</code> พร้อม <code>session_id</code> เพื่อล้างประวัติบทสนทนา — สะดวกสำหรับทดสอบ multi-turn ใหม่หมด.
+                      ใส่ <code>message</code> มาด้วยได้ในคำขอเดียวเพื่อเริ่ม session ใหม่ทันที.
+                    </p>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">
@@ -872,6 +893,7 @@ print(r.json()["reply"])`;
                           <tr className="border-t"><td className="p-2 font-mono">messages</td><td className="p-2">array</td><td className="p-2">รายการบทสนทนาแบบ multi-turn <code>{`{role,content}`}</code> (1–100 รายการ)</td></tr>
                           <tr className="border-t"><td className="p-2 font-mono">session_id</td><td className="p-2">string?</td><td className="p-2">เลือกใส่ — ใส่ค่าเดียวกันเพื่อให้ memory ต่อเนื่องระหว่าง request</td></tr>
                           <tr className="border-t"><td className="p-2 font-mono">stream</td><td className="p-2">boolean?</td><td className="p-2">ตั้ง <code>true</code> เพื่อรับ Server-Sent Events</td></tr>
+                          <tr className="border-t"><td className="p-2 font-mono">reset</td><td className="p-2">boolean?</td><td className="p-2">ตั้ง <code>true</code> พร้อม <code>session_id</code> เพื่อลบ memory ของ session นั้น</td></tr>
                         </tbody>
                       </table>
                     </div>
