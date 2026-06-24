@@ -222,7 +222,7 @@ serve(async (req) => {
 
     const { data: agent } = await supabase
       .from("agents")
-      .select("name, objective, system_prompt, model, temperature, status")
+      .select("name, objective, system_prompt, model, temperature, status, tools")
       .eq("id", keyRow.agent_id)
       .eq("user_id", keyRow.user_id)
       .maybeSingle();
@@ -240,6 +240,16 @@ serve(async (req) => {
 
     let systemPrompt = agent.system_prompt
       || (agent.objective ? `You are ${agent.name}. Objective: ${agent.objective}.` : "You are a helpful assistant.");
+
+    // Inject the agent's User Prompt template (configured in the UI) if any.
+    const userPromptTemplate = (() => {
+      const t: any = agent.tools;
+      const v = t && typeof t === "object" ? t._userPrompt : undefined;
+      return typeof v === "string" ? v.trim() : "";
+    })();
+    if (userPromptTemplate) {
+      systemPrompt += `\n\n---\nUser Prompt Template (apply when responding):\n${userPromptTemplate}\n---`;
+    }
 
     const { data: knowledge } = await supabase
       .from("knowledge_files")
