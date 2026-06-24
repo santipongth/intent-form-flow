@@ -779,7 +779,7 @@ print(r.json()["reply"])`;
           </div>
 
           <Tabs defaultValue="api" className="space-y-4">
-            <TabsList className="grid grid-cols-4 rounded-xl h-11">
+            <TabsList className="grid grid-cols-3 rounded-xl h-11">
               <TabsTrigger value="api" className="rounded-lg gap-1.5 text-xs sm:text-sm">
                 <Globe className="h-4 w-4 hidden sm:block" /> API
               </TabsTrigger>
@@ -789,9 +789,6 @@ print(r.json()["reply"])`;
               <TabsTrigger value="preview" className="rounded-lg gap-1.5 text-xs sm:text-sm">
                 <Monitor className="h-4 w-4 hidden sm:block" /> Preview
               </TabsTrigger>
-              <TabsTrigger value="apikey" className="rounded-lg gap-1.5 text-xs sm:text-sm">
-                <Key className="h-4 w-4 hidden sm:block" /> API Key
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="api">
@@ -800,7 +797,7 @@ print(r.json()["reply"])`;
                   <CardTitle className="text-lg">{t("detail.apiEndpoint")}</CardTitle>
                   <CardDescription>{t("detail.apiEndpointDesc")}</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5">
                   <div className="space-y-2">
                     <Label>{t("detail.endpointUrl")}</Label>
                     <div className="flex gap-2">
@@ -809,15 +806,98 @@ print(r.json()["reply"])`;
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Method: <code className="bg-muted px-1 rounded">POST</code> ·
+                      Header: <code className="bg-muted px-1 rounded">x-api-key: YOUR_API_KEY</code> ·
+                      Body: JSON · Agent ต้องอยู่สถานะ <b>Published</b>
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label>{t("detail.curlExample")}</Label>
+                      <Label>cURL — single message</Label>
                       <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => copyToClipboard(curlSnippet, "cURL")}>
                         <Copy className="h-3.5 w-3.5" /> {t("common.copy")}
                       </Button>
                     </div>
                     <pre className="bg-muted rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{curlSnippet}</pre>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>cURL — streaming (SSE)</Label>
+                      <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => copyToClipboard(curlStreamSnippet, "cURL stream")}>
+                        <Copy className="h-3.5 w-3.5" /> {t("common.copy")}
+                      </Button>
+                    </div>
+                    <pre className="bg-muted rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{curlStreamSnippet}</pre>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>JavaScript (fetch)</Label>
+                        <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => copyToClipboard(jsSnippet, "JavaScript")}>
+                          <Copy className="h-3.5 w-3.5" /> {t("common.copy")}
+                        </Button>
+                      </div>
+                      <pre className="bg-muted rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{jsSnippet}</pre>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>Python (requests)</Label>
+                        <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => copyToClipboard(pySnippet, "Python")}>
+                          <Copy className="h-3.5 w-3.5" /> {t("common.copy")}
+                        </Button>
+                      </div>
+                      <pre className="bg-muted rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{pySnippet}</pre>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Response (200 OK)</Label>
+                    <pre className="bg-muted rounded-xl p-4 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{responseExample}</pre>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Request body fields</Label>
+                    <div className="rounded-xl border overflow-hidden text-xs">
+                      <table className="w-full">
+                        <thead className="bg-muted">
+                          <tr><th className="text-left p-2">Field</th><th className="text-left p-2">Type</th><th className="text-left p-2">Description</th></tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-t"><td className="p-2 font-mono">message</td><td className="p-2">string</td><td className="p-2">ข้อความผู้ใช้ (≤ 32,000 ตัวอักษร). ใช้แทน <code>messages</code></td></tr>
+                          <tr className="border-t"><td className="p-2 font-mono">messages</td><td className="p-2">array</td><td className="p-2">รายการบทสนทนาแบบ multi-turn <code>{`{role,content}`}</code> (1–100 รายการ)</td></tr>
+                          <tr className="border-t"><td className="p-2 font-mono">session_id</td><td className="p-2">string?</td><td className="p-2">เลือกใส่ — ใส่ค่าเดียวกันเพื่อให้ memory ต่อเนื่องระหว่าง request</td></tr>
+                          <tr className="border-t"><td className="p-2 font-mono">stream</td><td className="p-2">boolean?</td><td className="p-2">ตั้ง <code>true</code> เพื่อรับ Server-Sent Events</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Errors</Label>
+                    <div className="rounded-xl border overflow-hidden text-xs">
+                      <table className="w-full">
+                        <thead className="bg-muted">
+                          <tr><th className="text-left p-2 w-20">Status</th><th className="text-left p-2">เมื่อไร</th></tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-t"><td className="p-2 font-mono">400</td><td className="p-2">ไม่มี <code>message</code>/<code>messages</code> หรือรูปแบบไม่ถูก</td></tr>
+                          <tr className="border-t"><td className="p-2 font-mono">401</td><td className="p-2">ไม่ได้ส่ง <code>x-api-key</code> หรือ key ผิด/ถูก revoke</td></tr>
+                          <tr className="border-t"><td className="p-2 font-mono">403</td><td className="p-2">Agent ยังไม่ Published</td></tr>
+                          <tr className="border-t"><td className="p-2 font-mono">404</td><td className="p-2">หา Agent ไม่เจอ</td></tr>
+                          <tr className="border-t"><td className="p-2 font-mono">413</td><td className="p-2">Body เกิน 256KB</td></tr>
+                          <tr className="border-t"><td className="p-2 font-mono">429</td><td className="p-2">เกิน Rate limit 60 req/min ต่อ key (ดู header <code>Retry-After</code>)</td></tr>
+                          <tr className="border-t"><td className="p-2 font-mono">402 / 502</td><td className="p-2">AI provider เครดิตหมด / ขัดข้อง</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2 bg-primary/10 text-primary rounded-xl px-4 py-3 text-sm">
+                    <Key className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>ยังไม่มี API key? เลื่อนลงไปที่ <b>API Keys</b> ด้านล่างเพื่อสร้าง key ใหม่ (ต้องเก็บค่า key ตอนแสดงครั้งเดียว)</span>
                   </div>
                 </CardContent>
               </Card>
