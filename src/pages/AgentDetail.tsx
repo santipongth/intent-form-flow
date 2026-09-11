@@ -594,7 +594,11 @@ print(r.json()["reply"])`;
       temperature: editTemperature[0],
       max_tokens: parseInt(editMaxTokens) || 2048,
       tools: withAgentSettings(
-        withPromptAndSkills(agent.tools as any, parsed.data.userPrompt, parsed.data.skills) as any,
+        withPromptAndSkills(
+          agent.tools as any,
+          parsed.data.userPrompt,
+          toSkillEntries(parsed.data.skills, skillCatalog),
+        ) as any,
         {
           greeting: editGreeting,
           starters: editStarters.map((x) => x.trim()).filter(Boolean),
