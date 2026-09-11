@@ -166,6 +166,8 @@ serve(async (req) => {
       if (passages && passages.length > 0) {
         systemPrompt += renderKnowledgeContext(passages);
         citations = buildCitations(passages);
+        hasKnowledge = true;
+
         trace.record({
           span_type: "retrieval",
           name: "semantic knowledge search",
