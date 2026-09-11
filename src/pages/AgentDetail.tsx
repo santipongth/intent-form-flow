@@ -24,7 +24,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ALL_MODEL_IDS, MODEL_LABELS } from "@/data/constants";
 import { useUpdateAgent } from "@/hooks/useUpdateAgent";
-import { useKnowledgeFiles, useUploadKnowledgeFile, useDeleteKnowledgeFile, useAddKnowledgeUrl, useRefreshKnowledgeUrl } from "@/hooks/useKnowledge";
+import { useKnowledgeFiles, useUploadKnowledgeFile, useDeleteKnowledgeFile, useAddKnowledgeUrl, useRefreshKnowledgeUrl, useReprocessKnowledgeFile } from "@/hooks/useKnowledge";
 import type { AgentRow } from "@/hooks/useAgents";
 import { ApiKeysSection } from "@/components/agent-detail/ApiKeysSection";
 import { WebhooksSection } from "@/components/agent-detail/WebhooksSection";
@@ -74,6 +74,7 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
   const deleteFile = useDeleteKnowledgeFile();
   const addUrl = useAddKnowledgeUrl();
   const refreshUrl = useRefreshKnowledgeUrl();
+  const reprocessFile = useReprocessKnowledgeFile();
   const [urlInput, setUrlInput] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [uploadQueue, setUploadQueue] = useState<{ name: string; stage: "uploading" | "extracting" }[]>([]);
@@ -293,6 +294,11 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
                     {f.source_type === "url" && (
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => refreshUrl.mutate({ id: f.id, agentId })} disabled={refreshUrl.isPending} aria-label="อ่าน URL ใหม่">
                         <RefreshCw className={`h-4 w-4 ${refreshUrl.isPending ? "animate-spin" : ""}`} />
+                      </Button>
+                    )}
+                    {f.source_type !== "url" && f.status === "error" && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => reprocessFile.mutate({ id: f.id, filePath: f.file_path, agentId })} disabled={reprocessFile.isPending} aria-label="ประมวลผลไฟล์ใหม่">
+                        <RefreshCw className={`h-4 w-4 ${reprocessFile.isPending ? "animate-spin" : ""}`} />
                       </Button>
                     )}
                     {f.status === "ready" && f.content && (

@@ -14,76 +14,68 @@ function sanitizeText(text: string): string {
 
 // ─── ZIP helpers ───────────────────────────────────────────────────────────────
 
+/** Inflate raw deflate data (ZIP method 8). */
+async function inflateRaw(raw: Uint8Array): Promise<Uint8Array> {
+  const ds = new DecompressionStream("deflate-raw");
+  const stream = new Blob([raw]).stream().pipeThrough(ds);
+  const buf = await new Response(stream).arrayBuffer();
+  return new Uint8Array(buf);
+}
+
+interface ZipEntry { name: string; method: number; compressedSize: number; localOffset: number }
+
+/**
+ * Read the ZIP central directory. This is the authoritative entry list —
+ * local headers can carry zeroed sizes when a data descriptor is used.
+ */
+function readCentralDirectory(zipBytes: Uint8Array): ZipEntry[] {
+  const view = new DataView(zipBytes.buffer, zipBytes.byteOffset, zipBytes.byteLength);
+  // Locate End Of Central Directory record (0x06054b50), scanning backwards.
+  let eocd = -1;
+  for (let i = zipBytes.length - 22; i >= 0 && i >= zipBytes.length - 66_000; i--) {
+    if (view.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) return [];
+  const count = view.getUint16(eocd + 10, true);
+  let offset = view.getUint32(eocd + 16, true);
+
+  const entries: ZipEntry[] = [];
+  for (let i = 0; i < count && offset + 46 <= zipBytes.length; i++) {
+    if (view.getUint32(offset, true) !== 0x02014b50) break;
+    const method = view.getUint16(offset + 10, true);
+    const compressedSize = view.getUint32(offset + 20, true);
+    const nameLen = view.getUint16(offset + 28, true);
+    const extraLen = view.getUint16(offset + 30, true);
+    const commentLen = view.getUint16(offset + 32, true);
+    const localOffset = view.getUint32(offset + 42, true);
+    const name = new TextDecoder().decode(zipBytes.slice(offset + 46, offset + 46 + nameLen));
+    entries.push({ name, method, compressedSize, localOffset });
+    offset += 46 + nameLen + extraLen + commentLen;
+  }
+  return entries;
+}
+
 /** Extract a file from a ZIP archive by path. Supports stored (0) and deflated (8). */
 async function extractFileFromZip(zipBytes: Uint8Array, targetPath: string): Promise<Uint8Array | null> {
   const view = new DataView(zipBytes.buffer, zipBytes.byteOffset, zipBytes.byteLength);
+  const entry = readCentralDirectory(zipBytes).find((e) => e.name === targetPath);
+  if (!entry) return null;
 
-  // Scan Local File Headers (signature 0x04034b50)
-  let offset = 0;
-  while (offset + 30 <= zipBytes.length) {
-    if (view.getUint32(offset, true) !== 0x04034b50) break;
+  const lo = entry.localOffset;
+  if (lo + 30 > zipBytes.length || view.getUint32(lo, true) !== 0x04034b50) return null;
+  const nameLen = view.getUint16(lo + 26, true);
+  const extraLen = view.getUint16(lo + 28, true);
+  const dataStart = lo + 30 + nameLen + extraLen;
+  const raw = zipBytes.slice(dataStart, dataStart + entry.compressedSize);
 
-    const compressionMethod = view.getUint16(offset + 8, true);
-    const compressedSize = view.getUint32(offset + 18, true);
-    const uncompressedSize = view.getUint32(offset + 22, true);
-    const nameLen = view.getUint16(offset + 26, true);
-    const extraLen = view.getUint16(offset + 28, true);
-    const nameBytes = zipBytes.slice(offset + 30, offset + 30 + nameLen);
-    const fileName = new TextDecoder().decode(nameBytes);
-    const dataStart = offset + 30 + nameLen + extraLen;
-
-    if (fileName === targetPath) {
-      const raw = zipBytes.slice(dataStart, dataStart + compressedSize);
-      if (compressionMethod === 0) {
-        return raw; // stored
-      }
-      if (compressionMethod === 8) {
-        // deflated – use DecompressionStream with raw deflate
-        const ds = new DecompressionStream("raw");
-        const writer = ds.writable.getWriter();
-        writer.write(raw);
-        writer.close();
-        const reader = ds.readable.getReader();
-        const chunks: Uint8Array[] = [];
-        let totalLen = 0;
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-          totalLen += value.length;
-        }
-        const result = new Uint8Array(totalLen);
-        let pos = 0;
-        for (const c of chunks) {
-          result.set(c, pos);
-          pos += c.length;
-        }
-        return result;
-      }
-      // unsupported compression
-      return null;
-    }
-
-    offset = dataStart + compressedSize;
-  }
+  if (entry.method === 0) return raw;
+  if (entry.method === 8) return await inflateRaw(raw);
   return null;
 }
 
 /** List all file names inside a ZIP archive */
 function listZipEntries(zipBytes: Uint8Array): string[] {
-  const view = new DataView(zipBytes.buffer, zipBytes.byteOffset, zipBytes.byteLength);
-  const names: string[] = [];
-  let offset = 0;
-  while (offset + 30 <= zipBytes.length) {
-    if (view.getUint32(offset, true) !== 0x04034b50) break;
-    const compressedSize = view.getUint32(offset + 18, true);
-    const nameLen = view.getUint16(offset + 26, true);
-    const extraLen = view.getUint16(offset + 28, true);
-    const nameBytes = zipBytes.slice(offset + 30, offset + 30 + nameLen);
-    names.push(new TextDecoder().decode(nameBytes));
-    offset = offset + 30 + nameLen + extraLen + compressedSize;
-  }
-  return names;
+  return readCentralDirectory(zipBytes).map((e) => e.name);
 }
 
 /** Extract XML content from DOCX (word/document.xml) */
