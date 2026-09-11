@@ -74,6 +74,7 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
   const deleteFile = useDeleteKnowledgeFile();
   const addUrl = useAddKnowledgeUrl();
   const refreshUrl = useRefreshKnowledgeUrl();
+  const reprocessFile = useReprocessKnowledgeFile();
   const [urlInput, setUrlInput] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [uploadQueue, setUploadQueue] = useState<{ name: string; stage: "uploading" | "extracting" }[]>([]);
