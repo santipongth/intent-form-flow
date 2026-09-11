@@ -239,7 +239,7 @@ serve(async (req) => {
     // Server-side validation: confirm record exists and check size
     const { data: fileInfo, error: infoError } = await supabase
       .from("knowledge_files")
-      .select("file_size, file_name, file_path")
+      .select("file_size, file_name, file_path, agent_id, user_id")
       .eq("id", knowledge_file_id)
       .single();
 
