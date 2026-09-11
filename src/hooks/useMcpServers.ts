@@ -72,7 +72,10 @@ export function useSaveMcpServer(agentId: string) {
       if (input.auth_type === "none") payload.auth_secret = null;
 
       if (input.id) {
-        const { error } = await supabase.from("agent_mcp_servers").update(payload).eq("id", input.id);
+        const { error } = await supabase
+          .from("agent_mcp_servers")
+          .update(payload as never)
+          .eq("id", input.id);
         if (error) throw error;
         return input.id;
       }
