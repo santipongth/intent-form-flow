@@ -1,50 +1,61 @@
-# แผน: สร้าง Master Prompt สำหรับ Technical Report
+# ตรวจสุขภาพโปรเจกต์ + แผนยกระดับสู่ Agentic AI
 
-## เป้าหมาย
-สร้างไฟล์ `docs/technical-report-prompt.md` เก็บ "master prompt" 1 ก้อน ที่ผู้ใช้สามารถคัดลอกไปให้ Claude (หรือ LLM ตัวอื่น) พร้อมกับ codebase เพื่อผลิตเอกสาร Technical Report ฉบับสมบูรณ์ของโปรเจกต์ ThoughtMind
+## สรุปผลตรวจ (จากการอ่านโค้ดทั้งโปรเจกต์)
 
-## ขอบเขตที่ prompt จะสั่ง Claude ให้ครอบคลุม
-จากการสแกน codebase พบว่าโปรเจกต์มีองค์ประกอบเหล่านี้ที่ต้องอธิบายในรายงาน:
+ระบบหลักทำงานจริงเกือบทั้งหมด — Dashboard, Analytics, Monitor, Chat, Knowledge, A/B Testing, Webhooks, API ทั้งหมดต่อกับฐานข้อมูลจริง ไม่ใช่ข้อมูลปลอม
 
-- **Vision / PRD**: intent-first agent platform ("LangFlow for normal people"), wizard-based
-- **Frontend**: Vite + React 18 + TS + Tailwind + shadcn, 20 หน้า (Landing, Auth, Dashboard, AgentBuilder, AgentDetail, ChatConsole, Marketplace, Analytics, Monitor, ABTesting, DocsApi, WidgetPreview, ฯลฯ)
-- **Backend (Lovable Cloud / Supabase)**: 18 ตาราง (agents, conversations, chat_messages, knowledge_files, agent_api_keys, api_key_usage, webhooks, ab_tests, analytics_events, error_logs, message_feedback, skills, profiles, email_* ฯลฯ), RLS + GRANT policies, 8+ security-definer functions
-- **Edge Functions**: `chat`, `agent-api`, `issue-api-key`, `widget`, `extract-text`, `test-webhook`, `auth-email-hook`, `process-email-queue`
-- **AI Integration**: Lovable AI Gateway (Gemini/GPT-5 family), tool-calling, streaming, knowledge injection
-- **Deploy surface**: Public REST API (`x-api-key`), Widget (bubble + fullpage iframe), Webhooks
-- **Ops**: analytics events, error logs, rate limiting (60/min), feedback, A/B tests, email queue (pgmq)
+### จุดที่ยังเป็นข้อมูลปลอม
+1. **หน้า Marketplace** — คะแนนดาว (4.8), จำนวนรีวิว, จำนวนคนใช้ ("2.3K uses") และชื่อผู้สร้าง เป็นตัวเลขที่เขียนตายไว้ในโค้ด ไม่ได้มาจากการใช้งานจริง
+2. **แถบความคืบหน้าตอนอัปโหลดไฟล์ความรู้** — ตัวเลข % เป็นการสุ่มขึ้นเอง ไม่ใช่ความคืบหน้าจริงของการอัปโหลด
+3. **เครื่องมือที่ติดป้าย "เร็ว ๆ นี้"** (รันโค้ด, ส่งอีเมล) — ยังเลือกเปิดได้แต่ไม่มีการทำงานจริงรองรับ
 
-## โครงสร้างของ Master Prompt ที่จะเขียน
-Prompt จะประกอบด้วย 6 บล็อกชัดเจน:
+### บั๊กที่พบ
+4. **สถิติคลังความรู้บนหน้าแรก** ไม่ผูกกับบัญชีผู้ใช้ — ถ้าสลับบัญชีในเบราว์เซอร์เดียวกันจะเห็นตัวเลขค้างของบัญชีก่อนหน้า
+5. **การลองเชื่อมต่อใหม่ตอนแชท** อาจแสดงข้อความ error ผิดตัว เมื่อครั้งแรกล้มเหลวแบบหนึ่งและครั้งที่สองล้มเหลวอีกแบบ
+6. **ชื่อห้องแชท** อาจถูกเขียนทับ ถ้าผู้ใช้พิมพ์ก่อนประวัติเก่าโหลดเสร็จ
+7. **บันทึก log ของระบบเลือกโมเดล** แสดงชื่อโมเดลผิดตัวหลังสลับโมเดลสำรอง (กระทบแค่การดูปัญหาย้อนหลัง)
 
-1. **Role & Mission** — ตั้งให้ Claude เป็น Senior Technical Writer + Solutions Architect
-2. **Context ingestion instructions** — บอกให้อ่าน `.lovable/plan.md`, `README.md`, `src/**`, `supabase/functions/**`, `supabase/migrations/**`, `src/integrations/supabase/types.ts`, `mem://` (ถ้ามี), แล้วสรุปก่อนเขียน
-3. **Required Output — Table of Contents** ที่บังคับ:
-   1. Executive Summary
-   2. Product Overview & Vision (intent-first, target users, USP)
-   3. System Architecture (diagram ASCII: Browser ↔ Vite SPA ↔ Supabase Auth/DB/Storage/Edge Functions ↔ Lovable AI Gateway ↔ 3rd-party webhooks)
-   4. Tech Stack & Rationale
-   5. Data Model (ทุกตาราง + คอลัมน์สำคัญ + relations + RLS strategy + `has_role` pattern)
-   6. Frontend Architecture (routing, state = react-query + context, i18n, theme, design tokens ใน `index.css`)
-   7. Feature Deep-Dive: Agent Builder wizard, Chat Console, Knowledge upload/RAG, Marketplace, Monitor, Analytics, A/B testing, Skills
-   8. Edge Functions reference (ต่อฟังก์ชัน: purpose, input, output, auth model, errors)
-   9. Public Deployment Surface: REST API (`/agent-api`), Widget embed, Webhooks, API Keys lifecycle, rate limits, session memory
-   10. AI Layer (Gateway, model normalization, tool-calling, streaming, temperature rules สำหรับ gpt-5)
-   11. Security (RLS + GRANT, security-definer + search_path, API key hashing SHA-256, role separation)
-   12. Observability (error_logs, analytics_events, api_key_usage, ai_gateway logs)
-   13. Email & Async jobs (pgmq queues, auth-email-hook, process-email-queue)
-   14. Non-functional: performance, scalability limits, known constraints (body ≤256KB, messages ≤100)
-   15. Developer Onboarding (env vars, local dev, deploy flow via Lovable)
-   16. Known Gaps / Roadmap (อ้างอิงจาก `.lovable/plan.md`)
-   17. Appendix: Glossary, endpoint cheat-sheet, sample cURL/JS/Python
-4. **Writing style rules** — bilingual TH/EN headings, Markdown, mermaid/ASCII diagrams, code blocks with language tags, tables for schemas, no marketing fluff, cite file paths เช่น `supabase/functions/agent-api/index.ts:120`
-5. **Quality checklist** ที่ Claude ต้องเช็คตัวเองก่อนส่ง (ทุกตาราง ทุก edge function ถูกกล่าวถึง; ทุก endpoint มีตัวอย่าง; ทุก security decision มีเหตุผล; ไม่มี placeholder "TODO")
-6. **Deliverable format** — ส่งเป็น 1 ไฟล์ `TECHNICAL_REPORT.md` พร้อม TOC มี anchor links, ประมาณ 8,000–15,000 คำ
+### ช่องว่างสำคัญด้าน Agentic AI
+- **"Skills" ยังไม่มีผลจริง** — เป็นแค่ป้ายกำกับ ไม่ถูกส่งเข้าไปในคำสั่งของ Agent เลย
+- **คลังความรู้ยังไม่ใช่ RAG** — ระบบยัดเนื้อหาไฟล์ทั้งก้อนเข้าไป (ตัดที่ 50,000 ตัวอักษร) ไฟล์ใหญ่จะถูกตัดทิ้งเงียบ ๆ
+- **API ภายนอกใช้เครื่องมือไม่ได้** — เรียกผ่าน API/Widget จะไม่มี web search / คำนวณ / อ่านตาราง
+- ไม่มี: การวางแผนหลายขั้น, เครื่องมือที่ผู้ใช้สร้างเอง, ความจำระยะยาวข้ามห้องแชท, การขออนุมัติก่อนทำงานสำคัญ, ตัวกรองความปลอดภัย, การไล่ดูขั้นตอนการทำงานย้อนหลัง, การตั้งเวลารันอัตโนมัติ, การทำงานหลาย Agent ร่วมกัน, ประวัติเวอร์ชันของ Agent
 
-## ไฟล์ที่จะสร้าง
-- `docs/technical-report-prompt.md` — master prompt (ภาษาไทยเป็นหลัก + คีย์เวิร์ดอังกฤษ) พร้อมใช้งาน คัดลอกวางส่งให้ Claude ได้เลย
+---
 
-## ไม่เปลี่ยนแปลง
-ไม่แก้ source code, ไม่ยุ่ง schema, ไม่ deploy อะไร — เป็นเอกสารล้วน
+## แผนที่เสนอ
 
-ถ้าโอเค กด Approve เพื่อให้สร้างไฟล์ได้เลยครับ หรือบอกว่าอยากปรับ TOC / เพิ่มหัวข้อ / เปลี่ยนภาษาเป็นอังกฤษล้วน ก็แจ้งได้
+### ระยะ 1 — แก้ของที่พังและของปลอม (ทำก่อน)
+- ผูกสถิติคลังความรู้กับบัญชีผู้ใช้
+- แก้การรายงาน error ตอนลองเชื่อมต่อใหม่ และการตั้งชื่อห้องแชท
+- เปลี่ยนแถบอัปโหลดเป็นสถานะจริง (กำลังอัปโหลด / กำลังแปลงข้อความ / พร้อมใช้) แทนเปอร์เซ็นต์สุ่ม
+- Marketplace: เก็บจำนวนการนำไปใช้จริงลงฐานข้อมูล และซ่อนดาว/รีวิวจนกว่าจะมีระบบรีวิวจริง
+- ปิดการเลือกเครื่องมือที่ยัง "เร็ว ๆ นี้" ให้กดไม่ได้จริง
+
+### ระยะ 2 — ทำให้ Agent ฉลาดขึ้นจริง
+- **ทำให้ Skills มีผล**: ส่งรายการ skill + คำอธิบายเข้าไปในคำสั่งระบบของ Agent ทั้งทางแชท, API และ Widget
+- **RAG จริง**: แบ่งไฟล์เป็นชิ้น สร้าง embedding เก็บด้วย pgvector แล้วดึงเฉพาะส่วนที่เกี่ยวข้องกับคำถาม แทนการยัดทั้งไฟล์
+- **เปิดเครื่องมือให้ API/Widget**: ย้ายลูปเรียกเครื่องมือมาเป็นโค้ดกลางที่ทั้ง chat และ agent-api ใช้ร่วมกัน
+- **ไล่ดูขั้นตอนย้อนหลัง (Trace)**: บันทึกทุกขั้น (คิด → เรียกเครื่องมือ → ผลลัพธ์ → ตอบ) แล้วแสดงในหน้า Monitor
+
+### ระยะ 3 — ความสามารถระดับ Agentic เต็มรูปแบบ
+- **ความจำระยะยาว**: จดจำข้อเท็จจริงเกี่ยวกับผู้ใช้ข้ามห้องแชท พร้อมหน้าให้ดู/ลบได้
+- **เครื่องมือที่ผู้ใช้สร้างเอง**: ให้ผู้ใช้ผูก API ภายนอกของตัวเองเป็นเครื่องมือของ Agent
+- **ขออนุมัติก่อนทำงานสำคัญ**: เครื่องมือที่ทำให้เกิดผลจริง (ส่งอีเมล/ยิง API) ต้องกดยืนยันก่อน
+- **ตัวกรองความปลอดภัย**: กรองเนื้อหาเข้า-ออก และกันการหลอกให้ Agent เปลี่ยนคำสั่ง
+- **ตั้งเวลารันอัตโนมัติ**: ให้ Agent ทำงานตามตาราง/เมื่อมีเหตุการณ์ แล้วส่งผลออกทาง webhook
+- **หลาย Agent ทำงานร่วมกัน**: Agent หลักส่งงานต่อให้ Agent ย่อยตามความถนัด
+- **ประวัติเวอร์ชัน**: เก็บทุกครั้งที่แก้ prompt/ตั้งค่า ย้อนกลับได้ และเทียบผลก่อน-หลัง
+- **งบและเพดานค่าใช้จ่าย**: กำหนดเพดาน token/ค่าใช้จ่ายต่อ Agent
+
+---
+
+## รายละเอียดทางเทคนิค
+
+- ระยะ 1: แก้ query key ใน `src/pages/Dashboard.tsx`, แก้ตัวแปร `resp` ที่ค้างข้ามรอบ retry ใน `src/lib/streamChat.ts`, แก้ progress จำลองใน `src/pages/AgentDetail.tsx`, เพิ่มคอลัมน์ `clone_count` + ตาราง marketplace stats
+- ระยะ 2: migration เปิด `pgvector` + ตาราง `knowledge_chunks(embedding vector)`, edge function `embed-knowledge`, ฟังก์ชัน `match_knowledge_chunks` (RPC), ย้าย tool loop จาก `supabase/functions/chat/index.ts` ไป `_shared/agent-runtime.ts` ให้ `agent-api` ใช้ร่วม, ตาราง `agent_traces` + span rendering ใน `src/pages/Monitor.tsx`
+- ระยะ 3: ตาราง `agent_memories` (vector), `agent_custom_tools`, `tool_approvals`, `agent_versions`, `agent_schedules` (pg_cron), guardrail hook ก่อน/หลังเรียกโมเดล
+
+## ขอบเขตที่ยังไม่รวม
+- ระบบรีวิว/ให้ดาวจริงใน Marketplace (ต้องออกแบบ UX เพิ่ม)
+- การเชื่อม MCP servers ภายนอก
