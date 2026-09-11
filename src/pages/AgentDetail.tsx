@@ -671,17 +671,21 @@ print(r.json()["reply"])`;
 
       {/* Main Tabs */}
       <Tabs defaultValue={defaultTab === "edit" ? "overview" : defaultTab} className="space-y-4">
-        <TabsList className="grid grid-cols-3 rounded-xl h-11 w-fit">
+        <TabsList className="grid grid-cols-4 rounded-xl h-11 w-fit">
           <TabsTrigger value="overview" className="rounded-lg gap-1.5">
             <Info className="h-4 w-4" /> {t("detail.overview")}
           </TabsTrigger>
           <TabsTrigger value="knowledge" className="rounded-lg gap-1.5">
             <FileText className="h-4 w-4" /> {t("knowledge.title")}
           </TabsTrigger>
+          <TabsTrigger value="enterprise" className="rounded-lg gap-1.5">
+            <ShieldCheck className="h-4 w-4" /> {t("detail.enterprise")}
+          </TabsTrigger>
           <TabsTrigger value="deploy" className="rounded-lg gap-1.5">
             <Globe className="h-4 w-4" /> {t("detail.deploy")}
           </TabsTrigger>
         </TabsList>
+
 
         {/* Overview Tab */}
         <TabsContent value="overview">
