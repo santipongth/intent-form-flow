@@ -148,7 +148,14 @@ export default function Monitor() {
             </Card>
           ) : (
             <div className="space-y-4">
-              {(runs || []).map((run) => (
+              {(runs || []).map((run) => {
+                const searchMs = run.spans
+                  .filter((s) => s.span_type === "retrieval")
+                  .reduce((sum, s) => sum + (s.duration_ms || 0), 0);
+                const answerMs = run.spans
+                  .filter((s) => s.span_type === "answer")
+                  .reduce((sum, s) => sum + (s.duration_ms || 0), 0);
+                return (
                 <Card key={run.runId} className="rounded-2xl">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-3">
