@@ -38,27 +38,8 @@ async function extractFileFromZip(zipBytes: Uint8Array, targetPath: string): Pro
         return raw; // stored
       }
       if (compressionMethod === 8) {
-        // deflated – use DecompressionStream with raw deflate
-        const ds = new DecompressionStream("raw");
-        const writer = ds.writable.getWriter();
-        writer.write(raw);
-        writer.close();
-        const reader = ds.readable.getReader();
-        const chunks: Uint8Array[] = [];
-        let totalLen = 0;
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-          totalLen += value.length;
-        }
-        const result = new Uint8Array(totalLen);
-        let pos = 0;
-        for (const c of chunks) {
-          result.set(c, pos);
-          pos += c.length;
-        }
-        return result;
+        // deflated – the web standard name for raw deflate is "deflate-raw"
+        return await inflateRaw(raw);
       }
       // unsupported compression
       return null;
