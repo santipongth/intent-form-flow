@@ -296,9 +296,74 @@ export default function DocsApi() {
           </CardContent>
         </Card>
 
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle className="text-lg">How a request is processed</CardTitle>
+            <CardDescription>Everything that happens between your POST and the reply.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <pre className="bg-muted rounded-xl p-4 text-xs font-mono overflow-x-auto">{`POST /agent-api
+  1. auth        verify x-api-key -> agent, owner, rate limit (60/min)
+  2. memory      load session history (session_id) + rolling summary
+  3. retrieval   semantic search over indexed knowledge chunks (RAG)
+                 fallback: whole-file context when nothing is indexed yet
+  4. prompt      system prompt + User Prompt + Skills + retrieved excerpts
+  5. tools       tool loop (max 4 rounds): web-search, calculator, read-excel
+  6. answer      final model call (streamed when "stream": true)
+  7. persist     analytics event, trace spans, webhook fan-out`}</pre>
+            <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
+              <li><strong>Knowledge indexing</strong> — uploaded files are chunked and embedded automatically; retrieval picks the most similar chunks for each question.</li>
+              <li><strong>Tools</strong> — only the tools enabled on the agent are exposed to the model; each call and its result is recorded.</li>
+              <li><strong>Memory</strong> — with a <code>session_id</code> the last 40 turns are replayed; older turns are compressed into a summary.</li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle className="text-lg">Monitor: reading a run trace</CardTitle>
+            <CardDescription>Every API, chat and widget run is recorded step by step.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-muted-foreground">
+              Open <strong>Monitor → Run traces</strong> to replay a run. Each run groups ordered spans with their duration, input and output.
+            </p>
+            <div className="rounded-xl border overflow-hidden text-sm">
+              <table className="w-full">
+                <thead className="bg-muted">
+                  <tr><th className="text-left p-3 w-40">Span</th><th className="text-left p-3">What it tells you</th></tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t"><td className="p-3 font-mono">retrieval</td><td className="p-3">Which knowledge files matched and their similarity score — empty means the answer used no documents.</td></tr>
+                  <tr className="border-t"><td className="p-3 font-mono">tool_probe</td><td className="p-3">The model deciding whether a tool is needed, plus which model served that turn.</td></tr>
+                  <tr className="border-t"><td className="p-3 font-mono">tool_call</td><td className="p-3">Tool name, arguments and returned result.</td></tr>
+                  <tr className="border-t"><td className="p-3 font-mono">answer</td><td className="p-3">Final model, tokens used and total latency.</td></tr>
+                  <tr className="border-t"><td className="p-3 font-mono">error</td><td className="p-3">Failed step with the upstream message — the fastest way to explain a 5xx.</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Answers produced from uploaded files are additionally checked against those files; a mismatch is recorded as a
+              <code className="px-1 rounded bg-muted"> groundedness check</code> span and surfaced as a warning in the chat console.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle className="text-lg">Models</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>Agents must use a real gateway model ID. Supported values:</p>
+            <p className="font-mono text-xs">openai/gpt-5 · openai/gpt-5-mini · openai/gpt-5-nano · google/gemini-2.5-flash · google/gemini-2.5-pro · google/gemini-2.5-flash-lite</p>
+            <p>Legacy labels (for example <code>GPT-4o</code>) are mapped automatically, and <code>temperature</code> is omitted for GPT-5 models, which only accept their default.</p>
+          </CardContent>
+        </Card>
+
         <div className="text-center text-xs text-muted-foreground pt-6">
           Need help? Open the Deploy tab on any agent for the same examples pre-filled with that agent's endpoint.
         </div>
+
       </main>
     </div>
   );
