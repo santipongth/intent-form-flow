@@ -10,6 +10,7 @@ import {
   retrieveKnowledgeDetailed,
 } from "../_shared/embeddings.ts";
 import { TraceRecorder } from "../_shared/traces.ts";
+import { readSkillEntries } from "../_shared/agent-settings.ts";
 import { supportsCustomTemperature } from "../_shared/models.ts";
 
 const corsHeaders = {
@@ -75,9 +76,7 @@ serve(async (req) => {
       .eq("status", "ready")
       .order("file_name", { ascending: true });
 
-    const skills: string[] = Array.isArray((agent.tools as any)?._skills)
-      ? (agent.tools as any)._skills
-      : [];
+    const skills: string[] = readSkillEntries((agent.tools as any)?._skills).map((s) => s.name);
 
     if (action === "info") {
       const { count } = await supabase

@@ -19,7 +19,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import KnowledgeStep from "@/components/agent-builder/KnowledgeStep";
 import { AdvancedSettings } from "@/components/agent-builder/AdvancedSettings";
 import { PreviewChat } from "@/components/agent-builder/PreviewChat";
-import { withAgentSettings } from "@/lib/agentTools";
+import { withAgentSettings, toSkillEntries, renderSkillBlock } from "@/lib/agentTools";
+import { useSkills } from "@/hooks/useSkills";
 import { AlertTriangle, Pencil } from "lucide-react";
 
 const STEPS_KEYS = ["Intent & Type", "Identity & Model", "Knowledge", "Tools & Memory", "Review & Create"];
@@ -47,6 +48,7 @@ export default function AgentBuilder() {
   const [skills, setSkills] = useState<string[]>([]);
   const [templateSkills, setTemplateSkills] = useState<string[]>([]);
   const [templateTools, setTemplateTools] = useState<string[]>([]);
+  const { data: skillCatalog = [] } = useSkills();
   const [temperature, setTemperature] = useState([0.7]);
   const [maxTokens, setMaxTokens] = useState("2048");
   const [templateFromMarketplace, setTemplateFromMarketplace] = useState<string | null>(null);
@@ -181,7 +183,7 @@ export default function AgentBuilder() {
       || (objective ? `You are ${name || "an assistant"}. Your objective: ${objective}. Be helpful and respond naturally.`
         : "You are a helpful AI assistant. Keep answers clear and concise.");
     if (userPrompt.trim()) out += `\n\n---\nUser Prompt Template (apply when responding):\n${userPrompt.trim()}\n---`;
-    if (skills.length > 0) out += `\n\n---\nSpecialised skills you must apply in every answer:\n${skills.map((x) => `- ${x}`).join("\n")}\n---`;
+    out += renderSkillBlock(toSkillEntries(skills, skillCatalog));
     return out;
   })();
 
@@ -223,7 +225,7 @@ export default function AgentBuilder() {
       temperature: temperature[0],
       max_tokens: parseInt(maxTokens) || 2048,
       tools: withAgentSettings(
-        { ...enabledTools, _userPrompt: userPrompt, _skills: skills },
+        { ...enabledTools, _userPrompt: userPrompt, _skills: toSkillEntries(skills, skillCatalog) },
         { greeting, starters: cleanStarters, fallbackMessage, strictKnowledge, maxToolIterations },
       ) as any,
       memory_enabled: memoryEnabled,

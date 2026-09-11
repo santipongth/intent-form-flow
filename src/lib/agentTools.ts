@@ -19,42 +19,60 @@ export function getUserPrompt(tools: AgentTools): string {
   return typeof v === "string" ? v : "";
 }
 
+export interface SkillEntry {
+  name: string;
+  instructions: string;
+}
+
 /**
- * Returns the `_skills` array of strings.
- * - Filters out non-strings.
- * - Trims whitespace, drops empties.
- * - De-duplicates case-insensitively, keeping first occurrence.
+ * Reads `_skills`, accepting both the legacy `string[]` shape and the newer
+ * `{ name, instructions }[]` snapshot. De-duplicates case-insensitively.
  */
-export function getSkills(tools: AgentTools): string[] {
+export function getSkillEntries(tools: AgentTools): SkillEntry[] {
   if (!tools || typeof tools !== "object") return [];
   const v = (tools as Record<string, unknown>)._skills;
   if (!Array.isArray(v)) return [];
   const seen = new Set<string>();
-  const out: string[] = [];
+  const out: SkillEntry[] = [];
   for (const item of v) {
-    if (typeof item !== "string") continue;
-    const t = item.trim();
-    if (!t) continue;
-    const key = t.toLowerCase();
+    let name = "";
+    let instructions = "";
+    if (typeof item === "string") {
+      name = item.trim();
+    } else if (item && typeof item === "object") {
+      const o = item as Record<string, unknown>;
+      name = typeof o.name === "string" ? o.name.trim() : "";
+      instructions = typeof o.instructions === "string" ? o.instructions.trim() : "";
+    }
+    if (!name) continue;
+    const key = name.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push(t);
+    out.push({ name, instructions });
   }
   return out;
+}
+
+/** Returns just the skill names (UI selection state stays name-based). */
+export function getSkills(tools: AgentTools): string[] {
+  return getSkillEntries(tools).map((s) => s.name);
 }
 
 /**
  * Merge `_userPrompt` / `_skills` back into the existing tools object
  * without dropping unrelated tool toggles.
+ * Accepts plain names or full `{ name, instructions }` snapshots.
  */
 export function withPromptAndSkills(
   tools: AgentTools,
   userPrompt: string,
-  skills: string[],
+  skills: (string | SkillEntry)[],
 ): Record<string, unknown> {
   const base = tools && typeof tools === "object" ? { ...(tools as Record<string, unknown>) } : {};
   base._userPrompt = userPrompt;
-  base._skills = skills;
+  base._skills = skills.map((s) =>
+    typeof s === "string" ? { name: s.trim(), instructions: "" } : { name: s.name.trim(), instructions: s.instructions ?? "" },
+  );
   return base;
 }
 
@@ -127,3 +145,30 @@ export const MAX_TOKEN_PRESETS = [
   { value: 2048, labelTh: "ยาว (คำตอบละเอียด)", labelEn: "Long (detailed answer)" },
   { value: 4096, labelTh: "ยาวมาก (รายงาน)", labelEn: "Very long (report)" },
 ];
+
+/**
+ * Snapshot the selected skill names against the user's catalog so the agent
+ * carries the actual instructions, not just a label.
+ */
+export function toSkillEntries(
+  names: string[],
+  catalog: { name: string; instructions?: string | null }[],
+): SkillEntry[] {
+  return names.map((n) => {
+    const hit = catalog.find((c) => c.name.toLowerCase() === n.trim().toLowerCase());
+    return { name: n.trim(), instructions: (hit?.instructions ?? "").trim() };
+  });
+}
+
+/** Mirrors the server-side skill block, used by the builder preview. */
+export function renderSkillBlock(skills: SkillEntry[]): string {
+  if (skills.length === 0) return "";
+  const body = skills
+    .map((x) =>
+      x.instructions
+        ? `- ${x.name}\n  How to apply this skill:\n${x.instructions.split("\n").map((l) => `    ${l}`).join("\n")}`
+        : `- ${x.name}`,
+    )
+    .join("\n");
+  return `\n\n---\nSpecialised skills you must apply in every answer:\n${body}\nFollow each skill's instructions exactly.\n---`;
+}

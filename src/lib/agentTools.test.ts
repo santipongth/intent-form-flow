@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getUserPrompt, getSkills, withPromptAndSkills } from "./agentTools";
+import { getUserPrompt, getSkills, getSkillEntries, withPromptAndSkills, toSkillEntries, renderSkillBlock } from "./agentTools";
 
 describe("getUserPrompt", () => {
   it("returns empty string for null", () => {
@@ -76,7 +76,7 @@ describe("getSkills", () => {
 describe("withPromptAndSkills", () => {
   it("creates a fresh object when tools is null", () => {
     const out = withPromptAndSkills(null, "hi", ["a"]);
-    expect(out).toEqual({ _userPrompt: "hi", _skills: ["a"] });
+    expect(out).toEqual({ _userPrompt: "hi", _skills: [{ name: "a", instructions: "" }] });
   });
 
   it("preserves unrelated tool toggles", () => {
@@ -89,7 +89,10 @@ describe("withPromptAndSkills", () => {
       "web-search": true,
       calculator: false,
       _userPrompt: "new",
-      _skills: ["y", "z"],
+      _skills: [
+        { name: "y", instructions: "" },
+        { name: "z", instructions: "" },
+      ],
     });
   });
 
@@ -131,5 +134,48 @@ describe("withPromptAndSkills", () => {
     expect(getUserPrompt(tools)).toBe("");
     expect(getSkills(tools)).toEqual(["Triage"]);
     expect(tools["web-search"]).toBe(true);
+  });
+});
+
+describe("skill entries with instructions", () => {
+  it("reads the legacy string[] shape as entries without instructions", () => {
+    expect(getSkillEntries({ _skills: ["FAQ", " Triage "] })).toEqual([
+      { name: "FAQ", instructions: "" },
+      { name: "Triage", instructions: "" },
+    ]);
+  });
+
+  it("reads the object shape and de-duplicates case-insensitively", () => {
+    expect(
+      getSkillEntries({
+        _skills: [
+          { name: "ตอบลูกค้า", instructions: "บทบาท: ..." },
+          { name: "ตอบลูกค้า", instructions: "ซ้ำ" },
+          { name: "", instructions: "x" },
+          42,
+        ],
+      } as any),
+    ).toEqual([{ name: "ตอบลูกค้า", instructions: "บทบาท: ..." }]);
+  });
+
+  it("snapshots instructions from the catalog when saving", () => {
+    const entries = toSkillEntries(["ตอบลูกค้า", "ไม่มีในคลัง"], [
+      { name: "ตอบลูกค้า", instructions: "ทำ A แล้ว B" },
+    ]);
+    expect(entries).toEqual([
+      { name: "ตอบลูกค้า", instructions: "ทำ A แล้ว B" },
+      { name: "ไม่มีในคลัง", instructions: "" },
+    ]);
+    const merged = withPromptAndSkills({ "web-search": true }, "", entries);
+    expect(getSkillEntries(merged)).toEqual(entries);
+    expect(getSkills(merged)).toEqual(["ตอบลูกค้า", "ไม่มีในคลัง"]);
+  });
+
+  it("renders instructions into the prompt block", () => {
+    const block = renderSkillBlock([{ name: "สรุป", instructions: "ข้อ 1\nข้อ 2" }]);
+    expect(block).toContain("- สรุป");
+    expect(block).toContain("    ข้อ 1");
+    expect(block).toContain("    ข้อ 2");
+    expect(renderSkillBlock([])).toBe("");
   });
 });

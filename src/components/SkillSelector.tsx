@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { useSkills, useCreateSkill } from "@/hooks/useSkills";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 
 type Props = {
@@ -22,6 +23,7 @@ type Props = {
  * - Allows quickly creating a new catalog skill from the search box.
  */
 export function SkillSelector({ value, onChange, max = 15, templateSkills = [], disabled }: Props) {
+  const { t } = useLanguage();
   const { data: skills = [], isLoading } = useSkills();
   const createSkill = useCreateSkill();
   const [open, setOpen] = useState(false);
@@ -135,10 +137,17 @@ export function SkillSelector({ value, onChange, max = 15, templateSkills = [], 
                         >
                           <Check className={`mr-2 h-4 w-4 ${selected ? "opacity-100" : "opacity-0"}`} />
                           <div className="flex flex-col">
-                            <span>{s.name}</span>
-                            {s.description && (
+                            <span className="flex items-center gap-1.5">
+                              {s.name}
+                              {!s.instructions?.trim() && (
+                                <span className="text-[9px] rounded-full border px-1.5 py-px text-muted-foreground">
+                                  {t("skills.noInstructions")}
+                                </span>
+                              )}
+                            </span>
+                            {(s.description || s.instructions) && (
                               <span className="text-[11px] text-muted-foreground line-clamp-1">
-                                {s.description}
+                                {s.description || s.instructions}
                               </span>
                             )}
                           </div>

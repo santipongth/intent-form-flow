@@ -30,7 +30,8 @@ import { ApiKeysSection } from "@/components/agent-detail/ApiKeysSection";
 import { WebhooksSection } from "@/components/agent-detail/WebhooksSection";
 import { ErrorLogsSection } from "@/components/agent-detail/ErrorLogsSection";
 import { z } from "zod";
-import { getUserPrompt, getSkills, withPromptAndSkills, getAgentSettings, withAgentSettings, modelSupportsTemperature } from "@/lib/agentTools";
+import { getUserPrompt, getSkills, getSkillEntries, withPromptAndSkills, getAgentSettings, withAgentSettings, modelSupportsTemperature, toSkillEntries } from "@/lib/agentTools";
+import { useSkills } from "@/hooks/useSkills";
 import { SkillSelector } from "@/components/SkillSelector";
 
 // ---- Validation rules for the edit form (User Prompt + Skills) ----
@@ -441,6 +442,7 @@ export default function AgentDetail() {
   const [editUserPrompt, setEditUserPrompt] = useState("");
   const [editSkills, setEditSkills] = useState<string[]>([]);
   const [editErrors, setEditErrors] = useState<{ userPrompt?: string; skills?: string }>({});
+  const { data: skillCatalog = [] } = useSkills();
   const [editGreeting, setEditGreeting] = useState("");
   const [editStarters, setEditStarters] = useState<string[]>(["", "", ""]);
   const [editFallback, setEditFallback] = useState("");
@@ -594,7 +596,11 @@ print(r.json()["reply"])`;
       temperature: editTemperature[0],
       max_tokens: parseInt(editMaxTokens) || 2048,
       tools: withAgentSettings(
-        withPromptAndSkills(agent.tools as any, parsed.data.userPrompt, parsed.data.skills) as any,
+        withPromptAndSkills(
+          agent.tools as any,
+          parsed.data.userPrompt,
+          toSkillEntries(parsed.data.skills, skillCatalog),
+        ) as any,
         {
           greeting: editGreeting,
           starters: editStarters.map((x) => x.trim()).filter(Boolean),
@@ -857,15 +863,21 @@ print(r.json()["reply"])`;
                 <div className="sm:col-span-2">
                   <Label className="text-muted-foreground text-xs">Skills</Label>
                   {(() => {
-                    const list = getSkills(agent.tools as any);
+                    const list = getSkillEntries(agent.tools as any);
                     if (list.length === 0) {
                       return <p className="font-medium text-sm text-muted-foreground">{t("dashboard.notSpecified")}</p>;
                     }
                     return (
                       <div className="flex flex-wrap gap-1.5 mt-1">
                         {list.map((s) => (
-                          <Badge key={s} variant="secondary" className="rounded-full">
-                            {s}
+                          <Badge
+                            key={s.name}
+                            variant="secondary"
+                            className="rounded-full"
+                            title={s.instructions || t("skills.noInstructions")}
+                          >
+                            {s.name}
+                            {s.instructions && <span className="ml-1 text-[10px] opacity-70">✓</span>}
                           </Badge>
                         ))}
                       </div>
