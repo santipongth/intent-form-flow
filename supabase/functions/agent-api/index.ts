@@ -4,16 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { activeToolSchemas, runToolLoop } from "../_shared/tool-loop.ts";
 import { retrieveKnowledge, renderKnowledgeContext } from "../_shared/embeddings.ts";
 import { TraceRecorder } from "../_shared/traces.ts";
+import { normalizeModel, supportsCustomTemperature } from "../_shared/models.ts";
 
-// Models that only accept the default temperature (=1). For these we must
-// omit `temperature` entirely or the AI gateway returns 400.
-function supportsCustomTemperature(model: string): boolean {
-  const m = model.toLowerCase();
-  if (m.startsWith("openai/gpt-5")) return false;
-  return true;
-}
-
-import { normalizeModel, supportsCustomTemperature as sharedSupportsCustomTemperature } from "../_shared/models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
