@@ -1,0 +1,2 @@
+REVOKE SELECT ON public.agent_custom_tools FROM authenticated;
+GRANT SELECT (id, agent_id, user_id, name, description, method, url, parameters, auth_type, auth_header_name, enabled, last_tested_at, last_test_status, created_at, updated_at) ON public.agent_custom_tools TO authenticated;
