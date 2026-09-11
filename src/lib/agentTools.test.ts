@@ -89,7 +89,10 @@ describe("withPromptAndSkills", () => {
       "web-search": true,
       calculator: false,
       _userPrompt: "new",
-      _skills: ["y", "z"],
+      _skills: [
+        { name: "y", instructions: "" },
+        { name: "z", instructions: "" },
+      ],
     });
   });
 
