@@ -84,9 +84,16 @@ export function applyAgentSettings(systemPrompt: string, s: AgentSettings, hasKn
     out += `\n\n---\nUser Prompt Template (apply when responding):\n${s.userPrompt}\n---`;
   }
   if (s.skills.length > 0) {
-    out += `\n\n---\nSpecialised skills you must apply in every answer:\n${
-      s.skills.map((x) => `- ${x}`).join("\n")
-    }\nLead with these strengths; if a request falls outside them, say so plainly instead of guessing.\n---`;
+    const body = s.skills
+      .map((x) =>
+        x.instructions
+          ? `- ${x.name}\n  How to apply this skill:\n${
+            x.instructions.split("\n").map((l) => `    ${l}`).join("\n")
+          }`
+          : `- ${x.name}`
+      )
+      .join("\n");
+    out += `\n\n---\nSpecialised skills you must apply in every answer:\n${body}\nFollow each skill's instructions exactly. Lead with these strengths; if a request falls outside them, say so plainly instead of guessing.\n---`;
   }
   if (s.strictKnowledge) {
     out += `\n\n---\nAnswer scope: answer ONLY using the reference documents provided above.${
