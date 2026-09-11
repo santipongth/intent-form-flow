@@ -9,6 +9,8 @@ import { readAgentSettings, applyAgentSettings } from "../_shared/agent-settings
 import { loadCustomTools, makeCustomToolExecutor } from "../_shared/custom-tools.ts";
 import { loadGuardrails, checkInput, checkOutput, hardenSystemPrompt } from "../_shared/guardrails.ts";
 import { checkBudget, recordUsage, BUDGET_EXCEEDED_MESSAGE } from "../_shared/budget.ts";
+import { loadMcpTools, makeMcpExecutor, chainExecutors } from "../_shared/mcp-tools.ts";
+import { loadHistory, loadAllRows, maybeSummarize } from "../_shared/memory.ts";
 
 
 const corsHeaders = {
@@ -338,13 +340,14 @@ serve(async (req) => {
         conversationId = created?.id ?? null;
       }
       if (conversationId) {
-        const { data: rows } = await supabase
-          .from("chat_messages")
-          .select("role, content")
-          .eq("conversation_id", conversationId)
-          .order("created_at", { ascending: true })
-          .limit(40);
-        historyMessages = (rows || []).map((r: any) => ({ role: r.role, content: r.content }));
+        const { summary, rows } = await loadHistory(supabase, conversationId);
+        if (summary) {
+          historyMessages.push({
+            role: "system",
+            content: `Previous conversation summary (older context):\n${summary}`,
+          });
+        }
+        historyMessages.push(...rows);
       }
     }
 
@@ -356,6 +359,18 @@ serve(async (req) => {
           { conversation_id: conversationId, role: "assistant", content: assistantMsg, tokens_used: tokens ?? 0, response_time_ms: respMs },
         ]);
         await supabase.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", conversationId);
+        // Fold older turns into the rolling summary so long API sessions keep context.
+        const { data: conv } = await supabase
+          .from("conversations")
+          .select("memory_summary, summary_message_count")
+          .eq("id", conversationId)
+          .maybeSingle();
+        const allRows = await loadAllRows(supabase, conversationId);
+        await maybeSummarize(
+          supabase, conversationId, allRows,
+          conv?.memory_summary ?? null, conv?.summary_message_count ?? 0,
+          Deno.env.get("LOVABLE_API_KEY") || "",
+        );
       } catch (_) { /* ignore */ }
     };
 
@@ -380,7 +395,8 @@ serve(async (req) => {
     const toolsEnabled: Record<string, unknown> =
       agent.tools && typeof agent.tools === "object" ? (agent.tools as any) : {};
     const customTools = await loadCustomTools(supabase, keyRow.agent_id);
-    const activeTools = [...activeToolSchemas(toolsEnabled), ...customTools.schemas];
+    const mcpTools = await loadMcpTools(supabase, keyRow.agent_id);
+    const activeTools = [...activeToolSchemas(toolsEnabled), ...customTools.schemas, ...mcpTools.schemas];
     let toolIterations = 0;
     if (activeTools.length > 0) {
       const loop = await runToolLoop({
@@ -395,7 +411,7 @@ serve(async (req) => {
         trace,
         logPrefix: "[agent-api]",
         maxIterations: agentSettings.maxToolIterations,
-        extraExec: makeCustomToolExecutor(customTools),
+        extraExec: chainExecutors(makeCustomToolExecutor(customTools), makeMcpExecutor(mcpTools)),
       });
       toolIterations = loop.iterations;
       if (loop.failure) {

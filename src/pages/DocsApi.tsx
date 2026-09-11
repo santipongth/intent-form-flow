@@ -272,6 +272,20 @@ export default function DocsApi() {
             <p>• Same <code>session_id</code> + same API key ⇒ same conversation. The server prepends up to the last 40 messages to the prompt automatically.</p>
             <p>• Omit <code>session_id</code> for stateless one-off calls.</p>
             <p>• To wipe memory (e.g. between test runs), POST <code>{`{ "session_id": "...", "reset": true }`}</code>. Add <code>message</code> in the same call to immediately start a new conversation.</p>
+            <p>• Long sessions keep working: the <strong>latest</strong> 40 turns are replayed verbatim and everything older is folded into a rolling summary that is prepended to the prompt.</p>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle className="text-lg">External tools: REST APIs and MCP</CardTitle>
+            <CardDescription>Tools configured on the agent are available through this API too.</CardDescription>
+          </CardHeader>
+          <CardContent className="text-sm space-y-2 text-muted-foreground">
+            <p>• <strong>Custom API tools</strong> — bind any public HTTPS endpoint (GET/POST/…) with typed parameters and API-key or Bearer auth. Exposed to the model as <code>ct_&lt;name&gt;</code>.</p>
+            <p>• <strong>MCP servers</strong> — connect a Model Context Protocol server (Streamable HTTP, optional token auth). Its tools are exposed as <code>mcp_&lt;server&gt;_&lt;tool&gt;</code>.</p>
+            <p>• Limits: 10 custom tools, 5 MCP servers, 30 MCP tools per agent; 15s timeout and 8KB result cap per call; private/internal addresses are blocked.</p>
+            <p>• Every tool call and result appears in the Monitor trace for the run.</p>
           </CardContent>
         </Card>
 
@@ -308,13 +322,14 @@ export default function DocsApi() {
   3. retrieval   semantic search over indexed knowledge chunks (RAG)
                  fallback: whole-file context when nothing is indexed yet
   4. prompt      system prompt + User Prompt + Skills + retrieved excerpts
-  5. tools       tool loop (max 4 rounds): web-search, calculator, read-excel
+  5. tools       tool loop: web-search, calculator, read-excel,
+                 custom REST tools (ct_*), MCP tools (mcp_*)
   6. answer      final model call (streamed when "stream": true)
   7. persist     analytics event, trace spans, webhook fan-out`}</pre>
             <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-5">
               <li><strong>Knowledge indexing</strong> — uploaded files are chunked and embedded automatically; retrieval picks the most similar chunks for each question.</li>
               <li><strong>Tools</strong> — only the tools enabled on the agent are exposed to the model; each call and its result is recorded.</li>
-              <li><strong>Memory</strong> — with a <code>session_id</code> the last 40 turns are replayed; older turns are compressed into a summary.</li>
+              <li><strong>Memory</strong> — with a <code>session_id</code> the latest 40 turns are replayed; older turns are compressed into a rolling summary.</li>
             </ul>
           </CardContent>
         </Card>

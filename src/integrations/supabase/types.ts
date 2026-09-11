@@ -230,6 +230,7 @@ export type Database = {
           created_at: string
           description: string
           enabled: boolean
+          headers: Json
           id: string
           last_test_status: string | null
           last_tested_at: string | null
@@ -248,6 +249,7 @@ export type Database = {
           created_at?: string
           description?: string
           enabled?: boolean
+          headers?: Json
           id?: string
           last_test_status?: string | null
           last_tested_at?: string | null
@@ -266,6 +268,7 @@ export type Database = {
           created_at?: string
           description?: string
           enabled?: boolean
+          headers?: Json
           id?: string
           last_test_status?: string | null
           last_tested_at?: string | null
@@ -331,6 +334,74 @@ export type Database = {
             foreignKeyName: "agent_guardrails_agent_id_fkey"
             columns: ["agent_id"]
             isOneToOne: true
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_mcp_servers: {
+        Row: {
+          agent_id: string
+          allowed_tools: string[]
+          auth_header_name: string | null
+          auth_secret: string | null
+          auth_type: string
+          cached_tools: Json
+          created_at: string
+          enabled: boolean
+          id: string
+          last_error: string | null
+          last_status: string | null
+          last_synced_at: string | null
+          name: string
+          transport: string
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          allowed_tools?: string[]
+          auth_header_name?: string | null
+          auth_secret?: string | null
+          auth_type?: string
+          cached_tools?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_error?: string | null
+          last_status?: string | null
+          last_synced_at?: string | null
+          name: string
+          transport?: string
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          allowed_tools?: string[]
+          auth_header_name?: string | null
+          auth_secret?: string | null
+          auth_type?: string
+          cached_tools?: Json
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_error?: string | null
+          last_status?: string | null
+          last_synced_at?: string | null
+          name?: string
+          transport?: string
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_mcp_servers_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
             referencedRelation: "agents"
             referencedColumns: ["id"]
           },
