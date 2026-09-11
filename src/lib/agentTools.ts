@@ -145,3 +145,30 @@ export const MAX_TOKEN_PRESETS = [
   { value: 2048, labelTh: "ยาว (คำตอบละเอียด)", labelEn: "Long (detailed answer)" },
   { value: 4096, labelTh: "ยาวมาก (รายงาน)", labelEn: "Very long (report)" },
 ];
+
+/**
+ * Snapshot the selected skill names against the user's catalog so the agent
+ * carries the actual instructions, not just a label.
+ */
+export function toSkillEntries(
+  names: string[],
+  catalog: { name: string; instructions?: string | null }[],
+): SkillEntry[] {
+  return names.map((n) => {
+    const hit = catalog.find((c) => c.name.toLowerCase() === n.trim().toLowerCase());
+    return { name: n.trim(), instructions: (hit?.instructions ?? "").trim() };
+  });
+}
+
+/** Mirrors the server-side skill block, used by the builder preview. */
+export function renderSkillBlock(skills: SkillEntry[]): string {
+  if (skills.length === 0) return "";
+  const body = skills
+    .map((x) =>
+      x.instructions
+        ? `- ${x.name}\n  How to apply this skill:\n${x.instructions.split("\n").map((l) => `    ${l}`).join("\n")}`
+        : `- ${x.name}`,
+    )
+    .join("\n");
+  return `\n\n---\nSpecialised skills you must apply in every answer:\n${body}\nFollow each skill's instructions exactly.\n---`;
+}
