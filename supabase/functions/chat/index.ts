@@ -1,12 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import {
-  TOOL_SCHEMAS,
-  runTool,
-  chooseToolChoice,
-  TOOL_MODEL_CHAIN,
-  isToolModelFallbackError,
-} from "./_tools.ts";
+import { activeToolSchemas, runToolLoop } from "../_shared/tool-loop.ts";
+import { retrieveKnowledge, renderKnowledgeContext } from "../_shared/embeddings.ts";
+import { TraceRecorder } from "../_shared/traces.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -293,6 +289,13 @@ serve(async (req) => {
       },
       async flush() {
         const responseTime = Date.now() - startTime;
+        trace.record({
+          span_type: "answer",
+          name: model,
+          output: { tokens_used: totalTokens || null, tool_iterations: toolIterations },
+          duration_ms: responseTime,
+        });
+        trace.flush();
         if (agent_id && userId) {
           supabase.from("agent_analytics_events").insert({
             agent_id, user_id: userId, event_type: "chat", status: "success",
