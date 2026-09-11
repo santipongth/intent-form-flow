@@ -76,7 +76,7 @@ describe("getSkills", () => {
 describe("withPromptAndSkills", () => {
   it("creates a fresh object when tools is null", () => {
     const out = withPromptAndSkills(null, "hi", ["a"]);
-    expect(out).toEqual({ _userPrompt: "hi", _skills: ["a"] });
+    expect(out).toEqual({ _userPrompt: "hi", _skills: [{ name: "a", instructions: "" }] });
   });
 
   it("preserves unrelated tool toggles", () => {
