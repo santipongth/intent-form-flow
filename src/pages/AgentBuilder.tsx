@@ -113,6 +113,12 @@ export default function AgentBuilder() {
   const uploadKnowledge = useUploadKnowledgeFile();
 
   const handleCreate = () => {
+    // Never persist tools that are not implemented yet ("เร็ว ๆ นี้"),
+    // even if a template default listed them.
+    const comingSoonIds = new Set(TOOLS_LIST.filter((tl) => tl.comingSoon).map((tl) => tl.id));
+    const enabledTools = Object.fromEntries(
+      Object.entries(tools).filter(([id, on]) => on && !comingSoonIds.has(id)),
+    );
     createAgent.mutate({
       name: name || "Agent ใหม่",
       avatar: "🤖",
