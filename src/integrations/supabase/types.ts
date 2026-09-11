@@ -174,6 +174,168 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_budgets: {
+        Row: {
+          agent_id: string
+          created_at: string
+          daily_message_limit: number | null
+          daily_token_limit: number | null
+          enabled: boolean
+          id: string
+          monthly_message_limit: number | null
+          monthly_token_limit: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          daily_message_limit?: number | null
+          daily_token_limit?: number | null
+          enabled?: boolean
+          id?: string
+          monthly_message_limit?: number | null
+          monthly_token_limit?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          daily_message_limit?: number | null
+          daily_token_limit?: number | null
+          enabled?: boolean
+          id?: string
+          monthly_message_limit?: number | null
+          monthly_token_limit?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_budgets_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: true
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_custom_tools: {
+        Row: {
+          agent_id: string
+          auth_header_name: string | null
+          auth_secret: string | null
+          auth_type: string
+          created_at: string
+          description: string
+          enabled: boolean
+          id: string
+          last_test_status: string | null
+          last_tested_at: string | null
+          method: string
+          name: string
+          parameters: Json
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          auth_header_name?: string | null
+          auth_secret?: string | null
+          auth_type?: string
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          id?: string
+          last_test_status?: string | null
+          last_tested_at?: string | null
+          method?: string
+          name: string
+          parameters?: Json
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          auth_header_name?: string | null
+          auth_secret?: string | null
+          auth_type?: string
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          id?: string
+          last_test_status?: string | null
+          last_tested_at?: string | null
+          method?: string
+          name?: string
+          parameters?: Json
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_custom_tools_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_guardrails: {
+        Row: {
+          agent_id: string
+          ai_review: boolean
+          blocked_keywords: string[]
+          blocked_message: string
+          created_at: string
+          enabled: boolean
+          id: string
+          injection_detection: boolean
+          pii_redaction: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          ai_review?: boolean
+          blocked_keywords?: string[]
+          blocked_message?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          injection_detection?: boolean
+          pii_redaction?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          ai_review?: boolean
+          blocked_keywords?: string[]
+          blocked_message?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          injection_detection?: boolean
+          pii_redaction?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_guardrails_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: true
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_traces: {
         Row: {
           agent_id: string | null
@@ -226,6 +388,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "agent_traces_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_usage_counters: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          messages: number
+          period_start: string
+          period_type: string
+          tokens: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          messages?: number
+          period_start: string
+          period_type: string
+          tokens?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          messages?: number
+          period_start?: string
+          period_type?: string
+          tokens?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_usage_counters_agent_id_fkey"
             columns: ["agent_id"]
             isOneToOne: false
             referencedRelation: "agents"
@@ -805,6 +1011,15 @@ export type Database = {
         Returns: number
       }
       get_platform_stats: { Args: never; Returns: Json }
+      increment_agent_usage: {
+        Args: {
+          _agent_id: string
+          _messages: number
+          _tokens: number
+          _user_id: string
+        }
+        Returns: undefined
+      }
       increment_api_key_usage: {
         Args: { _api_key_id: string; _user_id: string; _window: string }
         Returns: number
@@ -820,7 +1035,9 @@ export type Database = {
           _query_embedding: string
         }
         Returns: {
+          chunk_index: number
           content: string
+          file_id: string
           file_name: string
           id: string
           similarity: number

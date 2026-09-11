@@ -41,6 +41,8 @@ export async function runToolLoop(opts: {
   trace?: TraceRecorder;
   maxIterations?: number;
   logPrefix?: string;
+  /** Handles user-defined tools; returns null when the name is not one of them. */
+  extraExec?: (name: string, argsJson: string) => Promise<string | null>;
 }): Promise<ToolLoopResult> {
   const {
     activeTools, toolsEnabled, apiKey, supabase, agentId, userId, trace,
@@ -135,7 +137,9 @@ export async function runToolLoop(opts: {
 
     for (const tc of toolCalls) {
       const started = Date.now();
-      const result = await runTool(tc.function?.name, tc.function?.arguments, { supabase, agentId, userId });
+      const toolName = tc.function?.name;
+      const custom = opts.extraExec ? await opts.extraExec(toolName, tc.function?.arguments) : null;
+      const result = custom ?? await runTool(toolName, tc.function?.arguments, { supabase, agentId, userId });
       messages.push({ role: "tool", tool_call_id: tc.id, content: result });
       trace?.record({
         span_type: "tool_call",

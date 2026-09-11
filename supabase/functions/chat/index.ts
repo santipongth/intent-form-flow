@@ -1,9 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { activeToolSchemas, runToolLoop } from "../_shared/tool-loop.ts";
-import { retrieveKnowledgeDetailed, renderKnowledgeContext } from "../_shared/embeddings.ts";
+import { retrieveKnowledgeDetailed, renderKnowledgeContext, buildCitations } from "../_shared/embeddings.ts";
 import { TraceRecorder } from "../_shared/traces.ts";
 import { normalizeModel, supportsCustomTemperature, DEFAULT_MODEL } from "../_shared/models.ts";
+import { loadCustomTools, makeCustomToolExecutor } from "../_shared/custom-tools.ts";
+import { loadGuardrails, checkInput, checkOutput, hardenSystemPrompt } from "../_shared/guardrails.ts";
+import { checkBudget, recordUsage, BUDGET_EXCEEDED_MESSAGE } from "../_shared/budget.ts";
+
+/** Emit a one-shot OpenAI-style SSE stream (used for blocked / filtered answers). */
+function sseOnce(content: string, extra: Record<string, unknown> = {}) {
+  const body =
+    `data: ${JSON.stringify({ ...extra, choices: [{ delta: { content }, index: 0 }] })}\n\n` +
+    `data: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: "stop", index: 0 }] })}\n\n` +
+    `data: [DONE]\n\n`;
+  return new Response(body, {
+    headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+  });
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -120,6 +134,7 @@ serve(async (req) => {
     let temperature = 0.7;
     let memoryEnabled = true;
     let toolsEnabled: Record<string, boolean> = {};
+    let citations: ReturnType<typeof buildCitations> = [];
 
     if (agent_id) {
       const { data: agent } = await supabase
@@ -161,6 +176,7 @@ serve(async (req) => {
       const passages = rag.passages;
       if (passages && passages.length > 0) {
         systemPrompt += renderKnowledgeContext(passages);
+        citations = buildCitations(passages);
         trace.record({
           span_type: "retrieval",
           name: "semantic knowledge search",
@@ -197,8 +213,37 @@ serve(async (req) => {
       }
     }
 
-    // Build active tool schemas
-    const activeTools = activeToolSchemas(toolsEnabled);
+    // ---------- Budget: hard stop when the agent hit its cap ----------
+    const budget = await checkBudget(supabase, agent_id ?? null);
+    if (budget.blocked) {
+      trace.record({ span_type: "error", name: "budget_exceeded", status: "error", output: { reason: budget.reason } });
+      await trace.flush();
+      return new Response(JSON.stringify({ error: BUDGET_EXCEEDED_MESSAGE, reason: budget.reason }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ---------- Guardrails: filter the incoming message ----------
+    const guardrails = await loadGuardrails(supabase, agent_id ?? null);
+    const lastUserMessage = String([...messages].reverse().find((m: any) => m.role === "user")?.content || "");
+    if (guardrails.enabled) {
+      systemPrompt = hardenSystemPrompt(systemPrompt);
+      const verdict = await checkInput(lastUserMessage, guardrails, LOVABLE_API_KEY);
+      if (verdict.blocked) {
+        trace.record({
+          span_type: "guardrail", name: "input blocked", status: "error",
+          input: { message: lastUserMessage.slice(0, 300) },
+          output: { reason: verdict.reason, category: verdict.category },
+        });
+        await trace.flush();
+        return sseOnce(guardrails.blocked_message, { tm_guardrail: { blocked: true, stage: "input" } });
+      }
+    }
+
+    // Build active tool schemas (standard + the user's own API tools)
+    const customTools = await loadCustomTools(supabase, agent_id ?? null);
+    const activeTools = [...activeToolSchemas(toolsEnabled), ...customTools.schemas];
+    const customExec = makeCustomToolExecutor(customTools);
 
     // Memory: load persisted history + summary, prepend to incoming messages
     let baseMessages: any[] = [{ role: "system", content: systemPrompt }];
@@ -238,6 +283,7 @@ serve(async (req) => {
       userId,
       trace,
       logPrefix: "[chat]",
+      extraExec: customExec,
     });
     baseMessages = loop.messages;
     const toolIterations = loop.iterations;
@@ -249,6 +295,58 @@ serve(async (req) => {
       });
     }
 
+    // Output filtering needs the complete answer, so those agents answer in one shot.
+    const needsOutputFilter = guardrails.enabled &&
+      (guardrails.pii_redaction || guardrails.ai_review || (guardrails.blocked_keywords?.length ?? 0) > 0);
+
+    if (needsOutputFilter) {
+      const r = await fetch(AI_GATEWAY, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model, messages: baseMessages, stream: false,
+          ...(supportsCustomTemperature(model) ? { temperature } : {}),
+          ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "none" } : {}),
+        }),
+      });
+      if (!r.ok) {
+        const status = r.status === 429 ? 429 : r.status === 402 ? 402 : 500;
+        console.error("AI gateway final error:", r.status, (await r.text()).slice(0, 300));
+        await trace.flush();
+        return new Response(JSON.stringify({ error: "AI gateway error" }), {
+          status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const j = await r.json();
+      const raw = j.choices?.[0]?.message?.content || "";
+      const tokens = j.usage?.total_tokens || 0;
+      const verdict = await checkOutput(raw, guardrails, LOVABLE_API_KEY);
+      const responseTime = Date.now() - startTime;
+      trace.record({
+        span_type: "guardrail", name: "output filter",
+        status: verdict.blocked ? "error" : "success",
+        output: { blocked: verdict.blocked, reason: verdict.reason, redactions: verdict.redactions || 0 },
+      });
+      trace.record({
+        span_type: "answer", name: model,
+        output: { tokens_used: tokens || null, tool_iterations: toolIterations },
+        duration_ms: responseTime,
+      });
+      await trace.flush();
+      await recordUsage(supabase, agent_id ?? null, userId, tokens);
+      if (agent_id && userId) {
+        await supabase.from("agent_analytics_events").insert({
+          agent_id, user_id: userId, event_type: "chat",
+          status: verdict.blocked ? "error" : "success",
+          response_time_ms: responseTime, tokens_used: tokens || null,
+          metadata: { tool_iterations: toolIterations, guardrail_blocked: verdict.blocked },
+        });
+      }
+      if (verdict.blocked) {
+        return sseOnce(guardrails.blocked_message, { tm_guardrail: { blocked: true, stage: "output" } });
+      }
+      return sseOnce(verdict.text || raw, { tm_citations: citations, tm_budget_warning: budget.warning });
+    }
 
     // ---------- Final streaming response ----------
     const response = await fetch(AI_GATEWAY, {
@@ -278,8 +376,16 @@ serve(async (req) => {
 
     let totalTokens = 0;
     const decoder = new TextDecoder();
+    const encoder = new TextEncoder();
+    let sentMeta = false;
     const transformStream = new TransformStream({
       transform(chunk, controller) {
+        if (!sentMeta) {
+          sentMeta = true;
+          controller.enqueue(encoder.encode(
+            `data: ${JSON.stringify({ tm_citations: citations, tm_budget_warning: budget.warning, choices: [{ delta: {}, index: 0 }] })}\n\n`,
+          ));
+        }
         controller.enqueue(chunk);
         const text = decoder.decode(chunk, { stream: true });
         for (const line of text.split("\n")) {
@@ -304,6 +410,7 @@ serve(async (req) => {
           duration_ms: responseTime,
         });
         trace.flush();
+        recordUsage(supabase, agent_id ?? null, userId, totalTokens);
         if (agent_id && userId) {
           supabase.from("agent_analytics_events").insert({
             agent_id, user_id: userId, event_type: "chat", status: "success",
