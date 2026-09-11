@@ -119,7 +119,7 @@ export default function Marketplace() {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">{t("marketplace.featured")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {featured.map((tmpl, i) => (<TemplateCard key={tmpl.id} template={tmpl} index={i} onSelect={() => setSelected(tmpl)} onClone={() => handleClone(tmpl.id)} t={t} />))}
+            {featured.map((tmpl, i) => (<TemplateCard key={tmpl.id} template={tmpl} index={i} usageCount={usageOf(tmpl.id)} onSelect={() => setSelected(tmpl)} onClone={() => handleClone(tmpl.id)} t={t} />))}
           </div>
         </section>
       )}
@@ -130,7 +130,7 @@ export default function Marketplace() {
           <span className="text-muted-foreground font-normal text-sm">({filtered.length})</span>
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map((tmpl, i) => (<TemplateCard key={tmpl.id} template={tmpl} index={i} onSelect={() => setSelected(tmpl)} onClone={() => handleClone(tmpl.id)} t={t} />))}
+          {filtered.map((tmpl, i) => (<TemplateCard key={tmpl.id} template={tmpl} index={i} usageCount={usageOf(tmpl.id)} onSelect={() => setSelected(tmpl)} onClone={() => handleClone(tmpl.id)} t={t} />))}
         </div>
         {filtered.length === 0 && <p className="text-center text-muted-foreground py-12">{t("marketplace.noResults")}</p>}
       </section>
@@ -141,14 +141,12 @@ export default function Marketplace() {
             <div className={`-mx-6 -mt-6 h-3 rounded-t-lg bg-gradient-to-r ${selected.color}`} />
             <DialogHeader className="pt-2">
               <DialogTitle className="text-xl">{selected.name}</DialogTitle>
-              <DialogDescription className="text-sm">{t("marketplace.by")} {selected.author}</DialogDescription>
+              <DialogDescription className="text-sm">{selected.category}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-sm text-foreground/80 leading-relaxed">{selected.previewDescription}</p>
               <div className="flex items-center gap-4">
-                <StarRating rating={selected.rating} />
-                <span className="text-xs text-muted-foreground">({selected.reviewCount} {t("marketplace.reviews")})</span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3" /> {formatCount(selected.usageCount)} {t("marketplace.usageCount")}</span>
+                <span className="text-xs text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3" /> {formatCount(usageOf(selected.id))} {t("marketplace.usageCount")}</span>
               </div>
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-1">{t("marketplace.toolsUsed")}</p>
