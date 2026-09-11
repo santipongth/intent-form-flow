@@ -4,7 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { activeToolSchemas, runToolLoop } from "../_shared/tool-loop.ts";
 import { retrieveKnowledgeDetailed, renderKnowledgeContext, buildCitations } from "../_shared/embeddings.ts";
 import { TraceRecorder } from "../_shared/traces.ts";
-import { normalizeModel, supportsCustomTemperature } from "../_shared/models.ts";
+import { normalizeModel, supportsCustomTemperature, maxTokensParams } from "../_shared/models.ts";
+import { readAgentSettings, applyAgentSettings } from "../_shared/agent-settings.ts";
 import { loadCustomTools, makeCustomToolExecutor } from "../_shared/custom-tools.ts";
 import { loadGuardrails, checkInput, checkOutput, hardenSystemPrompt } from "../_shared/guardrails.ts";
 import { checkBudget, recordUsage, BUDGET_EXCEEDED_MESSAGE } from "../_shared/budget.ts";
@@ -194,7 +195,7 @@ serve(async (req) => {
 
     const { data: agent } = await supabase
       .from("agents")
-      .select("name, objective, system_prompt, model, temperature, status, tools")
+      .select("name, objective, system_prompt, model, temperature, max_tokens, status, tools")
       .eq("id", keyRow.agent_id)
       .eq("user_id", keyRow.user_id)
       .maybeSingle();
@@ -213,29 +214,7 @@ serve(async (req) => {
     let systemPrompt = agent.system_prompt
       || (agent.objective ? `You are ${agent.name}. Objective: ${agent.objective}.` : "You are a helpful assistant.");
 
-    // Inject the agent's User Prompt template (configured in the UI) if any.
-    const userPromptTemplate = (() => {
-      const t: any = agent.tools;
-      const v = t && typeof t === "object" ? t._userPrompt : undefined;
-      return typeof v === "string" ? v.trim() : "";
-    })();
-    if (userPromptTemplate) {
-      systemPrompt += `\n\n---\nUser Prompt Template (apply when responding):\n${userPromptTemplate}\n---`;
-    }
-
-    // Inject the agent's Skills so they actually shape behaviour at runtime.
-    const agentSkills: string[] = (() => {
-      const t: any = agent.tools;
-      const v = t && typeof t === "object" ? t._skills : undefined;
-      if (!Array.isArray(v)) return [];
-      return v.filter((s: unknown) => typeof s === "string" && s.trim()).map((s: string) => s.trim()).slice(0, 20);
-    })();
-    if (agentSkills.length > 0) {
-      systemPrompt += `\n\n---\nSpecialised skills you must apply in every answer:\n${
-        agentSkills.map((s) => `- ${s}`).join("\n")
-      }\nLead with these strengths; if a request falls outside them, say so plainly instead of guessing.\n---`;
-    }
-
+    const agentSettings = readAgentSettings(agent.tools);
 
     const trace = new TraceRecorder(supabase, {
       agentId: keyRow.agent_id,
@@ -406,6 +385,7 @@ serve(async (req) => {
         userId: keyRow.user_id,
         trace,
         logPrefix: "[agent-api]",
+        maxIterations: agentSettings.maxToolIterations,
         extraExec: makeCustomToolExecutor(customTools),
       });
       toolIterations = loop.iterations;
@@ -440,6 +420,7 @@ serve(async (req) => {
           model: gatewayModel,
           messages: gatewayMessages,
           ...(allowTemp ? { temperature: tempValue } : {}),
+        ...maxTokensParams(gatewayModel, agent.max_tokens),
           stream: true,
         }),
       });
@@ -543,6 +524,7 @@ serve(async (req) => {
         model: gatewayModel,
         messages: gatewayMessages,
         ...(allowTemp ? { temperature: tempValue } : {}),
+        ...maxTokensParams(gatewayModel, agent.max_tokens),
       }),
     });
 
