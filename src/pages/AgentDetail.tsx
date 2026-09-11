@@ -17,6 +17,8 @@ import { Copy, Globe, Code, Monitor, Key, ArrowLeft, Info, Pencil, Upload, Trash
 import { CustomToolsSection } from "@/components/agent-detail/CustomToolsSection";
 import { GuardrailsCard } from "@/components/agent-detail/GuardrailsCard";
 import { BudgetCard } from "@/components/agent-detail/BudgetCard";
+import { McpServersSection } from "@/components/agent-detail/McpServersSection";
+import { MemoryCard } from "@/components/agent-detail/MemoryCard";
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
@@ -900,6 +902,8 @@ print(r.json()["reply"])`;
         {/* Enterprise controls: custom tools, guardrails, budgets */}
         <TabsContent value="enterprise" className="space-y-4">
           <CustomToolsSection agentId={agent.id} />
+          <McpServersSection agentId={agent.id} />
+          <MemoryCard agentId={agent.id} memoryEnabled={!!agent.memory_enabled} />
           <GuardrailsCard agentId={agent.id} />
           <BudgetCard agentId={agent.id} />
         </TabsContent>
