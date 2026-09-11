@@ -393,6 +393,7 @@ export const en: Record<string, string> = {
   "knowledge.uploading": "Uploading...",
   "knowledge.noFiles": "No files uploaded yet",
   "knowledge.statusProcessing": "Processing",
+  "knowledge.statusUploading": "Uploading",
   "knowledge.statusReady": "Ready",
   "knowledge.statusError": "Error",
   "knowledge.deleteConfirm": "Delete this file?",

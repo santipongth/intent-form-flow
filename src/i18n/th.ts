@@ -393,6 +393,7 @@ export const th: Record<string, string> = {
   "knowledge.uploading": "กำลังอัปโหลด...",
   "knowledge.noFiles": "ยังไม่มีไฟล์",
   "knowledge.statusProcessing": "กำลังประมวลผล",
+  "knowledge.statusUploading": "กำลังอัปโหลด",
   "knowledge.statusReady": "พร้อมใช้งาน",
   "knowledge.statusError": "ผิดพลาด",
   "knowledge.deleteConfirm": "ลบไฟล์นี้?",
