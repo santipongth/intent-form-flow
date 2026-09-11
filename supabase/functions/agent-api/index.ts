@@ -2,9 +2,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { activeToolSchemas, runToolLoop } from "../_shared/tool-loop.ts";
-import { retrieveKnowledgeDetailed, renderKnowledgeContext } from "../_shared/embeddings.ts";
+import { retrieveKnowledgeDetailed, renderKnowledgeContext, buildCitations } from "../_shared/embeddings.ts";
 import { TraceRecorder } from "../_shared/traces.ts";
 import { normalizeModel, supportsCustomTemperature } from "../_shared/models.ts";
+import { loadCustomTools, makeCustomToolExecutor } from "../_shared/custom-tools.ts";
+import { loadGuardrails, checkInput, checkOutput, hardenSystemPrompt } from "../_shared/guardrails.ts";
+import { checkBudget, recordUsage, BUDGET_EXCEEDED_MESSAGE } from "../_shared/budget.ts";
 
 
 const corsHeaders = {
@@ -248,12 +251,43 @@ serve(async (req) => {
       return "";
     })();
 
+    // ---------- Budget: hard stop at 100% of the configured cap ----------
+    const budget = await checkBudget(supabase, keyRow.agent_id);
+    if (budget.blocked) {
+      trace.record({ span_type: "error", name: "budget_exceeded", status: "error", output: { reason: budget.reason } });
+      await trace.flush();
+      return new Response(
+        JSON.stringify({ error: BUDGET_EXCEEDED_MESSAGE, code: "budget_exceeded", reason: budget.reason }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "3600" } },
+      );
+    }
+
+    // ---------- Guardrails: filter the incoming message ----------
+    const guardrails = await loadGuardrails(supabase, keyRow.agent_id);
+    if (guardrails.enabled) {
+      systemPrompt = hardenSystemPrompt(systemPrompt);
+      const verdict = await checkInput(lastQuestion, guardrails, Deno.env.get("LOVABLE_API_KEY") || "");
+      if (verdict.blocked) {
+        trace.record({
+          span_type: "guardrail", name: "input blocked", status: "error",
+          output: { reason: verdict.reason, category: verdict.category },
+        });
+        await trace.flush();
+        return new Response(
+          JSON.stringify({ reply: guardrails.blocked_message, blocked: true, code: "guardrail_blocked", session_id: sessionId ?? null }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     const rag = await retrieveKnowledgeDetailed(
       supabase, keyRow.agent_id, lastQuestion, Deno.env.get("LOVABLE_API_KEY") || "",
     );
     const passages = rag.passages;
+    let citations: ReturnType<typeof buildCitations> = [];
     if (passages && passages.length > 0) {
       systemPrompt += renderKnowledgeContext(passages);
+      citations = buildCitations(passages);
       trace.record({
         span_type: "retrieval",
         name: "semantic knowledge search",
@@ -354,10 +388,11 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    // ---------- Tools: same runtime the in-app chat uses ----------
+    // ---------- Tools: same runtime the in-app chat uses (+ the user's own APIs) ----------
     const toolsEnabled: Record<string, unknown> =
       agent.tools && typeof agent.tools === "object" ? (agent.tools as any) : {};
-    const activeTools = activeToolSchemas(toolsEnabled);
+    const customTools = await loadCustomTools(supabase, keyRow.agent_id);
+    const activeTools = [...activeToolSchemas(toolsEnabled), ...customTools.schemas];
     let toolIterations = 0;
     if (activeTools.length > 0) {
       const loop = await runToolLoop({
@@ -371,6 +406,7 @@ serve(async (req) => {
         userId: keyRow.user_id,
         trace,
         logPrefix: "[agent-api]",
+        extraExec: makeCustomToolExecutor(customTools),
       });
       toolIterations = loop.iterations;
       if (loop.failure) {
@@ -388,8 +424,12 @@ serve(async (req) => {
     const allowTemp = supportsCustomTemperature(gatewayModel);
     const tempValue = agent.temperature ?? 0.7;
 
+    // Output filtering needs the full answer, so those agents cannot stream.
+    const needsOutputFilter = guardrails.enabled &&
+      (guardrails.pii_redaction || guardrails.ai_review || (guardrails.blocked_keywords?.length ?? 0) > 0);
+
     // ---------- Streaming branch ----------
-    if (wantStream) {
+    if (wantStream && !needsOutputFilter) {
       const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -418,6 +458,10 @@ serve(async (req) => {
 
       const stream = new ReadableStream({
         async start(controller) {
+          // First frame carries the sources the answer may cite.
+          controller.enqueue(encoder.encode(
+            `data: ${JSON.stringify({ citations, budget_warning: budget.warning, choices: [{ delta: {}, index: 0 }] })}\n\n`,
+          ));
           let buffer = "";
           try {
             while (true) {
@@ -454,6 +498,8 @@ serve(async (req) => {
             duration_ms: respMs,
           });
           trace.flush();
+          // Streaming responses carry no usage block; approximate for budgeting.
+          await recordUsage(supabase, keyRow.agent_id, keyRow.user_id, Math.round(assembled.length / 4));
           try {
             await supabase.from("agent_analytics_events").insert({
               agent_id: keyRow.agent_id,
@@ -517,15 +563,33 @@ serve(async (req) => {
     }
 
     const result = await aiResp.json();
-    const reply = result.choices?.[0]?.message?.content || "";
+    const rawReply = result.choices?.[0]?.message?.content || "";
     const tokens = result.usage?.total_tokens ?? null;
     const responseTime = Date.now() - startTime;
+
+    // ---------- Guardrails: filter the answer ----------
+    let reply = rawReply;
+    let outputBlocked = false;
+    if (needsOutputFilter) {
+      const verdict = await checkOutput(rawReply, guardrails, Deno.env.get("LOVABLE_API_KEY") || "");
+      trace.record({
+        span_type: "guardrail", name: "output filter",
+        status: verdict.blocked ? "error" : "success",
+        output: { blocked: verdict.blocked, reason: verdict.reason, redactions: verdict.redactions || 0 },
+      });
+      if (verdict.blocked) {
+        outputBlocked = true;
+        reply = guardrails.blocked_message;
+      } else {
+        reply = verdict.text || rawReply;
+      }
+    }
 
     await supabase.from("agent_analytics_events").insert({
       agent_id: keyRow.agent_id,
       user_id: keyRow.user_id,
       event_type: "api_chat",
-      status: "success",
+      status: outputBlocked ? "error" : "success",
       response_time_ms: responseTime,
       tokens_used: tokens,
     });
@@ -537,6 +601,7 @@ serve(async (req) => {
       duration_ms: responseTime,
     });
     trace.flush();
+    await recordUsage(supabase, keyRow.agent_id, keyRow.user_id, tokens ?? 0);
 
     await persistMessages(lastUserText, reply, tokens, responseTime);
 
@@ -550,6 +615,9 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       reply,
+      citations,
+      ...(outputBlocked ? { blocked: true, code: "guardrail_blocked" } : {}),
+      ...(budget.warning ? { budget_warning: true } : {}),
       tokens_used: tokens,
       response_time_ms: responseTime,
       model: gatewayModel,

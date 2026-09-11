@@ -17,6 +17,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { CitationList, type Citation } from "@/components/agent-detail/CitationList";
+
 
 interface LocalMessage {
   id: string;
@@ -46,7 +48,9 @@ export default function ChatConsole() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [grounding, setGrounding] = useState<Record<string, GroundingResult | "loading">>({});
+  const [citations, setCitations] = useState<Record<string, Citation[]>>({});
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Load messages from DB when conversation changes
@@ -150,7 +154,9 @@ export default function ChatConsole() {
     // Stream AI response
     setIsStreaming(true);
     let assistantSoFar = "";
+    let pendingCitations: Citation[] = [];
     const startTime = Date.now();
+
 
     const allMessages = [
       ...messages.map((m) => ({ role: m.role, content: m.content })),
@@ -184,6 +190,10 @@ export default function ChatConsole() {
         agentId: selectedAgentId || undefined,
         conversationId: convId,
         onDelta: upsertAssistant,
+        onMeta: (meta) => {
+          if (meta.citations?.length) pendingCitations = meta.citations as Citation[];
+          if (meta.budgetWarning) toast.warning(meta.budgetWarning);
+        },
         onDone: () => {
           const responseTime = Date.now() - startTime;
           setIsStreaming(false);
@@ -192,6 +202,10 @@ export default function ChatConsole() {
           setMessages((prev) =>
             prev.map((m) => (m.id === "streaming" ? { ...m, id: finalId } : m))
           );
+          if (pendingCitations.length) {
+            setCitations((c) => ({ ...c, [finalId]: pendingCitations }));
+          }
+
 
           // Check the answer against the agent's uploaded files (RAG grounding)
           if (assistantSoFar && selectedAgentId) {

@@ -4,6 +4,19 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export type ChatMsg = { role: "user" | "assistant" | "system"; content: string };
 
+/** Extra info the chat function streams alongside the answer. */
+export type ChatMeta = {
+  citations?: Array<{
+    index: number;
+    file_id: string | null;
+    file_name: string;
+    chunk_index: number | null;
+    similarity: number;
+    excerpt: string;
+  }>;
+  budgetWarning?: string | null;
+};
+
 export async function streamChat({
   messages,
   agentId,
@@ -11,6 +24,7 @@ export async function streamChat({
   onDelta,
   onDone,
   onError,
+  onMeta,
   signal,
   maxRetries = 2,
 }: {
@@ -20,9 +34,11 @@ export async function streamChat({
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError?: (error: string) => void;
+  onMeta?: (meta: ChatMeta) => void;
   signal?: AbortSignal;
   maxRetries?: number;
 }) {
+
   // Get user session token instead of using anon key
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -111,8 +127,12 @@ export async function streamChat({
 
       try {
         const parsed = JSON.parse(jsonStr);
+        if (parsed.tm_citations || parsed.tm_budget_warning) {
+          onMeta?.({ citations: parsed.tm_citations, budgetWarning: parsed.tm_budget_warning ?? null });
+        }
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) onDelta(content);
+
       } catch {
         textBuffer = line + "\n" + textBuffer;
         break;
@@ -131,9 +151,13 @@ export async function streamChat({
       if (jsonStr === "[DONE]") continue;
       try {
         const parsed = JSON.parse(jsonStr);
+        if (parsed.tm_citations || parsed.tm_budget_warning) {
+          onMeta?.({ citations: parsed.tm_citations, budgetWarning: parsed.tm_budget_warning ?? null });
+        }
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) onDelta(content);
       } catch { /* ignore */ }
+
     }
   }
 
