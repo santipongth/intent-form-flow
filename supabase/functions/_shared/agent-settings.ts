@@ -34,6 +34,34 @@ function strArray(v: unknown, max: number): string[] {
     .slice(0, max);
 }
 
+/**
+ * `_skills` may be a legacy `string[]` of names, or the newer
+ * `{ name, instructions }[]` snapshot. Both are normalised here.
+ */
+export function readSkillEntries(v: unknown, max = 20): SkillEntry[] {
+  if (!Array.isArray(v)) return [];
+  const seen = new Set<string>();
+  const out: SkillEntry[] = [];
+  for (const item of v) {
+    let name = "";
+    let instructions = "";
+    if (typeof item === "string") {
+      name = item.trim();
+    } else if (item && typeof item === "object") {
+      const o = item as Record<string, unknown>;
+      name = typeof o.name === "string" ? o.name.trim() : "";
+      instructions = typeof o.instructions === "string" ? o.instructions.trim() : "";
+    }
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ name, instructions });
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
 export function readAgentSettings(tools: unknown): AgentSettings {
   if (!tools || typeof tools !== "object") return { ...DEFAULTS };
   const t = tools as Record<string, unknown>;
