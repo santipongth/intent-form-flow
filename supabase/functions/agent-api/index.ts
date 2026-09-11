@@ -302,6 +302,15 @@ serve(async (req) => {
       systemPrompt += ctx + "---";
     }
 
+    // Behaviour settings last, so the strict-knowledge rule sees the documents.
+    systemPrompt = applyAgentSettings(
+      systemPrompt,
+      agentSettings,
+      Boolean((passages && passages.length > 0) || (knowledge && knowledge.length > 0)),
+    );
+
+
+
     // ---------- Optional session memory ----------
     let conversationId: string | null = null;
     let historyMessages: Array<{ role: string; content: string }> = [];
