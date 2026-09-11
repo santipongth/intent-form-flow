@@ -3,13 +3,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, Copy, Paperclip, Bot, Plus, MessageSquare, Settings2, PanelLeftOpen, Search, Trash2, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Send, Copy, Paperclip, Bot, Plus, MessageSquare, Settings2, PanelLeftOpen, Search, Trash2, ThumbsUp, ThumbsDown, AlertTriangle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAgents } from "@/hooks/useAgents";
 import { useConversations, useConversationMessages, useCreateConversation, useSaveMessage, useUpdateConversationTitle, useDeleteConversation } from "@/hooks/useConversations";
 import { streamChat } from "@/lib/streamChat";
+import { verifyAnswer, type GroundingResult } from "@/lib/verifyAnswer";
 import { useMessageFeedback, useSaveMessageFeedback } from "@/hooks/useMessageFeedback";
 import ReactMarkdown from "react-markdown";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -44,6 +45,7 @@ export default function ChatConsole() {
   const [messages, setMessages] = useState<LocalMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [grounding, setGrounding] = useState<Record<string, GroundingResult | "loading">>({});
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -186,9 +188,25 @@ export default function ChatConsole() {
           const responseTime = Date.now() - startTime;
           setIsStreaming(false);
           // Finalize the streaming message ID
+          const finalId = Date.now().toString();
           setMessages((prev) =>
-            prev.map((m) => (m.id === "streaming" ? { ...m, id: Date.now().toString() } : m))
+            prev.map((m) => (m.id === "streaming" ? { ...m, id: finalId } : m))
           );
+
+          // Check the answer against the agent's uploaded files (RAG grounding)
+          if (assistantSoFar && selectedAgentId) {
+            setGrounding((g) => ({ ...g, [finalId]: "loading" }));
+            verifyAnswer({
+              agentId: selectedAgentId,
+              question: userContent,
+              answer: assistantSoFar,
+              conversationId: convId,
+            })
+              .then((res) => setGrounding((g) => ({ ...g, [finalId]: res })))
+              .catch(() => setGrounding((g) => {
+                const next = { ...g }; delete next[finalId]; return next;
+              }));
+          }
           // Save assistant message to DB
           if (assistantSoFar && convId) {
             saveMessage.mutate(
@@ -349,6 +367,7 @@ export default function ChatConsole() {
                     <span className="whitespace-pre-wrap">{msg.content}</span>
                   )}
                 </div>
+                {msg.role === "assistant" && <GroundingNote state={grounding[msg.id]} t={t} />}
                 <div className={`flex items-center gap-2 mt-1 ${msg.role === "user" ? "justify-end" : ""}`}>
                   <span className="text-[10px] sm:text-xs text-muted-foreground">{msg.timestamp}</span>
                   {msg.role === "assistant" && msg.id !== "streaming" && msg.dbId && (
@@ -550,5 +569,48 @@ function SidebarContent({
         </div>
       </ScrollArea>
     </>
+  );
+}
+
+function GroundingNote({
+  state,
+  t,
+}: {
+  state: GroundingResult | "loading" | undefined;
+  t: (k: string) => string;
+}) {
+  if (!state) return null;
+  if (state === "loading") {
+    return (
+      <p className="flex items-center gap-1.5 mt-1 text-[11px] text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" /> {t("chat.grounding.checking")}
+      </p>
+    );
+  }
+  if (state.status !== "checked" || state.grounded) return null;
+
+  const sources = (state.sources || []).map((s) => s.file_name);
+  const uniqueSources = Array.from(new Set(sources)).slice(0, 3);
+
+  return (
+    <div className="mt-1.5 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[11px] space-y-1">
+      <p className="flex items-center gap-1.5 font-medium text-destructive">
+        <AlertTriangle className="h-3.5 w-3.5" />
+        {state.verdict === "contradicted"
+          ? t("chat.grounding.contradicted")
+          : t("chat.grounding.warning")}
+      </p>
+      {state.summary && <p className="text-muted-foreground">{state.summary}</p>}
+      {state.issues && state.issues.length > 0 && (
+        <ul className="list-disc pl-4 text-muted-foreground space-y-0.5">
+          {state.issues.map((issue, i) => <li key={i}>{issue}</li>)}
+        </ul>
+      )}
+      {uniqueSources.length > 0 && (
+        <p className="text-muted-foreground">
+          {t("chat.grounding.sources")}: {uniqueSources.join(", ")}
+        </p>
+      )}
+    </div>
   );
 }
