@@ -7,12 +7,32 @@ export const TEMPLATES = [
   { id: "data-analyst", name: "📊 Data Analyst", description: "วิเคราะห์ข้อมูลจาก Excel/CSV แล้วสรุปผล", color: "from-brand-cyan to-brand-green", category: "Analytics" },
 ];
 
+/**
+ * โมเดลที่เรียกใช้ได้จริงผ่าน AI Gateway (ต้องเป็น vendor/model ID จริงเท่านั้น
+ * ไม่งั้น API จะตอบ 400 "AI provider error")
+ */
 export const LLM_MODELS = [
-  { id: "openai", name: "OpenAI", models: ["GPT-4o", "GPT-4o mini", "GPT-4 Turbo"], icon: "🤖", color: "brand-green" },
-  { id: "anthropic", name: "Anthropic", models: ["Claude 3.5 Sonnet", "Claude 3 Haiku"], icon: "🧠", color: "brand-orange" },
-  { id: "gemini", name: "Google Gemini", models: ["Gemini Pro", "Gemini Flash"], icon: "💎", color: "brand-blue" },
-  { id: "groq", name: "Groq", models: ["Llama 3.1 70B", "Mixtral 8x7B"], icon: "⚡", color: "brand-cyan" },
+  {
+    id: "openai", name: "OpenAI", icon: "🤖", color: "brand-green",
+    models: ["openai/gpt-5", "openai/gpt-5-mini", "openai/gpt-5-nano"],
+  },
+  {
+    id: "gemini", name: "Google Gemini", icon: "💎", color: "brand-blue",
+    models: ["google/gemini-2.5-flash", "google/gemini-2.5-pro", "google/gemini-2.5-flash-lite"],
+  },
 ];
+
+export const MODEL_LABELS: Record<string, string> = {
+  "openai/gpt-5": "GPT-5 (แม่นยำสูงสุด)",
+  "openai/gpt-5-mini": "GPT-5 mini (สมดุล)",
+  "openai/gpt-5-nano": "GPT-5 nano (เร็ว/ประหยัด)",
+  "google/gemini-2.5-flash": "Gemini 2.5 Flash (แนะนำ)",
+  "google/gemini-2.5-pro": "Gemini 2.5 Pro (วิเคราะห์ลึก)",
+  "google/gemini-2.5-flash-lite": "Gemini 2.5 Flash Lite (เร็วที่สุด)",
+};
+
+export const ALL_MODEL_IDS = LLM_MODELS.flatMap((p) => p.models);
+
 
 export interface MarketplaceTemplate {
   id: string;
