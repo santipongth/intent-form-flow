@@ -30,7 +30,8 @@ import { ApiKeysSection } from "@/components/agent-detail/ApiKeysSection";
 import { WebhooksSection } from "@/components/agent-detail/WebhooksSection";
 import { ErrorLogsSection } from "@/components/agent-detail/ErrorLogsSection";
 import { z } from "zod";
-import { getUserPrompt, getSkills, withPromptAndSkills, getAgentSettings, withAgentSettings, modelSupportsTemperature } from "@/lib/agentTools";
+import { getUserPrompt, getSkills, getSkillEntries, withPromptAndSkills, getAgentSettings, withAgentSettings, modelSupportsTemperature, toSkillEntries } from "@/lib/agentTools";
+import { useSkills } from "@/hooks/useSkills";
 import { SkillSelector } from "@/components/SkillSelector";
 
 // ---- Validation rules for the edit form (User Prompt + Skills) ----
