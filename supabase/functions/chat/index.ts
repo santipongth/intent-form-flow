@@ -223,107 +223,29 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    // ---------- Tool-calling loop (non-streaming for tool steps, stream final answer) ----------
-    let toolIterations = 0;
-    const MAX_TOOL_ITERATIONS = 4;
-    // Track which tool model is currently working. We try models in order and
-    // remember the working one so subsequent iterations don't re-fall-back.
-    let toolModelIdx = 0;
-
-    while (toolIterations < MAX_TOOL_ITERATIONS && activeTools.length > 0) {
-      const toolChoice = chooseToolChoice(
-        baseMessages,
-        { calculator: !!toolsEnabled["calculator"], webSearch: !!toolsEnabled["web-search"] },
-        toolIterations,
-      );
-
-      // Try tool models in chain until one succeeds (handles gateway model
-      // mapping issues that occasionally return 4xx for unsupported tools).
-      let probeRes: Response | null = null;
-      let probeErrBody = "";
-      let probeModel = TOOL_MODEL_CHAIN[toolModelIdx];
-      while (toolModelIdx < TOOL_MODEL_CHAIN.length) {
-        const candidate = TOOL_MODEL_CHAIN[toolModelIdx];
-        const r = await fetch(AI_GATEWAY, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: candidate,
-            messages: baseMessages,
-            temperature,
-            tools: activeTools,
-            tool_choice: toolChoice,
-            stream: false,
-          }),
-        });
-        if (r.ok) {
-          probeRes = r;
-          probeModel = candidate;
-          if (toolModelIdx > 0) {
-            console.log("[chat] tool model fallback in use:", candidate);
-          }
-          break;
-        }
-        if (r.status === 429 || r.status === 402) {
-          const msg = r.status === 429
-            ? "Rate limit exceeded. Please try again later."
-            : "Payment required. Please add credits to your workspace.";
-          return new Response(JSON.stringify({ error: msg }), {
-            status: r.status,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        probeErrBody = await r.text();
-        const shouldFallback = isToolModelFallbackError(r.status, probeErrBody);
-        console.error(
-          "[chat] tool probe failed",
-          { model: candidate, status: r.status, fallback: shouldFallback, body: probeErrBody.slice(0, 300) },
-        );
-        if (!shouldFallback) {
-          return new Response(JSON.stringify({ error: "AI gateway error" }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        toolModelIdx++;
-      }
-      if (!probeRes) {
-        console.error("[chat] all tool models exhausted", probeErrBody.slice(0, 300));
-        return new Response(JSON.stringify({ error: "No tool-capable model available" }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const probe = await probeRes.json();
-      const choice = probe.choices?.[0];
-      const toolCalls = choice?.message?.tool_calls;
-      console.log(
-        "[chat] tool probe iter", toolIterations,
-        "model:", probeModel,
-        "tool_choice:", typeof toolChoice === "string" ? toolChoice : `forced:${toolChoice.function.name}`,
-        "finish:", choice?.finish_reason,
-        "tool_calls:", toolCalls?.length || 0,
-      );
-      if (!toolCalls || toolCalls.length === 0) {
-        // No tool needed → break and stream final answer in next phase
-        break;
-      }
-      // Append assistant tool-call message
-      baseMessages.push({
-        role: "assistant",
-        content: choice.message.content || "",
-        tool_calls: toolCalls,
+    // ---------- Tool-calling loop (shared with the public agent API) ----------
+    const loop = await runToolLoop({
+      messages: baseMessages,
+      activeTools,
+      toolsEnabled,
+      apiKey: LOVABLE_API_KEY,
+      temperature,
+      supabase,
+      agentId: agent_id ?? null,
+      userId,
+      trace,
+      logPrefix: "[chat]",
+    });
+    baseMessages = loop.messages;
+    const toolIterations = loop.iterations;
+    if (loop.failure) {
+      await trace.flush();
+      return new Response(JSON.stringify({ error: loop.failure.error }), {
+        status: loop.failure.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-      // Execute each tool
-      for (const tc of toolCalls) {
-        const result = await runTool(tc.function?.name, tc.function?.arguments, {
-          supabase, agentId: agent_id, userId,
-        });
-        baseMessages.push({ role: "tool", tool_call_id: tc.id, content: result });
-      }
-      toolIterations++;
     }
+
 
     // ---------- Final streaming response ----------
     const response = await fetch(AI_GATEWAY, {
