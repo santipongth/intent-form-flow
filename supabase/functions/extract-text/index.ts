@@ -361,7 +361,24 @@ serve(async (req) => {
       throw updateError;
     }
 
-    return new Response(JSON.stringify({ success: true, chars: textContent.length }), {
+    // Index the document for semantic retrieval (RAG). Failures here must not
+    // break the upload — the agent simply falls back to whole-file context.
+    let indexedChunks = 0;
+    if (textContent.length > 0) {
+      try {
+        indexedChunks = await indexKnowledgeFile(supabase, {
+          fileId: knowledge_file_id,
+          agentId: fileInfo.agent_id,
+          userId: fileInfo.user_id,
+          fileName: fileInfo.file_name,
+          content: textContent,
+        });
+      } catch (embedErr) {
+        console.error("[extract-text] embedding failed:", (embedErr as Error).message);
+      }
+    }
+
+    return new Response(JSON.stringify({ success: true, chars: textContent.length, chunks: indexedChunks }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
