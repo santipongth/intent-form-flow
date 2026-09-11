@@ -190,6 +190,10 @@ export default function ChatConsole() {
         agentId: selectedAgentId || undefined,
         conversationId: convId,
         onDelta: upsertAssistant,
+        onMeta: (meta) => {
+          if (meta.citations?.length) pendingCitations = meta.citations as Citation[];
+          if (meta.budgetWarning) toast.warning(meta.budgetWarning);
+        },
         onDone: () => {
           const responseTime = Date.now() - startTime;
           setIsStreaming(false);
@@ -198,6 +202,10 @@ export default function ChatConsole() {
           setMessages((prev) =>
             prev.map((m) => (m.id === "streaming" ? { ...m, id: finalId } : m))
           );
+          if (pendingCitations.length) {
+            setCitations((c) => ({ ...c, [finalId]: pendingCitations }));
+          }
+
 
           // Check the answer against the agent's uploaded files (RAG grounding)
           if (assistantSoFar && selectedAgentId) {
