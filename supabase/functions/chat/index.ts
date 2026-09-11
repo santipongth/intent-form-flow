@@ -232,6 +232,7 @@ serve(async (req) => {
         });
         if (r.ok) {
           probeRes = r;
+          probeModel = candidate;
           if (toolModelIdx > 0) {
             console.log("[chat] tool model fallback in use:", candidate);
           }
