@@ -17,6 +17,8 @@ import { Copy, Globe, Code, Monitor, Key, ArrowLeft, Info, Pencil, Upload, Trash
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ALL_MODEL_IDS, MODEL_LABELS } from "@/data/constants";
 import { useUpdateAgent } from "@/hooks/useUpdateAgent";
 import { useKnowledgeFiles, useUploadKnowledgeFile, useDeleteKnowledgeFile } from "@/hooks/useKnowledge";
 import type { AgentRow } from "@/hooks/useAgents";
@@ -586,7 +588,14 @@ print(r.json()["reply"])`;
               </div>
               <div>
                 <Label>{t("detail.model")}</Label>
-                <Input value={editModel} onChange={(e) => setEditModel(e.target.value)} className="rounded-xl mt-1" />
+                <Select value={editModel} onValueChange={setEditModel}>
+                  <SelectTrigger className="rounded-xl mt-1"><SelectValue placeholder={t("detail.model")} /></SelectTrigger>
+                  <SelectContent>
+                    {ALL_MODEL_IDS.map((m) => (
+                      <SelectItem key={m} value={m}>{MODEL_LABELS[m] ?? m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>{t("detail.provider")}</Label>
@@ -696,7 +705,7 @@ print(r.json()["reply"])`;
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-xs">{t("detail.model")}</Label>
-                  <p className="font-medium">{agent.model || t("dashboard.notSpecified")}</p>
+                  <p className="font-medium">{agent.model ? (MODEL_LABELS[agent.model] ?? agent.model) : t("dashboard.notSpecified")}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground text-xs">{t("detail.provider")}</Label>
