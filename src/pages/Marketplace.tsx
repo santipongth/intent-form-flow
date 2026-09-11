@@ -59,6 +59,21 @@ export default function Marketplace() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [selected, setSelected] = useState<MarketplaceTemplate | null>(null);
+  const qc = useQueryClient();
+
+  // Real usage counts from the database (incremented when a template is cloned).
+  const { data: usage } = useQuery({
+    queryKey: ["template_stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("template_stats").select("template_id, clone_count");
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      (data || []).forEach((row) => { map[row.template_id] = row.clone_count; });
+      return map;
+    },
+  });
+  const usageOf = (id: string) => usage?.[id] ?? 0;
+
 
   const filtered = useMemo(() => {
     return MARKETPLACE_TEMPLATES.filter((tmpl) => {
@@ -70,7 +85,13 @@ export default function Marketplace() {
   }, [search, category]);
 
   const featured = useMemo(() => MARKETPLACE_TEMPLATES.filter((tmpl) => tmpl.featured), []);
-  const handleClone = (id: string) => navigate(`/agents/new?template=${id}`);
+  const handleClone = async (id: string) => {
+    try {
+      await supabase.rpc("increment_template_clone", { _template_id: id });
+      qc.invalidateQueries({ queryKey: ["template_stats"] });
+    } catch { /* usage counting must never block the user */ }
+    navigate(`/agents/new?template=${id}`);
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8">
