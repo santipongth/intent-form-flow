@@ -338,13 +338,14 @@ serve(async (req) => {
         conversationId = created?.id ?? null;
       }
       if (conversationId) {
-        const { data: rows } = await supabase
-          .from("chat_messages")
-          .select("role, content")
-          .eq("conversation_id", conversationId)
-          .order("created_at", { ascending: true })
-          .limit(40);
-        historyMessages = (rows || []).map((r: any) => ({ role: r.role, content: r.content }));
+        const { summary, rows } = await loadHistory(supabase, conversationId);
+        if (summary) {
+          historyMessages.push({
+            role: "system",
+            content: `Previous conversation summary (older context):\n${summary}`,
+          });
+        }
+        historyMessages.push(...rows);
       }
     }
 
