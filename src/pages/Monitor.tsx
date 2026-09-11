@@ -8,6 +8,8 @@ import { useAnalyticsEvents } from "@/hooks/useAnalytics";
 import { useAgents } from "@/hooks/useAgents";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useTraces } from "@/hooks/useTraces";
 
 const statusColors: Record<string, string> = {
   success: "bg-brand-green/10 text-brand-green",
