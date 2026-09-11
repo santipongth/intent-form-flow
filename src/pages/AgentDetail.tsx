@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { Copy, Globe, Code, Monitor, Key, ArrowLeft, Info, Pencil, Upload, Trash2, FileText, Loader2, ChevronDown, ChevronUp, RefreshCw, ShieldCheck } from "lucide-react";
+import { Copy, Globe, Code, Monitor, Key, ArrowLeft, Info, Pencil, Upload, Trash2, FileText, Loader2, ChevronDown, ChevronUp, RefreshCw, ShieldCheck, Link as LinkIcon, ExternalLink } from "lucide-react";
 import { CustomToolsSection } from "@/components/agent-detail/CustomToolsSection";
 import { GuardrailsCard } from "@/components/agent-detail/GuardrailsCard";
 import { BudgetCard } from "@/components/agent-detail/BudgetCard";
@@ -24,7 +24,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ALL_MODEL_IDS, MODEL_LABELS } from "@/data/constants";
 import { useUpdateAgent } from "@/hooks/useUpdateAgent";
-import { useKnowledgeFiles, useUploadKnowledgeFile, useDeleteKnowledgeFile } from "@/hooks/useKnowledge";
+import { useKnowledgeFiles, useUploadKnowledgeFile, useDeleteKnowledgeFile, useAddKnowledgeUrl, useRefreshKnowledgeUrl } from "@/hooks/useKnowledge";
 import type { AgentRow } from "@/hooks/useAgents";
 import { ApiKeysSection } from "@/components/agent-detail/ApiKeysSection";
 import { WebhooksSection } from "@/components/agent-detail/WebhooksSection";
@@ -72,12 +72,16 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
   const { data: files = [], isLoading, refetch } = useKnowledgeFiles(agentId);
   const uploadFile = useUploadKnowledgeFile();
   const deleteFile = useDeleteKnowledgeFile();
+  const addUrl = useAddKnowledgeUrl();
+  const refreshUrl = useRefreshKnowledgeUrl();
+  const [urlInput, setUrlInput] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [uploadQueue, setUploadQueue] = useState<{ name: string; stage: "uploading" | "extracting" }[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  const totalSize = files.reduce((sum, f) => sum + (f.file_size || 0), 0);
-  const fileCount = files.length;
+  const uploadedFiles = files.filter((f) => f.source_type !== "url");
+  const totalSize = uploadedFiles.reduce((sum, f) => sum + (f.file_size || 0), 0);
+  const fileCount = uploadedFiles.length;
   const sizePercent = Math.min((totalSize / MAX_TOTAL_SIZE) * 100, 100);
   const isAtFileLimit = fileCount >= MAX_FILES;
   const isAtSizeLimit = totalSize >= MAX_TOTAL_SIZE;
@@ -157,6 +161,18 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
     startMultiUpload(e.dataTransfer.files);
   };
 
+  const handleAddUrl = () => {
+    try {
+      const parsed = new URL(urlInput.trim());
+      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error();
+      parsed.hash = "";
+      if (files.some((f) => f.source_url === parsed.toString())) return toast.error("URL นี้มีอยู่แล้ว");
+      addUrl.mutate({ url: parsed.toString(), agentId }, { onSuccess: () => setUrlInput("") });
+    } catch {
+      toast.error("กรุณาใส่ URL แบบ http หรือ https ที่ถูกต้อง");
+    }
+  };
+
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -197,6 +213,21 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
           </div>
         </div>
         <p className="text-xs text-muted-foreground">{t("knowledge.supportedTypes")}</p>
+        <div className="flex gap-2 pt-1">
+          <Input
+            type="url"
+            placeholder="https://example.com/article"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddUrl(); } }}
+            className="rounded-xl"
+          />
+          <Button variant="outline" className="rounded-xl gap-2" onClick={handleAddUrl} disabled={addUrl.isPending || !urlInput.trim()}>
+            {addUrl.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />}
+            เพิ่ม URL
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">อ่านเฉพาะหน้าที่ระบุ ไม่ติดตามลิงก์ และอัปเดตเมื่อคุณกดรีเฟรชเท่านั้น</p>
         {/* Usage indicators */}
         <div className="space-y-2 pt-1">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -243,14 +274,27 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
                     className="flex items-center gap-3 min-w-0 flex-1 text-left"
                     onClick={() => f.status === "ready" && f.content ? setExpandedId(expandedId === f.id ? null : f.id) : null}
                   >
-                    <FileText className="h-5 w-5 text-primary shrink-0" />
+                    {f.source_type === "url" ? <LinkIcon className="h-5 w-5 text-primary shrink-0" /> : <FileText className="h-5 w-5 text-primary shrink-0" />}
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{f.file_name}</p>
-                      <p className="text-xs text-muted-foreground">{formatSize(f.file_size)} · {new Date(f.created_at).toLocaleDateString("th-TH")}</p>
+                      <p className="text-sm font-medium truncate">{f.source_title || f.file_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {f.source_type === "url" ? f.source_url : `${formatSize(f.file_size)} · ${new Date(f.created_at).toLocaleDateString("th-TH")}`}
+                      </p>
+                      {f.error_message && <p className="text-xs text-destructive mt-1 line-clamp-2">{f.error_message}</p>}
                     </div>
                   </button>
                   <div className="flex items-center gap-2 shrink-0">
                     {statusBadge(f.status)}
+                    {f.source_type === "url" && f.source_url && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                        <a href={f.source_url} target="_blank" rel="noopener noreferrer" aria-label="เปิด URL ต้นทาง"><ExternalLink className="h-4 w-4" /></a>
+                      </Button>
+                    )}
+                    {f.source_type === "url" && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => refreshUrl.mutate({ id: f.id, agentId })} disabled={refreshUrl.isPending} aria-label="อ่าน URL ใหม่">
+                        <RefreshCw className={`h-4 w-4 ${refreshUrl.isPending ? "animate-spin" : ""}`} />
+                      </Button>
+                    )}
                     {f.status === "ready" && f.content && (
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setExpandedId(expandedId === f.id ? null : f.id)}>
                         {expandedId === f.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -267,7 +311,7 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                          <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteFile.mutate({ id: f.id, filePath: f.file_path })}>{t("common.delete")}</AlertDialogAction>
+                        <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => deleteFile.mutate({ id: f.id, filePath: f.file_path, sourceType: f.source_type })}>{t("common.delete")}</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
@@ -279,6 +323,7 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
                       <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono leading-relaxed">{f.content.length > 3000 ? f.content.substring(0, 3000) + "\n\n... (" + (f.content.length - 3000).toLocaleString() + " characters more)" : f.content}</pre>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1.5">{f.content.length.toLocaleString()} {t("knowledge.characters")}</p>
+                    {f.source_type === "url" && f.last_crawled_at && <p className="text-xs text-muted-foreground mt-1">อ่านล่าสุด: {new Date(f.last_crawled_at).toLocaleString("th-TH")}</p>}
                   </div>
                 )}
               </div>
