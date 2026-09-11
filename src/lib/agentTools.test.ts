@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getUserPrompt, getSkills, withPromptAndSkills } from "./agentTools";
+import { getUserPrompt, getSkills, getSkillEntries, withPromptAndSkills, toSkillEntries, renderSkillBlock } from "./agentTools";
 
 describe("getUserPrompt", () => {
   it("returns empty string for null", () => {
