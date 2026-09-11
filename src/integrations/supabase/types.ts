@@ -659,6 +659,27 @@ export type Database = {
         }
         Relationships: []
       }
+      template_stats: {
+        Row: {
+          clone_count: number
+          created_at: string
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          clone_count?: number
+          created_at?: string
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          clone_count?: number
+          created_at?: string
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -675,6 +696,10 @@ export type Database = {
       get_platform_stats: { Args: never; Returns: Json }
       increment_api_key_usage: {
         Args: { _api_key_id: string; _user_id: string; _window: string }
+        Returns: number
+      }
+      increment_template_clone: {
+        Args: { _template_id: string }
         Returns: number
       }
       move_to_dlq: {
