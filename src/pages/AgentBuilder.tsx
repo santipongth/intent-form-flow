@@ -19,7 +19,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import KnowledgeStep from "@/components/agent-builder/KnowledgeStep";
 import { AdvancedSettings } from "@/components/agent-builder/AdvancedSettings";
 import { PreviewChat } from "@/components/agent-builder/PreviewChat";
-import { withAgentSettings } from "@/lib/agentTools";
+import { withAgentSettings, toSkillEntries, renderSkillBlock } from "@/lib/agentTools";
+import { useSkills } from "@/hooks/useSkills";
 import { AlertTriangle, Pencil } from "lucide-react";
 
 const STEPS_KEYS = ["Intent & Type", "Identity & Model", "Knowledge", "Tools & Memory", "Review & Create"];
