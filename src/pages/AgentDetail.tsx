@@ -24,7 +24,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ALL_MODEL_IDS, MODEL_LABELS } from "@/data/constants";
 import { useUpdateAgent } from "@/hooks/useUpdateAgent";
-import { useKnowledgeFiles, useUploadKnowledgeFile, useDeleteKnowledgeFile, useAddKnowledgeUrl, useRefreshKnowledgeUrl } from "@/hooks/useKnowledge";
+import { useKnowledgeFiles, useUploadKnowledgeFile, useDeleteKnowledgeFile, useAddKnowledgeUrl, useRefreshKnowledgeUrl, useReprocessKnowledgeFile } from "@/hooks/useKnowledge";
 import type { AgentRow } from "@/hooks/useAgents";
 import { ApiKeysSection } from "@/components/agent-detail/ApiKeysSection";
 import { WebhooksSection } from "@/components/agent-detail/WebhooksSection";
