@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { chunkText, embedTexts } from "../_shared/embeddings.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -446,4 +447,43 @@ async function extractPdfWithAI(blob: Blob): Promise<string> {
     console.error("PDF AI error:", err);
     return extractTextFromPdfBasic(bytes);
   }
+}
+
+// ─── Knowledge indexing for semantic search (RAG) ──────────────────────────────
+
+async function indexKnowledgeFile(
+  supabase: any,
+  file: { fileId: string; agentId: string; userId: string; fileName: string; content: string },
+): Promise<number> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) return 0;
+
+  const chunks = chunkText(file.content);
+  if (chunks.length === 0) return 0;
+
+  // Re-index from scratch so re-processing a file never duplicates chunks.
+  await supabase.from("knowledge_chunks").delete().eq("file_id", file.fileId);
+
+  const MAX_CHUNKS = 400;
+  const limited = chunks.slice(0, MAX_CHUNKS);
+  const BATCH = 32;
+  let inserted = 0;
+
+  for (let i = 0; i < limited.length; i += BATCH) {
+    const batch = limited.slice(i, i + BATCH);
+    const vectors = await embedTexts(batch, apiKey);
+    const rows = batch.map((content, j) => ({
+      file_id: file.fileId,
+      agent_id: file.agentId,
+      user_id: file.userId,
+      file_name: file.fileName,
+      chunk_index: i + j,
+      content,
+      embedding: vectors[j] ? JSON.stringify(vectors[j]) : null,
+    }));
+    const { error } = await supabase.from("knowledge_chunks").insert(rows);
+    if (error) throw new Error(error.message);
+    inserted += rows.length;
+  }
+  return inserted;
 }
