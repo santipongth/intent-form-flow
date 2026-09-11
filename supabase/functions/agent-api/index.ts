@@ -278,7 +278,7 @@ serve(async (req) => {
     if (knowledge && knowledge.length > 0) {
       let ctx = "\n\n---\nReference Documents:\n";
       let total = 0;
-      const MAX = 50000;
+      const MAX = 20000;
       for (const k of knowledge) {
         if (!k.content) continue;
         const chunk = k.content.substring(0, MAX - total);
