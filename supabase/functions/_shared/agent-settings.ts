@@ -1,9 +1,14 @@
 // Extra agent behaviour settings stored inside the `agents.tools` jsonb column
 // (underscore-prefixed keys are configuration, everything else is a tool toggle).
 
+export interface SkillEntry {
+  name: string;
+  instructions: string;
+}
+
 export interface AgentSettings {
   userPrompt: string;
-  skills: string[];
+  skills: SkillEntry[];
   greeting: string;
   starters: string[];
   fallbackMessage: string;
