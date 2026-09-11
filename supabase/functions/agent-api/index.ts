@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { activeToolSchemas, runToolLoop } from "../_shared/tool-loop.ts";
-import { retrieveKnowledge, renderKnowledgeContext } from "../_shared/embeddings.ts";
+import { retrieveKnowledgeDetailed, renderKnowledgeContext } from "../_shared/embeddings.ts";
 import { TraceRecorder } from "../_shared/traces.ts";
 import { normalizeModel, supportsCustomTemperature } from "../_shared/models.ts";
 
@@ -248,18 +248,22 @@ serve(async (req) => {
       return "";
     })();
 
-    const ragStart = Date.now();
-    const passages = await retrieveKnowledge(
+    const rag = await retrieveKnowledgeDetailed(
       supabase, keyRow.agent_id, lastQuestion, Deno.env.get("LOVABLE_API_KEY") || "",
     );
+    const passages = rag.passages;
     if (passages && passages.length > 0) {
       systemPrompt += renderKnowledgeContext(passages);
       trace.record({
         span_type: "retrieval",
         name: "semantic knowledge search",
         input: { question: lastQuestion.slice(0, 500) },
-        output: { matches: passages.map((p) => ({ file: p.file_name, similarity: Number(p.similarity?.toFixed(3)) })) },
-        duration_ms: Date.now() - ragStart,
+        output: {
+          matches: passages.map((p) => ({ file: p.file_name, similarity: Number(p.similarity?.toFixed(3)) })),
+          embed_ms: rag.embedMs,
+          search_ms: rag.searchMs,
+        },
+        duration_ms: rag.totalMs,
       });
     }
 
