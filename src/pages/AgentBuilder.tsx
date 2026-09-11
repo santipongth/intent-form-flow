@@ -317,12 +317,14 @@ export default function AgentBuilder() {
               <h2 className="font-display text-lg font-semibold">{t("builder.nameAndBrain")}</h2>
               <div className="space-y-4">
                 <div>
-                  <Label>{t("builder.agentName")}</Label>
-                  <Input placeholder="เช่น Nong Support" value={name} onChange={(e) => setName(e.target.value)} className="rounded-xl mt-1" />
+                  <Label>{t("builder.agentName")} <span className="text-destructive">*</span></Label>
+                  <Input placeholder="เช่น Nong Support" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={!name.trim()} className="rounded-xl mt-1" />
+                  {!name.trim() && <p className="text-xs text-destructive mt-1">{t("builder.needName")}</p>}
                 </div>
                 <div>
-                  <Label>{t("builder.objective")}</Label>
-                  <Input placeholder="เช่น ตอบคำถามลูกค้าเกี่ยวกับสินค้า" value={objective} onChange={(e) => setObjective(e.target.value)} className="rounded-xl mt-1" />
+                  <Label>{t("builder.objective")} <span className="text-destructive">*</span></Label>
+                  <Input placeholder="เช่น ตอบคำถามลูกค้าเกี่ยวกับสินค้า" value={objective} onChange={(e) => setObjective(e.target.value)} aria-invalid={!objective.trim()} className="rounded-xl mt-1" />
+                  {!objective.trim() && <p className="text-xs text-destructive mt-1">{t("builder.needObjective")}</p>}
                 </div>
                 <div>
                   <Label>{t("builder.tone")}</Label>
