@@ -110,6 +110,13 @@ serve(async (req) => {
       isPublicSession = true;
     }
 
+    const trace = new TraceRecorder(supabase, {
+      agentId: agent_id ?? null,
+      userId,
+      conversationId: conversation_id ?? null,
+      source: isPublicSession ? "widget" : "chat",
+    });
+
     // Agent config
     let systemPrompt = "You are a helpful AI assistant. Keep answers clear and concise.";
     let model = "google/gemini-2.5-flash";
