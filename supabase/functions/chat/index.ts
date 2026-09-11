@@ -194,6 +194,7 @@ serve(async (req) => {
           }
           knowledgeContext += "---\nUse the above documents as reference to answer questions accurately.";
           systemPrompt += knowledgeContext;
+          hasKnowledge = true;
           trace.record({
             span_type: "retrieval",
             name: "full document context (not indexed yet)",
@@ -202,7 +203,12 @@ serve(async (req) => {
           });
         }
       }
+
+      // Behaviour settings (user prompt, skills, answer scope) come last so the
+      // strict-knowledge rule can reference the documents injected above.
+      systemPrompt = applyAgentSettings(systemPrompt, settings, hasKnowledge);
     }
+
 
     // ---------- Budget: hard stop when the agent hit its cap ----------
     const budget = await checkBudget(supabase, agent_id ?? null);
