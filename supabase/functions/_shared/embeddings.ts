@@ -48,38 +48,76 @@ export function chunkText(text: string, size = 1200, overlap = 150): string[] {
  * Falls back to `null` when the agent has no indexed chunks yet, so callers
  * can keep their previous whole-file behaviour.
  */
-export async function retrieveKnowledge(
+export interface KnowledgePassage {
+  file_name: string;
+  content: string;
+  similarity: number;
+}
+
+export interface RetrievalResult {
+  passages: KnowledgePassage[] | null;
+  /** ms spent embedding the question */
+  embedMs: number;
+  /** ms spent on the vector search itself */
+  searchMs: number;
+  /** embed + search */
+  totalMs: number;
+}
+
+/**
+ * Detailed retrieval with per-stage timings so the Monitor page can show how
+ * long the document search took versus the answer.
+ * Single round-trip: the previous "does this agent have chunks?" count query
+ * was dropped — an empty match result means the same thing.
+ */
+export async function retrieveKnowledgeDetailed(
   supabase: any,
   agentId: string,
   question: string,
   apiKey: string,
-  matchCount = 8,
-): Promise<{ file_name: string; content: string; similarity: number }[] | null> {
-  if (!agentId || !question.trim()) return null;
-  const { count } = await supabase
-    .from("knowledge_chunks")
-    .select("id", { count: "exact", head: true })
-    .eq("agent_id", agentId)
-    .not("embedding", "is", null);
-  if (!count) return null;
+  matchCount = 6,
+): Promise<RetrievalResult> {
+  const empty: RetrievalResult = { passages: null, embedMs: 0, searchMs: 0, totalMs: 0 };
+  if (!agentId || !question.trim()) return empty;
 
+  const t0 = Date.now();
   try {
-    const [vec] = await embedTexts([question.slice(0, 4000)], apiKey);
-    if (!vec) return null;
+    const [vec] = await embedTexts([question.slice(0, 2000)], apiKey);
+    const t1 = Date.now();
+    if (!vec) return { ...empty, embedMs: t1 - t0, totalMs: t1 - t0 };
     const { data, error } = await supabase.rpc("match_knowledge_chunks", {
       _agent_id: agentId,
       _query_embedding: JSON.stringify(vec),
       _match_count: matchCount,
     });
+    const t2 = Date.now();
     if (error) {
       console.error("[rag] match failed", error.message);
-      return null;
+      return { passages: null, embedMs: t1 - t0, searchMs: t2 - t1, totalMs: t2 - t0 };
     }
-    return (data || []) as { file_name: string; content: string; similarity: number }[];
+    const rows = (data || []) as KnowledgePassage[];
+    return {
+      passages: rows.length > 0 ? rows : null,
+      embedMs: t1 - t0,
+      searchMs: t2 - t1,
+      totalMs: t2 - t0,
+    };
   } catch (e) {
     console.error("[rag] retrieval failed", (e as Error).message);
-    return null;
+    const t = Date.now() - t0;
+    return { passages: null, embedMs: t, searchMs: 0, totalMs: t };
   }
+}
+
+export async function retrieveKnowledge(
+  supabase: any,
+  agentId: string,
+  question: string,
+  apiKey: string,
+  matchCount = 6,
+): Promise<KnowledgePassage[] | null> {
+  const r = await retrieveKnowledgeDetailed(supabase, agentId, question, apiKey, matchCount);
+  return r.passages;
 }
 
 /** Render retrieved passages as a system-prompt section. */
