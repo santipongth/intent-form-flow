@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { activeToolSchemas, runToolLoop } from "../_shared/tool-loop.ts";
 import { retrieveKnowledgeDetailed, renderKnowledgeContext, buildCitations } from "../_shared/embeddings.ts";
 import { TraceRecorder } from "../_shared/traces.ts";
-import { normalizeModel, supportsCustomTemperature, DEFAULT_MODEL } from "../_shared/models.ts";
+import { normalizeModel, supportsCustomTemperature, maxTokensParams, DEFAULT_MODEL } from "../_shared/models.ts";
+import { readAgentSettings, applyAgentSettings } from "../_shared/agent-settings.ts";
 import { loadCustomTools, makeCustomToolExecutor } from "../_shared/custom-tools.ts";
 import { loadGuardrails, checkInput, checkOutput, hardenSystemPrompt } from "../_shared/guardrails.ts";
 import { checkBudget, recordUsage, BUDGET_EXCEEDED_MESSAGE } from "../_shared/budget.ts";
@@ -280,6 +281,7 @@ serve(async (req) => {
       userId,
       trace,
       logPrefix: "[chat]",
+      maxIterations: settings.maxToolIterations,
       extraExec: customExec,
     });
     baseMessages = loop.messages;
@@ -303,6 +305,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model, messages: baseMessages, stream: false,
           ...(supportsCustomTemperature(model) ? { temperature } : {}),
+          ...maxTokensParams(model, maxTokens),
           ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "none" } : {}),
         }),
       });
@@ -352,6 +355,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model, messages: baseMessages, stream: true,
         ...(supportsCustomTemperature(model) ? { temperature } : {}),
+          ...maxTokensParams(model, maxTokens),
         ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "none" } : {}),
       }),
     });
