@@ -20,19 +20,8 @@ function formatCount(n: number) {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
 }
 
-function StarRating({ rating }: { rating: number }) {
-  return (
-    <span className="inline-flex items-center gap-1">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Star key={i} className={`h-3.5 w-3.5 ${i <= Math.round(rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`} />
-      ))}
-      <span className="text-xs font-medium text-muted-foreground ml-0.5">{rating}</span>
-    </span>
-  );
-}
-
-function TemplateCard({ template, index, onSelect, onClone, t }: {
-  template: MarketplaceTemplate; index: number; onSelect: () => void; onClone: () => void; t: (k: string) => string;
+function TemplateCard({ template, index, usageCount, onSelect, onClone, t }: {
+  template: MarketplaceTemplate; index: number; usageCount: number; onSelect: () => void; onClone: () => void; t: (k: string) => string;
 }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05, duration: 0.3 }}>
