@@ -195,10 +195,7 @@ serve(async (req) => {
     }
 
     // Build active tool schemas
-    const activeTools: any[] = [];
-    for (const key of ["web-search", "calculator", "read-excel"]) {
-      if (toolsEnabled[key]) activeTools.push(TOOL_SCHEMAS[key]);
-    }
+    const activeTools = activeToolSchemas(toolsEnabled);
 
     // Memory: load persisted history + summary, prepend to incoming messages
     let baseMessages: any[] = [{ role: "system", content: systemPrompt }];
