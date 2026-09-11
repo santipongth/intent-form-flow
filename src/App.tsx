@@ -29,6 +29,7 @@ import NotFound from "./pages/NotFound";
 import WidgetPreview from "./pages/WidgetPreview";
 import Skills from "./pages/Skills";
 import DocsApi from "./pages/DocsApi";
+import Demo from "./pages/Demo";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
                 <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
                 <Route path="/widget-preview/:agentId" element={<WidgetPreview />} />
                 <Route path="/docs/api" element={<DocsApi />} />
+                <Route path="/demo" element={<Demo />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
