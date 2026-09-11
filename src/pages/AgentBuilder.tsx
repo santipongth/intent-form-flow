@@ -183,7 +183,7 @@ export default function AgentBuilder() {
       || (objective ? `You are ${name || "an assistant"}. Your objective: ${objective}. Be helpful and respond naturally.`
         : "You are a helpful AI assistant. Keep answers clear and concise.");
     if (userPrompt.trim()) out += `\n\n---\nUser Prompt Template (apply when responding):\n${userPrompt.trim()}\n---`;
-    if (skills.length > 0) out += `\n\n---\nSpecialised skills you must apply in every answer:\n${skills.map((x) => `- ${x}`).join("\n")}\n---`;
+    out += renderSkillBlock(toSkillEntries(skills, skillCatalog));
     return out;
   })();
 
