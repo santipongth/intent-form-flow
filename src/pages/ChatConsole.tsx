@@ -48,7 +48,9 @@ export default function ChatConsole() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [grounding, setGrounding] = useState<Record<string, GroundingResult | "loading">>({});
+  const [citations, setCitations] = useState<Record<string, Citation[]>>({});
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Load messages from DB when conversation changes
@@ -152,7 +154,9 @@ export default function ChatConsole() {
     // Stream AI response
     setIsStreaming(true);
     let assistantSoFar = "";
+    let pendingCitations: Citation[] = [];
     const startTime = Date.now();
+
 
     const allMessages = [
       ...messages.map((m) => ({ role: m.role, content: m.content })),
