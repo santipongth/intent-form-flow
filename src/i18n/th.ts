@@ -411,4 +411,8 @@ export const th: Record<string, string> = {
   "knowledge.fileCount": "จำนวนไฟล์",
   "knowledge.limitFiles": "อัปโหลดได้สูงสุด 10 ไฟล์ต่อ Agent",
   "knowledge.limitSize": "พื้นที่จัดเก็บสูงสุด 50MB ต่อ Agent",
+  "chat.grounding.checking": "กำลังตรวจสอบคำตอบกับไฟล์ของคุณ…",
+  "chat.grounding.warning": "คำตอบนี้อาจไม่ตรงกับไฟล์ที่คุณอัปโหลด",
+  "chat.grounding.contradicted": "คำตอบนี้ขัดแย้งกับไฟล์ที่คุณอัปโหลด",
+  "chat.grounding.sources": "ตรวจสอบกับ",
 };
