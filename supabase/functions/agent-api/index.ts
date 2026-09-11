@@ -251,6 +251,20 @@ serve(async (req) => {
       systemPrompt += `\n\n---\nUser Prompt Template (apply when responding):\n${userPromptTemplate}\n---`;
     }
 
+    // Inject the agent's Skills so they actually shape behaviour at runtime.
+    const agentSkills: string[] = (() => {
+      const t: any = agent.tools;
+      const v = t && typeof t === "object" ? t._skills : undefined;
+      if (!Array.isArray(v)) return [];
+      return v.filter((s: unknown) => typeof s === "string" && s.trim()).map((s: string) => s.trim()).slice(0, 20);
+    })();
+    if (agentSkills.length > 0) {
+      systemPrompt += `\n\n---\nSpecialised skills you must apply in every answer:\n${
+        agentSkills.map((s) => `- ${s}`).join("\n")
+      }\nLead with these strengths; if a request falls outside them, say so plainly instead of guessing.\n---`;
+    }
+
+
     const { data: knowledge } = await supabase
       .from("knowledge_files")
       .select("file_name, content")

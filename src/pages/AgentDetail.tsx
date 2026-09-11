@@ -67,7 +67,7 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
   const uploadFile = useUploadKnowledgeFile();
   const deleteFile = useDeleteKnowledgeFile();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [uploadQueue, setUploadQueue] = useState<{ name: string; progress: number }[]>([]);
+  const [uploadQueue, setUploadQueue] = useState<{ name: string; stage: "uploading" | "extracting" }[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
   const totalSize = files.reduce((sum, f) => sum + (f.file_size || 0), 0);
@@ -85,22 +85,15 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
   }, [files, refetch]);
 
   const startUpload = (file: File) => {
-    setUploadQueue(prev => [...prev, { name: file.name, progress: 0 }]);
-    const progressInterval = setInterval(() => {
-      setUploadQueue(prev => prev.map((item) =>
-        item.name === file.name && item.progress < 90
-          ? { ...item, progress: Math.min(item.progress + Math.random() * 20, 90) }
-          : item
-      ));
-    }, 200);
+    // Real state only: "uploading" while the transfer is in flight, then
+    // "extracting" until the row appears with status ready/error.
+    setUploadQueue(prev => [...prev, { name: file.name, stage: "uploading" }]);
     uploadFile.mutate({ file, agentId }, {
       onSuccess: () => {
-        clearInterval(progressInterval);
-        setUploadQueue(prev => prev.map(item => item.name === file.name ? { ...item, progress: 100 } : item));
-        setTimeout(() => setUploadQueue(prev => prev.filter(item => item.name !== file.name)), 1000);
+        setUploadQueue(prev => prev.map(item => item.name === file.name ? { ...item, stage: "extracting" } : item));
+        setTimeout(() => setUploadQueue(prev => prev.filter(item => item.name !== file.name)), 1200);
       },
       onError: () => {
-        clearInterval(progressInterval);
         setUploadQueue(prev => prev.filter(item => item.name !== file.name));
       },
     });
@@ -216,9 +209,11 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
               <div key={item.name} className="space-y-1">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="truncate max-w-[200px]">📄 {item.name}</span>
-                  <span>{item.progress >= 100 ? t("knowledge.statusProcessing") : `${Math.round(item.progress)}%`}</span>
+                  <span>{item.stage === "uploading" ? t("knowledge.statusUploading") : t("knowledge.statusProcessing")}</span>
                 </div>
-                <Progress value={Math.min(item.progress, 100)} className="h-1.5 rounded-full" />
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+                  <div className="h-full w-1/3 animate-pulse rounded-full bg-primary" />
+                </div>
               </div>
             ))}
           </div>

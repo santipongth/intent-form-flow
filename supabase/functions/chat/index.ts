@@ -128,6 +128,23 @@ serve(async (req) => {
         if (agent.temperature != null) temperature = agent.temperature;
         if (agent.memory_enabled === false) memoryEnabled = false;
         if (agent.tools && typeof agent.tools === "object") toolsEnabled = agent.tools as any;
+
+        // User Prompt template (configured in the UI) reinforces the system prompt.
+        const rawPrompt = (toolsEnabled as any)._userPrompt;
+        if (typeof rawPrompt === "string" && rawPrompt.trim()) {
+          systemPrompt += `\n\n---\nUser Prompt Template (apply when responding):\n${rawPrompt.trim()}\n---`;
+        }
+
+        // Skills must actually shape behaviour, not just be labels in the UI.
+        const rawSkills = (toolsEnabled as any)._skills;
+        const skillList: string[] = Array.isArray(rawSkills)
+          ? rawSkills.filter((s: unknown) => typeof s === "string" && s.trim()).map((s: string) => s.trim()).slice(0, 20)
+          : [];
+        if (skillList.length > 0) {
+          systemPrompt += `\n\n---\nSpecialised skills you must apply in every answer:\n${
+            skillList.map((s) => `- ${s}`).join("\n")
+          }\nLead with these strengths; if a request falls outside them, say so plainly instead of guessing.\n---`;
+        }
       }
 
       // Knowledge base injection
@@ -198,6 +215,7 @@ serve(async (req) => {
       // mapping issues that occasionally return 4xx for unsupported tools).
       let probeRes: Response | null = null;
       let probeErrBody = "";
+      let probeModel = TOOL_MODEL_CHAIN[toolModelIdx];
       while (toolModelIdx < TOOL_MODEL_CHAIN.length) {
         const candidate = TOOL_MODEL_CHAIN[toolModelIdx];
         const r = await fetch(AI_GATEWAY, {
@@ -214,6 +232,7 @@ serve(async (req) => {
         });
         if (r.ok) {
           probeRes = r;
+          probeModel = candidate;
           if (toolModelIdx > 0) {
             console.log("[chat] tool model fallback in use:", candidate);
           }
@@ -255,7 +274,7 @@ serve(async (req) => {
       const toolCalls = choice?.message?.tool_calls;
       console.log(
         "[chat] tool probe iter", toolIterations,
-        "model:", TOOL_MODEL_CHAIN[toolModelIdx],
+        "model:", probeModel,
         "tool_choice:", typeof toolChoice === "string" ? toolChoice : `forced:${toolChoice.function.name}`,
         "finish:", choice?.finish_reason,
         "tool_calls:", toolCalls?.length || 0,

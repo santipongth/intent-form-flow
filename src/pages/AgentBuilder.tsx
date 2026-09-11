@@ -113,6 +113,12 @@ export default function AgentBuilder() {
   const uploadKnowledge = useUploadKnowledgeFile();
 
   const handleCreate = () => {
+    // Never persist tools that are not implemented yet ("เร็ว ๆ นี้"),
+    // even if a template default listed them.
+    const comingSoonIds = new Set(TOOLS_LIST.filter((tl) => tl.comingSoon).map((tl) => tl.id));
+    const enabledTools = Object.fromEntries(
+      Object.entries(tools).filter(([id, on]) => on && !comingSoonIds.has(id)),
+    );
     createAgent.mutate({
       name: name || "Agent ใหม่",
       avatar: "🤖",
@@ -124,7 +130,7 @@ export default function AgentBuilder() {
       system_prompt: systemPrompt || null,
       temperature: temperature[0],
       max_tokens: parseInt(maxTokens) || 2048,
-      tools: { ...tools, _userPrompt: userPrompt, _skills: skills } as any,
+      tools: { ...enabledTools, _userPrompt: userPrompt, _skills: skills } as any,
       memory_enabled: memoryEnabled,
       knowledge_urls: urls,
     }, {

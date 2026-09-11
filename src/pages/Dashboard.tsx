@@ -23,7 +23,7 @@ export default function Dashboard() {
   const { user } = useAuth();
 
   const { data: knowledgeStats } = useQuery({
-    queryKey: ["knowledge_stats"],
+    queryKey: ["knowledge_stats", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("knowledge_files")
@@ -47,7 +47,7 @@ export default function Dashboard() {
   }, []);
 
   const { data: analyticsStats } = useQuery({
-    queryKey: ["dashboard_analytics", todayStart],
+    queryKey: ["dashboard_analytics", user?.id, todayStart],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("agent_analytics_events")

@@ -32,6 +32,9 @@ export async function streamChat({
   let lastErr: unknown = null;
 
   while (attempt <= maxRetries) {
+    // Reset between attempts so a stale failed response from a previous
+    // attempt is never reported when a later attempt throws.
+    resp = null;
     try {
       resp = await fetch(CHAT_URL, {
         method: "POST",

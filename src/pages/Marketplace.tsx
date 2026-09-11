@@ -1,7 +1,9 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Star, Users, ArrowRight, X } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Search, Users, ArrowRight, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,19 +20,8 @@ function formatCount(n: number) {
   return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n);
 }
 
-function StarRating({ rating }: { rating: number }) {
-  return (
-    <span className="inline-flex items-center gap-1">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Star key={i} className={`h-3.5 w-3.5 ${i <= Math.round(rating) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/30"}`} />
-      ))}
-      <span className="text-xs font-medium text-muted-foreground ml-0.5">{rating}</span>
-    </span>
-  );
-}
-
-function TemplateCard({ template, index, onSelect, onClone, t }: {
-  template: MarketplaceTemplate; index: number; onSelect: () => void; onClone: () => void; t: (k: string) => string;
+function TemplateCard({ template, index, usageCount, onSelect, onClone, t }: {
+  template: MarketplaceTemplate; index: number; usageCount: number; onSelect: () => void; onClone: () => void; t: (k: string) => string;
 }) {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05, duration: 0.3 }}>
@@ -44,10 +35,11 @@ function TemplateCard({ template, index, onSelect, onClone, t }: {
             )}
           </div>
           <p className="text-sm text-muted-foreground line-clamp-2">{template.description}</p>
-          <StarRating rating={template.rating} />
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><Users className="h-3 w-3" />{formatCount(template.usageCount)} {t("marketplace.usageCount")}</span>
-            <span>{t("marketplace.by")} {template.author}</span>
+            <span className="flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              {formatCount(usageCount)} {t("marketplace.usageCount")}
+            </span>
           </div>
           <div className="flex flex-wrap gap-1">
             {template.tags.map((tag) => (<Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">{tag}</Badge>))}
@@ -67,6 +59,21 @@ export default function Marketplace() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [selected, setSelected] = useState<MarketplaceTemplate | null>(null);
+  const qc = useQueryClient();
+
+  // Real usage counts from the database (incremented when a template is cloned).
+  const { data: usage } = useQuery({
+    queryKey: ["template_stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("template_stats").select("template_id, clone_count");
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      (data || []).forEach((row) => { map[row.template_id] = row.clone_count; });
+      return map;
+    },
+  });
+  const usageOf = (id: string) => usage?.[id] ?? 0;
+
 
   const filtered = useMemo(() => {
     return MARKETPLACE_TEMPLATES.filter((tmpl) => {
@@ -78,7 +85,13 @@ export default function Marketplace() {
   }, [search, category]);
 
   const featured = useMemo(() => MARKETPLACE_TEMPLATES.filter((tmpl) => tmpl.featured), []);
-  const handleClone = (id: string) => navigate(`/agents/new?template=${id}`);
+  const handleClone = async (id: string) => {
+    try {
+      await supabase.rpc("increment_template_clone", { _template_id: id });
+      qc.invalidateQueries({ queryKey: ["template_stats"] });
+    } catch { /* usage counting must never block the user */ }
+    navigate(`/agents/new?template=${id}`);
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8">
@@ -106,7 +119,7 @@ export default function Marketplace() {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">{t("marketplace.featured")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {featured.map((tmpl, i) => (<TemplateCard key={tmpl.id} template={tmpl} index={i} onSelect={() => setSelected(tmpl)} onClone={() => handleClone(tmpl.id)} t={t} />))}
+            {featured.map((tmpl, i) => (<TemplateCard key={tmpl.id} template={tmpl} index={i} usageCount={usageOf(tmpl.id)} onSelect={() => setSelected(tmpl)} onClone={() => handleClone(tmpl.id)} t={t} />))}
           </div>
         </section>
       )}
@@ -117,7 +130,7 @@ export default function Marketplace() {
           <span className="text-muted-foreground font-normal text-sm">({filtered.length})</span>
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map((tmpl, i) => (<TemplateCard key={tmpl.id} template={tmpl} index={i} onSelect={() => setSelected(tmpl)} onClone={() => handleClone(tmpl.id)} t={t} />))}
+          {filtered.map((tmpl, i) => (<TemplateCard key={tmpl.id} template={tmpl} index={i} usageCount={usageOf(tmpl.id)} onSelect={() => setSelected(tmpl)} onClone={() => handleClone(tmpl.id)} t={t} />))}
         </div>
         {filtered.length === 0 && <p className="text-center text-muted-foreground py-12">{t("marketplace.noResults")}</p>}
       </section>
@@ -128,14 +141,12 @@ export default function Marketplace() {
             <div className={`-mx-6 -mt-6 h-3 rounded-t-lg bg-gradient-to-r ${selected.color}`} />
             <DialogHeader className="pt-2">
               <DialogTitle className="text-xl">{selected.name}</DialogTitle>
-              <DialogDescription className="text-sm">{t("marketplace.by")} {selected.author}</DialogDescription>
+              <DialogDescription className="text-sm">{selected.category}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-sm text-foreground/80 leading-relaxed">{selected.previewDescription}</p>
               <div className="flex items-center gap-4">
-                <StarRating rating={selected.rating} />
-                <span className="text-xs text-muted-foreground">({selected.reviewCount} {t("marketplace.reviews")})</span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3" /> {formatCount(selected.usageCount)} {t("marketplace.usageCount")}</span>
+                <span className="text-xs text-muted-foreground flex items-center gap-1"><Users className="h-3 w-3" /> {formatCount(usageOf(selected.id))} {t("marketplace.usageCount")}</span>
               </div>
               <div>
                 <p className="text-xs font-medium text-muted-foreground mb-1">{t("marketplace.toolsUsed")}</p>
