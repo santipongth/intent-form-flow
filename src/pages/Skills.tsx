@@ -44,8 +44,8 @@ const INSTR_MAX = 4000;
 type Filter = "all" | "used" | "unused";
 
 export default function Skills() {
-  const { t, language } = useLanguage();
-  const isTh = language === "th";
+  const { t, locale } = useLanguage();
+  const isTh = locale === "th";
   const { data: skills = [], isLoading } = useSkills();
   const { data: usage = {} } = useSkillUsage();
   const createSkill = useCreateSkill();
