@@ -168,9 +168,21 @@ export default function Monitor() {
                           {run.startedAt ? format(new Date(run.startedAt), "dd MMM yyyy HH:mm:ss") : ""} · {run.source}
                         </p>
                       </div>
-                      <Badge className={`rounded-full text-xs ${run.hasError ? statusColors.error : statusColors.success}`}>
-                        {run.hasError ? "❌" : "✅"} {run.totalMs}ms
-                      </Badge>
+                      <div className="flex flex-wrap justify-end gap-1.5">
+                        {searchMs > 0 && (
+                          <Badge variant="secondary" className="rounded-full text-xs">
+                            🔎 {t("monitor.searchMs")} {searchMs}ms
+                          </Badge>
+                        )}
+                        {answerMs > 0 && (
+                          <Badge variant="secondary" className="rounded-full text-xs">
+                            💬 {t("monitor.answerMs")} {answerMs}ms
+                          </Badge>
+                        )}
+                        <Badge className={`rounded-full text-xs ${run.hasError ? statusColors.error : statusColors.success}`}>
+                          {run.hasError ? "❌" : "✅"} {run.totalMs}ms
+                        </Badge>
+                      </div>
                     </div>
 
                     <div className="space-y-2">
@@ -195,7 +207,8 @@ export default function Monitor() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
         </TabsContent>
