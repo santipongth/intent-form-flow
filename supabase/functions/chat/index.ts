@@ -147,21 +147,43 @@ serve(async (req) => {
         }
       }
 
-      // Knowledge base injection
-      const { data: knowledgeFiles } = await supabase
-        .from("knowledge_files").select("file_name, content")
-        .eq("agent_id", agent_id).eq("user_id", userId).eq("status", "ready");
-      if (knowledgeFiles && knowledgeFiles.length > 0) {
-        let knowledgeContext = "\n\n---\nReference Documents:\n";
-        let total = 0; const MAX = 50000;
-        for (const kf of knowledgeFiles) {
-          if (!kf.content) continue;
-          const chunk = kf.content.substring(0, MAX - total);
-          knowledgeContext += `[Document: ${kf.file_name}]\n${chunk}\n\n`;
-          total += chunk.length; if (total >= MAX) break;
+      // Knowledge: semantic retrieval first (RAG), whole-file context as fallback
+      const lastUserQuestion = String(
+        [...messages].reverse().find((m: any) => m.role === "user")?.content || "",
+      );
+      const ragStart = Date.now();
+      const passages = await retrieveKnowledge(supabase, agent_id, lastUserQuestion, LOVABLE_API_KEY);
+      if (passages && passages.length > 0) {
+        systemPrompt += renderKnowledgeContext(passages);
+        trace.record({
+          span_type: "retrieval",
+          name: "semantic knowledge search",
+          input: { question: lastUserQuestion.slice(0, 500) },
+          output: { matches: passages.map((p) => ({ file: p.file_name, similarity: Number(p.similarity?.toFixed(3)) })) },
+          duration_ms: Date.now() - ragStart,
+        });
+      } else {
+        const { data: knowledgeFiles } = await supabase
+          .from("knowledge_files").select("file_name, content")
+          .eq("agent_id", agent_id).eq("user_id", userId).eq("status", "ready");
+        if (knowledgeFiles && knowledgeFiles.length > 0) {
+          let knowledgeContext = "\n\n---\nReference Documents:\n";
+          let total = 0; const MAX = 50000;
+          for (const kf of knowledgeFiles) {
+            if (!kf.content) continue;
+            const chunk = kf.content.substring(0, MAX - total);
+            knowledgeContext += `[Document: ${kf.file_name}]\n${chunk}\n\n`;
+            total += chunk.length; if (total >= MAX) break;
+          }
+          knowledgeContext += "---\nUse the above documents as reference to answer questions accurately.";
+          systemPrompt += knowledgeContext;
+          trace.record({
+            span_type: "retrieval",
+            name: "full document context (not indexed yet)",
+            output: { files: knowledgeFiles.length },
+            duration_ms: Date.now() - ragStart,
+          });
         }
-        knowledgeContext += "---\nUse the above documents as reference to answer questions accurately.";
-        systemPrompt += knowledgeContext;
       }
     }
 
