@@ -22,6 +22,7 @@ type Props = {
  * - Allows quickly creating a new catalog skill from the search box.
  */
 export function SkillSelector({ value, onChange, max = 15, templateSkills = [], disabled }: Props) {
+  const { t } = useLanguage();
   const { data: skills = [], isLoading } = useSkills();
   const createSkill = useCreateSkill();
   const [open, setOpen] = useState(false);
