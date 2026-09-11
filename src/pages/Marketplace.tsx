@@ -35,10 +35,11 @@ function TemplateCard({ template, index, usageCount, onSelect, onClone, t }: {
             )}
           </div>
           <p className="text-sm text-muted-foreground line-clamp-2">{template.description}</p>
-          <StarRating rating={template.rating} />
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><Users className="h-3 w-3" />{formatCount(template.usageCount)} {t("marketplace.usageCount")}</span>
-            <span>{t("marketplace.by")} {template.author}</span>
+            <span className="flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              {formatCount(usageCount)} {t("marketplace.usageCount")}
+            </span>
           </div>
           <div className="flex flex-wrap gap-1">
             {template.tags.map((tag) => (<Badge key={tag} variant="secondary" className="text-[10px] px-1.5 py-0">{tag}</Badge>))}
