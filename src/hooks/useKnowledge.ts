@@ -79,6 +79,31 @@ export function useRefreshKnowledgeUrl() {
   });
 }
 
+/** Re-run text extraction + indexing for an uploaded file (e.g. after a failure). */
+export function useReprocessKnowledgeFile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, filePath }: { id: string; filePath: string; agentId: string }) => {
+      const { error } = await supabase
+        .from("knowledge_files")
+        .update({ status: "processing", error_message: null })
+        .eq("id", id);
+      if (error) throw error;
+      const { error: fnError } = await supabase.functions.invoke("extract-text", {
+        body: { file_path: filePath, knowledge_file_id: id },
+      });
+      if (fnError) throw fnError;
+    },
+    onSuccess: (_, { agentId }) => {
+      qc.invalidateQueries({ queryKey: ["knowledge_files", agentId] });
+      toast.success("ประมวลผลไฟล์ใหม่สำเร็จ");
+    },
+    onError: (err: Error) => toast.error("ประมวลผลไฟล์ไม่สำเร็จ", { description: err.message }),
+  });
+}
+
+
+
 export function useUploadKnowledgeFile() {
   const { user } = useAuth();
   const qc = useQueryClient();
