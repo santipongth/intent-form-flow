@@ -21,15 +21,12 @@ export interface MarketplaceTemplate {
   previewDescription: string;
   color: string;
   category: string;
-  author: string;
-  rating: number;
-  reviewCount: number;
-  usageCount: number;
   tags: string[];
   featured: boolean;
   tools: string[];
   recommendedModel: string;
 }
+
 
 export const MARKETPLACE_TEMPLATES: MarketplaceTemplate[] = [
   {
