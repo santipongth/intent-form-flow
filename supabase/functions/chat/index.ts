@@ -274,7 +274,7 @@ serve(async (req) => {
       const toolCalls = choice?.message?.tool_calls;
       console.log(
         "[chat] tool probe iter", toolIterations,
-        "model:", TOOL_MODEL_CHAIN[toolModelIdx],
+        "model:", probeModel,
         "tool_choice:", typeof toolChoice === "string" ? toolChoice : `forced:${toolChoice.function.name}`,
         "finish:", choice?.finish_reason,
         "tool_calls:", toolCalls?.length || 0,
