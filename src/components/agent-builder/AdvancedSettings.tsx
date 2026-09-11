@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SkillSelector } from "@/components/SkillSelector";
 import { FieldHint } from "@/components/agent-builder/FieldHint";
+import { UserPromptExamplePicker } from "@/components/agent-builder/UserPromptExamplePicker";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MAX_TOKEN_PRESETS, modelSupportsTemperature } from "@/lib/agentTools";
 
@@ -97,12 +98,7 @@ export function AdvancedSettings({ value, on }: { value: AdvancedSettingsValue; 
               <span className="text-xs text-muted-foreground font-normal">({t("builder.optional")})</span>
               <FieldHint text={t("builder.userPromptHelp")} />
             </Label>
-            <Button
-              type="button" variant="ghost" size="sm" className="h-7 text-xs rounded-lg"
-              onClick={() => on.setUserPrompt(USER_PROMPT_EXAMPLE)}
-            >
-              {t("builder.userPromptInsert")}
-            </Button>
+            <UserPromptExamplePicker currentValue={value.userPrompt} onInsert={on.setUserPrompt} />
           </div>
           <Textarea
             placeholder={USER_PROMPT_EXAMPLE}
