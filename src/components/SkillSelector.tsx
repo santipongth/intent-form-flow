@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { useSkills, useCreateSkill } from "@/hooks/useSkills";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 
 type Props = {
