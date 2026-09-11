@@ -215,6 +215,7 @@ serve(async (req) => {
       // mapping issues that occasionally return 4xx for unsupported tools).
       let probeRes: Response | null = null;
       let probeErrBody = "";
+      let probeModel = TOOL_MODEL_CHAIN[toolModelIdx];
       while (toolModelIdx < TOOL_MODEL_CHAIN.length) {
         const candidate = TOOL_MODEL_CHAIN[toolModelIdx];
         const r = await fetch(AI_GATEWAY, {
