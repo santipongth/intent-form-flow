@@ -8,6 +8,7 @@ import { readAgentSettings, applyAgentSettings } from "../_shared/agent-settings
 import { loadCustomTools, makeCustomToolExecutor } from "../_shared/custom-tools.ts";
 import { loadGuardrails, checkInput, checkOutput, hardenSystemPrompt } from "../_shared/guardrails.ts";
 import { checkBudget, recordUsage, BUDGET_EXCEEDED_MESSAGE } from "../_shared/budget.ts";
+import { loadMcpTools, makeMcpExecutor, chainExecutors } from "../_shared/mcp-tools.ts";
 
 /** Emit a one-shot OpenAI-style SSE stream (used for blocked / filtered answers). */
 function sseOnce(content: string, extra: Record<string, unknown> = {}) {
@@ -240,8 +241,9 @@ serve(async (req) => {
 
     // Build active tool schemas (standard + the user's own API tools)
     const customTools = await loadCustomTools(supabase, agent_id ?? null);
-    const activeTools = [...activeToolSchemas(toolsEnabled), ...customTools.schemas];
-    const customExec = makeCustomToolExecutor(customTools);
+    const mcpTools = await loadMcpTools(supabase, agent_id ?? null);
+    const activeTools = [...activeToolSchemas(toolsEnabled), ...customTools.schemas, ...mcpTools.schemas];
+    const customExec = chainExecutors(makeCustomToolExecutor(customTools), makeMcpExecutor(mcpTools));
 
     // Memory: load persisted history + summary, prepend to incoming messages
     let baseMessages: any[] = [{ role: "system", content: systemPrompt }];
