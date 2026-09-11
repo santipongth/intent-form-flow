@@ -295,6 +295,11 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
                         <RefreshCw className={`h-4 w-4 ${refreshUrl.isPending ? "animate-spin" : ""}`} />
                       </Button>
                     )}
+                    {f.source_type !== "url" && f.status === "error" && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => reprocessFile.mutate({ id: f.id, filePath: f.file_path, agentId })} disabled={reprocessFile.isPending} aria-label="ประมวลผลไฟล์ใหม่">
+                        <RefreshCw className={`h-4 w-4 ${reprocessFile.isPending ? "animate-spin" : ""}`} />
+                      </Button>
+                    )}
                     {f.status === "ready" && f.content && (
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setExpandedId(expandedId === f.id ? null : f.id)}>
                         {expandedId === f.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
