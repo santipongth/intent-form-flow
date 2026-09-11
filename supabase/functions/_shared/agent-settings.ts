@@ -68,7 +68,7 @@ export function readAgentSettings(tools: unknown): AgentSettings {
   const iter = Number(t._maxToolIterations);
   return {
     userPrompt: typeof t._userPrompt === "string" ? t._userPrompt.trim() : "",
-    skills: strArray(t._skills, 20),
+    skills: readSkillEntries(t._skills, 20),
     greeting: typeof t._greeting === "string" ? t._greeting.trim() : "",
     starters: strArray(t._starters, 3),
     fallbackMessage: typeof t._fallbackMessage === "string" ? t._fallbackMessage.trim() : "",
