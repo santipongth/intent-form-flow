@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SkillSelector } from "@/components/SkillSelector";
 import { FieldHint } from "@/components/agent-builder/FieldHint";
+import { UserPromptExamplePicker } from "@/components/agent-builder/UserPromptExamplePicker";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { MAX_TOKEN_PRESETS, modelSupportsTemperature } from "@/lib/agentTools";
 
