@@ -209,9 +209,9 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
               <div key={item.name} className="space-y-1">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="truncate max-w-[200px]">📄 {item.name}</span>
-                  <span>{item.progress >= 100 ? t("knowledge.statusProcessing") : `${Math.round(item.progress)}%`}</span>
+                  <span>{item.stage === "uploading" ? t("knowledge.statusUploading") : t("knowledge.statusProcessing")}</span>
                 </div>
-                <Progress value={Math.min(item.progress, 100)} className="h-1.5 rounded-full" />
+                <Progress className="h-1.5 rounded-full" indeterminate />
               </div>
             ))}
           </div>
