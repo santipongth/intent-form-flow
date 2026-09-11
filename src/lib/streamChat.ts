@@ -4,6 +4,19 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 
 export type ChatMsg = { role: "user" | "assistant" | "system"; content: string };
 
+/** Extra info the chat function streams alongside the answer. */
+export type ChatMeta = {
+  citations?: Array<{
+    index: number;
+    file_id: string | null;
+    file_name: string;
+    chunk_index: number | null;
+    similarity: number;
+    excerpt: string;
+  }>;
+  budgetWarning?: string | null;
+};
+
 export async function streamChat({
   messages,
   agentId,
@@ -11,6 +24,7 @@ export async function streamChat({
   onDelta,
   onDone,
   onError,
+  onMeta,
   signal,
   maxRetries = 2,
 }: {
@@ -20,9 +34,11 @@ export async function streamChat({
   onDelta: (deltaText: string) => void;
   onDone: () => void;
   onError?: (error: string) => void;
+  onMeta?: (meta: ChatMeta) => void;
   signal?: AbortSignal;
   maxRetries?: number;
 }) {
+
   // Get user session token instead of using anon key
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
