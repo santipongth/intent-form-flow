@@ -65,7 +65,7 @@ const USER_PROMPT_EXAMPLE =
   "คำถามของผู้ใช้: {{question}}\nตอบเป็นข้อ ๆ อ้างอิงข้อมูลที่มี และปิดท้ายด้วยสรุปสั้น 1 บรรทัด";
 
 export function AdvancedSettings({ value, on }: { value: AdvancedSettingsValue; on: AdvancedSettingsHandlers }) {
-  const { t, language } = useLanguage();
+  const { t, locale } = useLanguage();
   const tempSupported = modelSupportsTemperature(value.model);
   const presetValues = MAX_TOKEN_PRESETS.map((p) => String(p.value));
   const isPreset = presetValues.includes(value.maxTokens);
@@ -150,7 +150,7 @@ export function AdvancedSettings({ value, on }: { value: AdvancedSettingsValue; 
             <SelectContent>
               {MAX_TOKEN_PRESETS.map((p) => (
                 <SelectItem key={p.value} value={String(p.value)}>
-                  {language === "en" ? p.labelEn : p.labelTh}
+                  {locale === "en" ? p.labelEn : p.labelTh}
                 </SelectItem>
               ))}
               <SelectItem value="custom">{t("builder.lengthCustom")}</SelectItem>

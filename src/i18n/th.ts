@@ -525,4 +525,5 @@ export const th: Record<string, string> = {
   "builder.tryItSend": "ส่ง",
   "builder.tryItPlaceholder": "พิมพ์คำถามทดสอบ...",
   "builder.edit": "แก้ไข",
+  "builder.optional": "ไม่บังคับ",
 };

@@ -525,4 +525,5 @@ export const en: Record<string, string> = {
   "builder.tryItSend": "Send",
   "builder.tryItPlaceholder": "Type a test question...",
   "builder.edit": "Edit",
+  "builder.optional": "optional",
 };
