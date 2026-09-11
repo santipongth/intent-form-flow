@@ -225,7 +225,7 @@ export default function AgentBuilder() {
       temperature: temperature[0],
       max_tokens: parseInt(maxTokens) || 2048,
       tools: withAgentSettings(
-        { ...enabledTools, _userPrompt: userPrompt, _skills: skills },
+        { ...enabledTools, _userPrompt: userPrompt, _skills: toSkillEntries(skills, skillCatalog) },
         { greeting, starters: cleanStarters, fallbackMessage, strictKnowledge, maxToolIterations },
       ) as any,
       memory_enabled: memoryEnabled,
