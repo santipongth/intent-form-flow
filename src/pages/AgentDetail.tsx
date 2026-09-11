@@ -442,6 +442,7 @@ export default function AgentDetail() {
   const [editUserPrompt, setEditUserPrompt] = useState("");
   const [editSkills, setEditSkills] = useState<string[]>([]);
   const [editErrors, setEditErrors] = useState<{ userPrompt?: string; skills?: string }>({});
+  const { data: skillCatalog = [] } = useSkills();
   const [editGreeting, setEditGreeting] = useState("");
   const [editStarters, setEditStarters] = useState<string[]>(["", "", ""]);
   const [editFallback, setEditFallback] = useState("");
