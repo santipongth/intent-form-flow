@@ -28,6 +28,8 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import WidgetPreview from "./pages/WidgetPreview";
 import Skills from "./pages/Skills";
+import KnowledgeFile from "./pages/KnowledgeFile";
+
 import DocsApi from "./pages/DocsApi";
 import Demo from "./pages/Demo";
 
