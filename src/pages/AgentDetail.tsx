@@ -211,7 +211,9 @@ function KnowledgeTab({ agentId }: { agentId: string }) {
                   <span className="truncate max-w-[200px]">📄 {item.name}</span>
                   <span>{item.stage === "uploading" ? t("knowledge.statusUploading") : t("knowledge.statusProcessing")}</span>
                 </div>
-                <Progress className="h-1.5 rounded-full" indeterminate />
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+                  <div className="h-full w-1/3 animate-pulse rounded-full bg-primary" />
+                </div>
               </div>
             ))}
           </div>
