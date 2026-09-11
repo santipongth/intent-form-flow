@@ -2,7 +2,7 @@
 // model ID the Lovable AI Gateway actually accepts. Legacy/friendly names
 // (e.g. "GPT-4o") otherwise make the gateway answer 400.
 
-export const DEFAULT_MODEL = "google/gemini-2.5-flash";
+export const DEFAULT_MODEL = "openai/gpt-5";
 
 export const SUPPORTED_MODELS = [
   "openai/gpt-5",
