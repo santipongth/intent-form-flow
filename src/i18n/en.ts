@@ -282,6 +282,8 @@ export const en: Record<string, string> = {
   "monitor.tabTraces": "Run traces",
   "monitor.noTraces": "No agent runs recorded yet. Chat with an agent to see its steps here.",
   "monitor.unknownAgent": "Unknown Agent",
+  "monitor.searchMs": "search",
+  "monitor.answerMs": "answer",
 
   // Analytics
   "analytics.title": "Analytics",
