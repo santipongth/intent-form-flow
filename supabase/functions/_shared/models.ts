@@ -57,3 +57,16 @@ export function normalizeModel(input: string | null | undefined): string {
 export function supportsCustomTemperature(model: string): boolean {
   return !model.startsWith("openai/gpt-5");
 }
+
+/**
+ * The gateway expects `max_completion_tokens` for OpenAI models and
+ * `max_tokens` elsewhere. Returns {} when no usable limit is configured.
+ */
+export function maxTokensParams(model: string, maxTokens?: number | null): Record<string, number> {
+  const n = Number(maxTokens);
+  if (!Number.isFinite(n) || n <= 0) return {};
+  const clamped = Math.min(Math.max(Math.round(n), 256), 32000);
+  return model.startsWith("openai/")
+    ? { max_completion_tokens: clamped }
+    : { max_tokens: clamped };
+}
