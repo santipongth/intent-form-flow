@@ -30,7 +30,7 @@ import { ApiKeysSection } from "@/components/agent-detail/ApiKeysSection";
 import { WebhooksSection } from "@/components/agent-detail/WebhooksSection";
 import { ErrorLogsSection } from "@/components/agent-detail/ErrorLogsSection";
 import { z } from "zod";
-import { getUserPrompt, getSkills, withPromptAndSkills } from "@/lib/agentTools";
+import { getUserPrompt, getSkills, withPromptAndSkills, getAgentSettings, withAgentSettings, modelSupportsTemperature } from "@/lib/agentTools";
 import { SkillSelector } from "@/components/SkillSelector";
 
 // ---- Validation rules for the edit form (User Prompt + Skills) ----
@@ -441,6 +441,11 @@ export default function AgentDetail() {
   const [editUserPrompt, setEditUserPrompt] = useState("");
   const [editSkills, setEditSkills] = useState<string[]>([]);
   const [editErrors, setEditErrors] = useState<{ userPrompt?: string; skills?: string }>({});
+  const [editGreeting, setEditGreeting] = useState("");
+  const [editStarters, setEditStarters] = useState<string[]>(["", "", ""]);
+  const [editFallback, setEditFallback] = useState("");
+  const [editStrictKnowledge, setEditStrictKnowledge] = useState(false);
+  const [editToolRounds, setEditToolRounds] = useState(4);
 
   useEffect(() => {
     if (agent) {
@@ -455,6 +460,12 @@ export default function AgentDetail() {
       // the embedded fields, or contain wrong-typed items from older rows.
       setEditUserPrompt(getUserPrompt(agent.tools as any));
       setEditSkills(getSkills(agent.tools as any));
+      const st = getAgentSettings(agent.tools as any);
+      setEditGreeting(st.greeting);
+      setEditStarters([st.starters[0] ?? "", st.starters[1] ?? "", st.starters[2] ?? ""]);
+      setEditFallback(st.fallbackMessage);
+      setEditStrictKnowledge(st.strictKnowledge);
+      setEditToolRounds(st.maxToolIterations);
     }
   }, [agent]);
 
@@ -582,7 +593,16 @@ print(r.json()["reply"])`;
       system_prompt: editSystemPrompt || null,
       temperature: editTemperature[0],
       max_tokens: parseInt(editMaxTokens) || 2048,
-      tools: withPromptAndSkills(agent.tools as any, parsed.data.userPrompt, parsed.data.skills) as any,
+      tools: withAgentSettings(
+        withPromptAndSkills(agent.tools as any, parsed.data.userPrompt, parsed.data.skills) as any,
+        {
+          greeting: editGreeting,
+          starters: editStarters.map((x) => x.trim()).filter(Boolean),
+          fallbackMessage: editFallback,
+          strictKnowledge: editStrictKnowledge,
+          maxToolIterations: editToolRounds,
+        },
+      ) as any,
     }, {
       onSuccess: () => setIsEditing(false),
     });
@@ -657,8 +677,11 @@ print(r.json()["reply"])`;
                 <Input value={editProvider} onChange={(e) => setEditProvider(e.target.value)} className="rounded-xl mt-1" />
               </div>
               <div>
-                <Label>{t("detail.temperature")}: {editTemperature[0]}</Label>
-                <Slider value={editTemperature} onValueChange={setEditTemperature} max={2} step={0.1} className="mt-2" />
+                <Label>{t("detail.temperature")}: {modelSupportsTemperature(editModel) ? editTemperature[0] : "—"}</Label>
+                <Slider value={editTemperature} onValueChange={setEditTemperature} max={2} step={0.1} className="mt-2" disabled={!modelSupportsTemperature(editModel)} />
+                {!modelSupportsTemperature(editModel) && (
+                  <p className="text-xs text-muted-foreground mt-1">{t("builder.temperatureUnsupported")}</p>
+                )}
               </div>
               <div>
                 <Label>{t("detail.maxTokens")}</Label>
