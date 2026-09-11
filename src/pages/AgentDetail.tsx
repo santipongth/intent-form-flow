@@ -863,15 +863,21 @@ print(r.json()["reply"])`;
                 <div className="sm:col-span-2">
                   <Label className="text-muted-foreground text-xs">Skills</Label>
                   {(() => {
-                    const list = getSkills(agent.tools as any);
+                    const list = getSkillEntries(agent.tools as any);
                     if (list.length === 0) {
                       return <p className="font-medium text-sm text-muted-foreground">{t("dashboard.notSpecified")}</p>;
                     }
                     return (
                       <div className="flex flex-wrap gap-1.5 mt-1">
                         {list.map((s) => (
-                          <Badge key={s} variant="secondary" className="rounded-full">
-                            {s}
+                          <Badge
+                            key={s.name}
+                            variant="secondary"
+                            className="rounded-full"
+                            title={s.instructions || t("skills.noInstructions")}
+                          >
+                            {s.name}
+                            {s.instructions && <span className="ml-1 text-[10px] opacity-70">✓</span>}
                           </Badge>
                         ))}
                       </div>
