@@ -114,6 +114,77 @@ export default function AgentBuilder() {
     toast.success(t("builder.templateLoaded"), { description: `${t("builder.usingTemplate")} "${tmpl.name}" ${t("builder.fromMarketplace")}` });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ---- Draft autosave (local only) so a half-filled wizard survives a reload
+  const DRAFT_KEY = "tm.agentDraft";
+  useEffect(() => {
+    if (searchParams.get("template")) { setDraftLoaded(true); return; }
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d && typeof d === "object") {
+          setSelectedTemplate(d.selectedTemplate ?? null);
+          setName(d.name ?? "");
+          setObjective(d.objective ?? "");
+          setOutputStyle(d.outputStyle ?? "friendly");
+          setSelectedProvider(d.selectedProvider ?? "openai");
+          setSelectedModel(d.selectedModel ?? "openai/gpt-5");
+          setUrls(Array.isArray(d.urls) ? d.urls : []);
+          setTools(d.tools ?? { "web-search": true });
+          setMemoryEnabled(d.memoryEnabled ?? true);
+          setSystemPrompt(d.systemPrompt ?? "");
+          setUserPrompt(d.userPrompt ?? "");
+          setSkills(Array.isArray(d.skills) ? d.skills : []);
+          setTemperature([typeof d.temperature === "number" ? d.temperature : 0.7]);
+          setMaxTokens(d.maxTokens ?? "2048");
+          setGreeting(d.greeting ?? "");
+          setStarters(Array.isArray(d.starters) ? d.starters : ["", "", ""]);
+          setFallbackMessage(d.fallbackMessage ?? "");
+          setStrictKnowledge(!!d.strictKnowledge);
+          setMaxToolIterations(typeof d.maxToolIterations === "number" ? d.maxToolIterations : 4);
+          if (d.name || d.objective) toast.info(t("builder.draftRestored"));
+        }
+      }
+    } catch { /* ignore malformed drafts */ }
+    setDraftLoaded(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!draftLoaded) return;
+    const draft = {
+      selectedTemplate, name, objective, outputStyle, selectedProvider, selectedModel, urls,
+      tools, memoryEnabled, systemPrompt, userPrompt, skills, temperature: temperature[0], maxTokens,
+      greeting, starters, fallbackMessage, strictKnowledge, maxToolIterations,
+    };
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch { /* quota */ }
+  }, [draftLoaded, selectedTemplate, name, objective, outputStyle, selectedProvider, selectedModel, urls,
+      tools, memoryEnabled, systemPrompt, userPrompt, skills, temperature, maxTokens,
+      greeting, starters, fallbackMessage, strictKnowledge, maxToolIterations]);
+
+  // ---- Required fields per step
+  const stepError = (() => {
+    if (step === 1 && !name.trim()) return t("builder.needName");
+    if (step === 1 && !objective.trim()) return t("builder.needObjective");
+    return null;
+  })();
+
+  const goNext = () => {
+    if (stepError) { toast.error(stepError); return; }
+    setStep(step + 1);
+  };
+
+  const cleanStarters = starters.map((x) => x.trim()).filter(Boolean);
+
+  /** System prompt used by the "try it" preview, mirroring the backend composition. */
+  const previewSystemPrompt = (() => {
+    let out = systemPrompt.trim()
+      || (objective ? `You are ${name || "an assistant"}. Your objective: ${objective}. Be helpful and respond naturally.`
+        : "You are a helpful AI assistant. Keep answers clear and concise.");
+    if (userPrompt.trim()) out += `\n\n---\nUser Prompt Template (apply when responding):\n${userPrompt.trim()}\n---`;
+    if (skills.length > 0) out += `\n\n---\nSpecialised skills you must apply in every answer:\n${skills.map((x) => `- ${x}`).join("\n")}\n---`;
+    return out;
+  })();
+
   const handleAddUrl = () => {
     try {
       const parsed = new URL(urlInput.trim());
@@ -151,7 +222,10 @@ export default function AgentBuilder() {
       system_prompt: systemPrompt || null,
       temperature: temperature[0],
       max_tokens: parseInt(maxTokens) || 2048,
-      tools: { ...enabledTools, _userPrompt: userPrompt, _skills: skills } as any,
+      tools: withAgentSettings(
+        { ...enabledTools, _userPrompt: userPrompt, _skills: skills },
+        { greeting, starters: cleanStarters, fallbackMessage, strictKnowledge, maxToolIterations },
+      ) as any,
       memory_enabled: memoryEnabled,
       knowledge_urls: urls,
     }, {
@@ -165,6 +239,7 @@ export default function AgentBuilder() {
         if (data?.id) {
           urls.forEach((url) => addKnowledgeUrl.mutate({ url, agentId: data.id }));
         }
+        try { localStorage.removeItem("tm.agentDraft"); } catch { /* ignore */ }
         navigate("/dashboard");
       },
     });
@@ -420,7 +495,7 @@ export default function AgentBuilder() {
           <span className="sm:hidden">{step > 0 ? t("builder.back") : "Back"}</span>
         </Button>
         {step < STEPS_KEYS.length - 1 ? (
-          <Button className="gradient-primary text-primary-foreground rounded-xl gap-1.5 sm:gap-2 text-sm" onClick={() => setStep(step + 1)}>
+          <Button className="gradient-primary text-primary-foreground rounded-xl gap-1.5 sm:gap-2 text-sm" disabled={!!stepError} title={stepError ?? undefined} onClick={goNext}>
             {t("builder.next")}
             <ArrowRight className="h-4 w-4" />
           </Button>
