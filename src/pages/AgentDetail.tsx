@@ -773,6 +773,15 @@ print(r.json()["reply"])`;
           <KnowledgeTab agentId={agent.id} />
         </TabsContent>
 
+        {/* Enterprise controls: custom tools, guardrails, budgets */}
+        <TabsContent value="enterprise" className="space-y-4">
+          <CustomToolsSection agentId={agent.id} />
+          <GuardrailsCard agentId={agent.id} />
+          <BudgetCard agentId={agent.id} />
+        </TabsContent>
+
+
+
         {/* Deploy Tab */}
         <TabsContent value="deploy" className="space-y-4">
           <div className="flex items-center justify-between">
