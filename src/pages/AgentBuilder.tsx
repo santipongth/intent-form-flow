@@ -48,6 +48,7 @@ export default function AgentBuilder() {
   const [skills, setSkills] = useState<string[]>([]);
   const [templateSkills, setTemplateSkills] = useState<string[]>([]);
   const [templateTools, setTemplateTools] = useState<string[]>([]);
+  const { data: skillCatalog = [] } = useSkills();
   const [temperature, setTemperature] = useState([0.7]);
   const [maxTokens, setMaxTokens] = useState("2048");
   const [templateFromMarketplace, setTemplateFromMarketplace] = useState<string | null>(null);
