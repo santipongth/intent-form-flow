@@ -127,8 +127,12 @@ export async function streamChat({
 
       try {
         const parsed = JSON.parse(jsonStr);
+        if (parsed.tm_citations || parsed.tm_budget_warning) {
+          onMeta?.({ citations: parsed.tm_citations, budgetWarning: parsed.tm_budget_warning ?? null });
+        }
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) onDelta(content);
+
       } catch {
         textBuffer = line + "\n" + textBuffer;
         break;
@@ -147,9 +151,13 @@ export async function streamChat({
       if (jsonStr === "[DONE]") continue;
       try {
         const parsed = JSON.parse(jsonStr);
+        if (parsed.tm_citations || parsed.tm_budget_warning) {
+          onMeta?.({ citations: parsed.tm_citations, budgetWarning: parsed.tm_budget_warning ?? null });
+        }
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
         if (content) onDelta(content);
       } catch { /* ignore */ }
+
     }
   }
 
