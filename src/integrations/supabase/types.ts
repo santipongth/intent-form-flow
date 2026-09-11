@@ -1059,6 +1059,7 @@ export type Database = {
           file_name: string
           id: string
           similarity: number
+          source_url: string
         }[]
       }
       move_to_dlq: {
