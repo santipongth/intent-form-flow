@@ -508,7 +508,7 @@ export const en: Record<string, string> = {
   "builder.temperatureUnsupported": "This model ignores creativity settings; the default is used",
   "builder.answerLength": "Maximum answer length",
   "builder.answerLengthHelp": "Caps answer length to control cost and keep replies focused",
-  "builder.custom": "Custom",
+  "builder.lengthCustom": "Custom",
   "builder.greeting": "Welcome message",
   "builder.greetingHelp": "The first message users see when the chat opens",
   "builder.starters": "Starter questions (up to 3)",

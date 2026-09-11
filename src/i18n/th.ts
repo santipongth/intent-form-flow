@@ -508,7 +508,7 @@ export const th: Record<string, string> = {
   "builder.temperatureUnsupported": "โมเดลนี้ไม่รองรับการปรับความสร้างสรรค์ ระบบจะใช้ค่ามาตรฐาน",
   "builder.answerLength": "ความยาวคำตอบสูงสุด",
   "builder.answerLengthHelp": "จำกัดความยาวคำตอบ ช่วยคุมค่าใช้จ่ายและให้คำตอบกระชับ",
-  "builder.custom": "กำหนดเอง",
+  "builder.lengthCustom": "กำหนดเอง",
   "builder.greeting": "ข้อความทักทายเริ่มต้น",
   "builder.greetingHelp": "ข้อความแรกที่ผู้ใช้เห็นเมื่อเปิดแชท",
   "builder.starters": "คำถามตัวอย่าง (สูงสุด 3 ข้อ)",
