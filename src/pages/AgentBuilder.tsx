@@ -17,7 +17,10 @@ import { useCreateAgent } from "@/hooks/useAgents";
 import { useAddKnowledgeUrl, useUploadKnowledgeFile } from "@/hooks/useKnowledge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import KnowledgeStep from "@/components/agent-builder/KnowledgeStep";
-import { SkillSelector } from "@/components/SkillSelector";
+import { AdvancedSettings } from "@/components/agent-builder/AdvancedSettings";
+import { PreviewChat } from "@/components/agent-builder/PreviewChat";
+import { withAgentSettings } from "@/lib/agentTools";
+import { AlertTriangle, Pencil } from "lucide-react";
 
 const STEPS_KEYS = ["Intent & Type", "Identity & Model", "Knowledge", "Tools & Memory", "Review & Create"];
 
@@ -47,6 +50,12 @@ export default function AgentBuilder() {
   const [temperature, setTemperature] = useState([0.7]);
   const [maxTokens, setMaxTokens] = useState("2048");
   const [templateFromMarketplace, setTemplateFromMarketplace] = useState<string | null>(null);
+  const [greeting, setGreeting] = useState("");
+  const [starters, setStarters] = useState<string[]>(["", "", ""]);
+  const [fallbackMessage, setFallbackMessage] = useState("");
+  const [strictKnowledge, setStrictKnowledge] = useState(false);
+  const [maxToolIterations, setMaxToolIterations] = useState(4);
+  const [draftLoaded, setDraftLoaded] = useState(false);
 
   const progress = ((step + 1) / STEPS_KEYS.length) * 100;
 
