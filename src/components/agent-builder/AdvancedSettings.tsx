@@ -97,12 +97,7 @@ export function AdvancedSettings({ value, on }: { value: AdvancedSettingsValue; 
               <span className="text-xs text-muted-foreground font-normal">({t("builder.optional")})</span>
               <FieldHint text={t("builder.userPromptHelp")} />
             </Label>
-            <Button
-              type="button" variant="ghost" size="sm" className="h-7 text-xs rounded-lg"
-              onClick={() => on.setUserPrompt(USER_PROMPT_EXAMPLE)}
-            >
-              {t("builder.userPromptInsert")}
-            </Button>
+            <UserPromptExamplePicker currentValue={value.userPrompt} onInsert={on.setUserPrompt} />
           </div>
           <Textarea
             placeholder={USER_PROMPT_EXAMPLE}
