@@ -75,9 +75,7 @@ serve(async (req) => {
       .eq("status", "ready")
       .order("file_name", { ascending: true });
 
-    const skills: string[] = Array.isArray((agent.tools as any)?._skills)
-      ? (agent.tools as any)._skills
-      : [];
+    const skills: string[] = readSkillEntries((agent.tools as any)?._skills).map((s) => s.name);
 
     if (action === "info") {
       const { count } = await supabase
