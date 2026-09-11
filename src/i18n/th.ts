@@ -278,6 +278,10 @@ export const th: Record<string, string> = {
   "monitor.title": "🔍 Monitor",
   "monitor.subtitle": "ดูกระบวนการคิดของ Agent แบบ real-time",
   "monitor.allAgents": "ทุก Agent",
+  "monitor.tabActivity": "กิจกรรม",
+  "monitor.tabTraces": "ขั้นตอนการทำงาน",
+  "monitor.noTraces": "ยังไม่มีบันทึกการทำงานของ Agent ลองแชทกับ Agent เพื่อดูขั้นตอนที่นี่",
+  "monitor.unknownAgent": "ไม่พบ Agent",
 
   // Analytics
   "analytics.title": "Analytics",

@@ -278,6 +278,10 @@ export const en: Record<string, string> = {
   "monitor.title": "🔍 Monitor",
   "monitor.subtitle": "Watch your Agent's thinking process in real-time",
   "monitor.allAgents": "All Agents",
+  "monitor.tabActivity": "Activity",
+  "monitor.tabTraces": "Run traces",
+  "monitor.noTraces": "No agent runs recorded yet. Chat with an agent to see its steps here.",
+  "monitor.unknownAgent": "Unknown Agent",
 
   // Analytics
   "analytics.title": "Analytics",

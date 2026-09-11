@@ -1,6 +1,9 @@
 // Public Agent API endpoint - authenticate via x-api-key header
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { activeToolSchemas, runToolLoop } from "../_shared/tool-loop.ts";
+import { retrieveKnowledge, renderKnowledgeContext } from "../_shared/embeddings.ts";
+import { TraceRecorder } from "../_shared/traces.ts";
 
 // Models that only accept the default temperature (=1). For these we must
 // omit `temperature` entirely or the AI gateway returns 400.
@@ -265,11 +268,42 @@ serve(async (req) => {
     }
 
 
-    const { data: knowledge } = await supabase
-      .from("knowledge_files")
-      .select("file_name, content")
-      .eq("agent_id", keyRow.agent_id)
-      .eq("status", "ready");
+    const trace = new TraceRecorder(supabase, {
+      agentId: keyRow.agent_id,
+      userId: keyRow.user_id,
+      source: "api",
+    });
+
+    const lastQuestion = (() => {
+      for (let i = finalMessages.length - 1; i >= 0; i--) {
+        const m: any = finalMessages[i];
+        if (m?.role === "user" && typeof m?.content === "string") return m.content;
+      }
+      return "";
+    })();
+
+    const ragStart = Date.now();
+    const passages = await retrieveKnowledge(
+      supabase, keyRow.agent_id, lastQuestion, Deno.env.get("LOVABLE_API_KEY") || "",
+    );
+    if (passages && passages.length > 0) {
+      systemPrompt += renderKnowledgeContext(passages);
+      trace.record({
+        span_type: "retrieval",
+        name: "semantic knowledge search",
+        input: { question: lastQuestion.slice(0, 500) },
+        output: { matches: passages.map((p) => ({ file: p.file_name, similarity: Number(p.similarity?.toFixed(3)) })) },
+        duration_ms: Date.now() - ragStart,
+      });
+    }
+
+    const { data: knowledge } = (passages && passages.length > 0)
+      ? { data: null as any }
+      : await supabase
+        .from("knowledge_files")
+        .select("file_name, content")
+        .eq("agent_id", keyRow.agent_id)
+        .eq("status", "ready");
 
     if (knowledge && knowledge.length > 0) {
       let ctx = "\n\n---\nReference Documents:\n";
@@ -342,13 +376,43 @@ serve(async (req) => {
       return typeof message === "string" ? message : "";
     })();
 
-    const gatewayMessages = [
+    const gatewayMessages: any[] = [
       { role: "system", content: systemPrompt },
       ...historyMessages,
       ...finalMessages,
     ];
 
     const startTime = Date.now();
+
+    // ---------- Tools: same runtime the in-app chat uses ----------
+    const toolsEnabled: Record<string, unknown> =
+      agent.tools && typeof agent.tools === "object" ? (agent.tools as any) : {};
+    const activeTools = activeToolSchemas(toolsEnabled);
+    let toolIterations = 0;
+    if (activeTools.length > 0) {
+      const loop = await runToolLoop({
+        messages: gatewayMessages,
+        activeTools,
+        toolsEnabled,
+        apiKey: Deno.env.get("LOVABLE_API_KEY") || "",
+        temperature: agent.temperature ?? undefined,
+        supabase,
+        agentId: keyRow.agent_id,
+        userId: keyRow.user_id,
+        trace,
+        logPrefix: "[agent-api]",
+      });
+      toolIterations = loop.iterations;
+      if (loop.failure) {
+        await trace.flush();
+        return new Response(JSON.stringify({ error: loop.failure.error }), {
+          status: loop.failure.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      gatewayMessages.length = 0;
+      gatewayMessages.push(...loop.messages);
+    }
 
     const gatewayModel = normalizeModel(agent.model);
     const allowTemp = supportsCustomTemperature(gatewayModel);
@@ -413,6 +477,13 @@ serve(async (req) => {
           controller.close();
 
           const respMs = Date.now() - startTime;
+          trace.record({
+            span_type: "answer",
+            name: gatewayModel,
+            output: { tool_iterations: toolIterations, stream: true },
+            duration_ms: respMs,
+          });
+          trace.flush();
           try {
             await supabase.from("agent_analytics_events").insert({
               agent_id: keyRow.agent_id,
@@ -488,6 +559,14 @@ serve(async (req) => {
       response_time_ms: responseTime,
       tokens_used: tokens,
     });
+
+    trace.record({
+      span_type: "answer",
+      name: gatewayModel,
+      output: { tokens_used: tokens, tool_iterations: toolIterations },
+      duration_ms: responseTime,
+    });
+    trace.flush();
 
     await persistMessages(lastUserText, reply, tokens, responseTime);
 

@@ -1,12 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import {
-  TOOL_SCHEMAS,
-  runTool,
-  chooseToolChoice,
-  TOOL_MODEL_CHAIN,
-  isToolModelFallbackError,
-} from "./_tools.ts";
+import { activeToolSchemas, runToolLoop } from "../_shared/tool-loop.ts";
+import { retrieveKnowledge, renderKnowledgeContext } from "../_shared/embeddings.ts";
+import { TraceRecorder } from "../_shared/traces.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -110,6 +106,13 @@ serve(async (req) => {
       isPublicSession = true;
     }
 
+    const trace = new TraceRecorder(supabase, {
+      agentId: agent_id ?? null,
+      userId,
+      conversationId: conversation_id ?? null,
+      source: isPublicSession ? "widget" : "chat",
+    });
+
     // Agent config
     let systemPrompt = "You are a helpful AI assistant. Keep answers clear and concise.";
     let model = "google/gemini-2.5-flash";
@@ -147,29 +150,48 @@ serve(async (req) => {
         }
       }
 
-      // Knowledge base injection
-      const { data: knowledgeFiles } = await supabase
-        .from("knowledge_files").select("file_name, content")
-        .eq("agent_id", agent_id).eq("user_id", userId).eq("status", "ready");
-      if (knowledgeFiles && knowledgeFiles.length > 0) {
-        let knowledgeContext = "\n\n---\nReference Documents:\n";
-        let total = 0; const MAX = 50000;
-        for (const kf of knowledgeFiles) {
-          if (!kf.content) continue;
-          const chunk = kf.content.substring(0, MAX - total);
-          knowledgeContext += `[Document: ${kf.file_name}]\n${chunk}\n\n`;
-          total += chunk.length; if (total >= MAX) break;
+      // Knowledge: semantic retrieval first (RAG), whole-file context as fallback
+      const lastUserQuestion = String(
+        [...messages].reverse().find((m: any) => m.role === "user")?.content || "",
+      );
+      const ragStart = Date.now();
+      const passages = await retrieveKnowledge(supabase, agent_id, lastUserQuestion, LOVABLE_API_KEY);
+      if (passages && passages.length > 0) {
+        systemPrompt += renderKnowledgeContext(passages);
+        trace.record({
+          span_type: "retrieval",
+          name: "semantic knowledge search",
+          input: { question: lastUserQuestion.slice(0, 500) },
+          output: { matches: passages.map((p) => ({ file: p.file_name, similarity: Number(p.similarity?.toFixed(3)) })) },
+          duration_ms: Date.now() - ragStart,
+        });
+      } else {
+        const { data: knowledgeFiles } = await supabase
+          .from("knowledge_files").select("file_name, content")
+          .eq("agent_id", agent_id).eq("user_id", userId).eq("status", "ready");
+        if (knowledgeFiles && knowledgeFiles.length > 0) {
+          let knowledgeContext = "\n\n---\nReference Documents:\n";
+          let total = 0; const MAX = 50000;
+          for (const kf of knowledgeFiles) {
+            if (!kf.content) continue;
+            const chunk = kf.content.substring(0, MAX - total);
+            knowledgeContext += `[Document: ${kf.file_name}]\n${chunk}\n\n`;
+            total += chunk.length; if (total >= MAX) break;
+          }
+          knowledgeContext += "---\nUse the above documents as reference to answer questions accurately.";
+          systemPrompt += knowledgeContext;
+          trace.record({
+            span_type: "retrieval",
+            name: "full document context (not indexed yet)",
+            output: { files: knowledgeFiles.length },
+            duration_ms: Date.now() - ragStart,
+          });
         }
-        knowledgeContext += "---\nUse the above documents as reference to answer questions accurately.";
-        systemPrompt += knowledgeContext;
       }
     }
 
     // Build active tool schemas
-    const activeTools: any[] = [];
-    for (const key of ["web-search", "calculator", "read-excel"]) {
-      if (toolsEnabled[key]) activeTools.push(TOOL_SCHEMAS[key]);
-    }
+    const activeTools = activeToolSchemas(toolsEnabled);
 
     // Memory: load persisted history + summary, prepend to incoming messages
     let baseMessages: any[] = [{ role: "system", content: systemPrompt }];
@@ -197,107 +219,29 @@ serve(async (req) => {
 
     const startTime = Date.now();
 
-    // ---------- Tool-calling loop (non-streaming for tool steps, stream final answer) ----------
-    let toolIterations = 0;
-    const MAX_TOOL_ITERATIONS = 4;
-    // Track which tool model is currently working. We try models in order and
-    // remember the working one so subsequent iterations don't re-fall-back.
-    let toolModelIdx = 0;
-
-    while (toolIterations < MAX_TOOL_ITERATIONS && activeTools.length > 0) {
-      const toolChoice = chooseToolChoice(
-        baseMessages,
-        { calculator: !!toolsEnabled["calculator"], webSearch: !!toolsEnabled["web-search"] },
-        toolIterations,
-      );
-
-      // Try tool models in chain until one succeeds (handles gateway model
-      // mapping issues that occasionally return 4xx for unsupported tools).
-      let probeRes: Response | null = null;
-      let probeErrBody = "";
-      let probeModel = TOOL_MODEL_CHAIN[toolModelIdx];
-      while (toolModelIdx < TOOL_MODEL_CHAIN.length) {
-        const candidate = TOOL_MODEL_CHAIN[toolModelIdx];
-        const r = await fetch(AI_GATEWAY, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: candidate,
-            messages: baseMessages,
-            temperature,
-            tools: activeTools,
-            tool_choice: toolChoice,
-            stream: false,
-          }),
-        });
-        if (r.ok) {
-          probeRes = r;
-          probeModel = candidate;
-          if (toolModelIdx > 0) {
-            console.log("[chat] tool model fallback in use:", candidate);
-          }
-          break;
-        }
-        if (r.status === 429 || r.status === 402) {
-          const msg = r.status === 429
-            ? "Rate limit exceeded. Please try again later."
-            : "Payment required. Please add credits to your workspace.";
-          return new Response(JSON.stringify({ error: msg }), {
-            status: r.status,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        probeErrBody = await r.text();
-        const shouldFallback = isToolModelFallbackError(r.status, probeErrBody);
-        console.error(
-          "[chat] tool probe failed",
-          { model: candidate, status: r.status, fallback: shouldFallback, body: probeErrBody.slice(0, 300) },
-        );
-        if (!shouldFallback) {
-          return new Response(JSON.stringify({ error: "AI gateway error" }), {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        toolModelIdx++;
-      }
-      if (!probeRes) {
-        console.error("[chat] all tool models exhausted", probeErrBody.slice(0, 300));
-        return new Response(JSON.stringify({ error: "No tool-capable model available" }), {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const probe = await probeRes.json();
-      const choice = probe.choices?.[0];
-      const toolCalls = choice?.message?.tool_calls;
-      console.log(
-        "[chat] tool probe iter", toolIterations,
-        "model:", probeModel,
-        "tool_choice:", typeof toolChoice === "string" ? toolChoice : `forced:${toolChoice.function.name}`,
-        "finish:", choice?.finish_reason,
-        "tool_calls:", toolCalls?.length || 0,
-      );
-      if (!toolCalls || toolCalls.length === 0) {
-        // No tool needed → break and stream final answer in next phase
-        break;
-      }
-      // Append assistant tool-call message
-      baseMessages.push({
-        role: "assistant",
-        content: choice.message.content || "",
-        tool_calls: toolCalls,
+    // ---------- Tool-calling loop (shared with the public agent API) ----------
+    const loop = await runToolLoop({
+      messages: baseMessages,
+      activeTools,
+      toolsEnabled,
+      apiKey: LOVABLE_API_KEY,
+      temperature,
+      supabase,
+      agentId: agent_id ?? null,
+      userId,
+      trace,
+      logPrefix: "[chat]",
+    });
+    baseMessages = loop.messages;
+    const toolIterations = loop.iterations;
+    if (loop.failure) {
+      await trace.flush();
+      return new Response(JSON.stringify({ error: loop.failure.error }), {
+        status: loop.failure.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-      // Execute each tool
-      for (const tc of toolCalls) {
-        const result = await runTool(tc.function?.name, tc.function?.arguments, {
-          supabase, agentId: agent_id, userId,
-        });
-        baseMessages.push({ role: "tool", tool_call_id: tc.id, content: result });
-      }
-      toolIterations++;
     }
+
 
     // ---------- Final streaming response ----------
     const response = await fetch(AI_GATEWAY, {
@@ -345,6 +289,13 @@ serve(async (req) => {
       },
       async flush() {
         const responseTime = Date.now() - startTime;
+        trace.record({
+          span_type: "answer",
+          name: model,
+          output: { tokens_used: totalTokens || null, tool_iterations: toolIterations },
+          duration_ms: responseTime,
+        });
+        trace.flush();
         if (agent_id && userId) {
           supabase.from("agent_analytics_events").insert({
             agent_id, user_id: userId, event_type: "chat", status: "success",
