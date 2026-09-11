@@ -137,8 +137,11 @@ export default function ChatConsole() {
       }
     );
 
-    // Update conversation title on first message
-    if (messages.length === 0) {
+    // Update conversation title on first message only — never overwrite the
+    // title of an existing conversation whose history may still be loading.
+    const existingConv = conversations?.find((c: any) => c.id === convId);
+    const hasTitle = !!existingConv?.title && existingConv.title !== "New Chat";
+    if (messages.length === 0 && !hasTitle) {
       updateTitle.mutate({ id: convId, title: userContent.slice(0, 50) });
     }
 
