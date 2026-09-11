@@ -13,7 +13,11 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { Copy, Globe, Code, Monitor, Key, ArrowLeft, Info, Pencil, Upload, Trash2, FileText, Loader2, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { Copy, Globe, Code, Monitor, Key, ArrowLeft, Info, Pencil, Upload, Trash2, FileText, Loader2, ChevronDown, ChevronUp, RefreshCw, ShieldCheck } from "lucide-react";
+import { CustomToolsSection } from "@/components/agent-detail/CustomToolsSection";
+import { GuardrailsCard } from "@/components/agent-detail/GuardrailsCard";
+import { BudgetCard } from "@/components/agent-detail/BudgetCard";
+
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -671,17 +675,21 @@ print(r.json()["reply"])`;
 
       {/* Main Tabs */}
       <Tabs defaultValue={defaultTab === "edit" ? "overview" : defaultTab} className="space-y-4">
-        <TabsList className="grid grid-cols-3 rounded-xl h-11 w-fit">
+        <TabsList className="grid grid-cols-4 rounded-xl h-11 w-fit">
           <TabsTrigger value="overview" className="rounded-lg gap-1.5">
             <Info className="h-4 w-4" /> {t("detail.overview")}
           </TabsTrigger>
           <TabsTrigger value="knowledge" className="rounded-lg gap-1.5">
             <FileText className="h-4 w-4" /> {t("knowledge.title")}
           </TabsTrigger>
+          <TabsTrigger value="enterprise" className="rounded-lg gap-1.5">
+            <ShieldCheck className="h-4 w-4" /> {t("detail.enterprise")}
+          </TabsTrigger>
           <TabsTrigger value="deploy" className="rounded-lg gap-1.5">
             <Globe className="h-4 w-4" /> {t("detail.deploy")}
           </TabsTrigger>
         </TabsList>
+
 
         {/* Overview Tab */}
         <TabsContent value="overview">
@@ -764,6 +772,15 @@ print(r.json()["reply"])`;
         <TabsContent value="knowledge">
           <KnowledgeTab agentId={agent.id} />
         </TabsContent>
+
+        {/* Enterprise controls: custom tools, guardrails, budgets */}
+        <TabsContent value="enterprise" className="space-y-4">
+          <CustomToolsSection agentId={agent.id} />
+          <GuardrailsCard agentId={agent.id} />
+          <BudgetCard agentId={agent.id} />
+        </TabsContent>
+
+
 
         {/* Deploy Tab */}
         <TabsContent value="deploy" className="space-y-4">

@@ -381,7 +381,9 @@ export default function ChatConsole() {
                     <span className="whitespace-pre-wrap">{msg.content}</span>
                   )}
                 </div>
+                {msg.role === "assistant" && <CitationList citations={citations[msg.id] || []} />}
                 {msg.role === "assistant" && <GroundingNote state={grounding[msg.id]} t={t} />}
+
                 <div className={`flex items-center gap-2 mt-1 ${msg.role === "user" ? "justify-end" : ""}`}>
                   <span className="text-[10px] sm:text-xs text-muted-foreground">{msg.timestamp}</span>
                   {msg.role === "assistant" && msg.id !== "streaming" && msg.dbId && (

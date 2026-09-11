@@ -28,6 +28,8 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import WidgetPreview from "./pages/WidgetPreview";
 import Skills from "./pages/Skills";
+import KnowledgeFile from "./pages/KnowledgeFile";
+
 import DocsApi from "./pages/DocsApi";
 import Demo from "./pages/Demo";
 
@@ -61,6 +63,8 @@ const App = () => (
                 <Route path="/ab-testing/results" element={<ProtectedRoute><AppLayout><ABTestResults /></AppLayout></ProtectedRoute>} />
                 <Route path="/ab-testing/:id" element={<ProtectedRoute><AppLayout><ABTestDetail /></AppLayout></ProtectedRoute>} />
                 <Route path="/skills" element={<ProtectedRoute><AppLayout><Skills /></AppLayout></ProtectedRoute>} />
+                <Route path="/knowledge/:fileId" element={<ProtectedRoute><AppLayout><KnowledgeFile /></AppLayout></ProtectedRoute>} />
+
                 <Route path="/settings" element={<ProtectedRoute><AppLayout><SettingsPage /></AppLayout></ProtectedRoute>} />
                 <Route path="/widget-preview/:agentId" element={<WidgetPreview />} />
                 <Route path="/docs/api" element={<DocsApi />} />

@@ -200,11 +200,16 @@ export async function checkInput(
 
   if (cfg.ai_review && (isBorderline(text) || text.length > 1500)) {
     const verdict = await aiReview(text, apiKey, "input");
-    if (verdict?.unsafe) {
+    // Fail closed: if the reviewer cannot decide, block rather than allow.
+    if (!verdict) {
+      return { blocked: true, reason: "AI review unavailable", category: "ai_review", reviewed: true };
+    }
+    if (verdict.unsafe) {
       return { blocked: true, reason: `AI review: ${verdict.reason}`, category: "ai_review", reviewed: true };
     }
     return { blocked: false, reviewed: true };
   }
+
 
   return { blocked: false };
 }
@@ -230,11 +235,16 @@ export async function checkOutput(
 
   if (cfg.ai_review && isBorderline(out)) {
     const verdict = await aiReview(out, apiKey, "output");
-    if (verdict?.unsafe) {
+    // Fail closed: an undecidable review blocks the answer.
+    if (!verdict) {
+      return { blocked: true, reason: "AI review unavailable", category: "ai_review", reviewed: true };
+    }
+    if (verdict.unsafe) {
       return { blocked: true, reason: `AI review: ${verdict.reason}`, category: "ai_review", reviewed: true };
     }
     return { blocked: false, text: out, redactions, reviewed: true };
   }
+
 
   return { blocked: false, text: out, redactions };
 }
