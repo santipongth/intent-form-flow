@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { activeToolSchemas, runToolLoop } from "../_shared/tool-loop.ts";
 import { retrieveKnowledge, renderKnowledgeContext } from "../_shared/embeddings.ts";
 import { TraceRecorder } from "../_shared/traces.ts";
+import { normalizeModel, supportsCustomTemperature, DEFAULT_MODEL } from "../_shared/models.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -115,7 +116,7 @@ serve(async (req) => {
 
     // Agent config
     let systemPrompt = "You are a helpful AI assistant. Keep answers clear and concise.";
-    let model = "google/gemini-2.5-flash";
+    let model = DEFAULT_MODEL;
     let temperature = 0.7;
     let memoryEnabled = true;
     let toolsEnabled: Record<string, boolean> = {};
@@ -128,6 +129,7 @@ serve(async (req) => {
       if (agent) {
         if (agent.system_prompt) systemPrompt = agent.system_prompt;
         else if (agent.objective) systemPrompt = `You are ${agent.name}. Your objective: ${agent.objective}. Be helpful and respond naturally.`;
+        model = normalizeModel(agent.model);
         if (agent.temperature != null) temperature = agent.temperature;
         if (agent.memory_enabled === false) memoryEnabled = false;
         if (agent.tools && typeof agent.tools === "object") toolsEnabled = agent.tools as any;
@@ -248,7 +250,8 @@ serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model, messages: baseMessages, temperature, stream: true,
+        model, messages: baseMessages, stream: true,
+        ...(supportsCustomTemperature(model) ? { temperature } : {}),
         ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "none" } : {}),
       }),
     });
