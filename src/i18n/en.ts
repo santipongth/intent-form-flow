@@ -411,4 +411,8 @@ export const en: Record<string, string> = {
   "knowledge.fileCount": "Files",
   "knowledge.limitFiles": "Maximum 10 files per agent",
   "knowledge.limitSize": "Maximum 50MB storage per agent",
+  "chat.grounding.checking": "Checking the answer against your files…",
+  "chat.grounding.warning": "This answer may not match your uploaded files",
+  "chat.grounding.contradicted": "This answer contradicts your uploaded files",
+  "chat.grounding.sources": "Checked against",
 };

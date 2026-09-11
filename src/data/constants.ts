@@ -7,12 +7,32 @@ export const TEMPLATES = [
   { id: "data-analyst", name: "📊 Data Analyst", description: "วิเคราะห์ข้อมูลจาก Excel/CSV แล้วสรุปผล", color: "from-brand-cyan to-brand-green", category: "Analytics" },
 ];
 
+/**
+ * โมเดลที่เรียกใช้ได้จริงผ่าน AI Gateway (ต้องเป็น vendor/model ID จริงเท่านั้น
+ * ไม่งั้น API จะตอบ 400 "AI provider error")
+ */
 export const LLM_MODELS = [
-  { id: "openai", name: "OpenAI", models: ["GPT-4o", "GPT-4o mini", "GPT-4 Turbo"], icon: "🤖", color: "brand-green" },
-  { id: "anthropic", name: "Anthropic", models: ["Claude 3.5 Sonnet", "Claude 3 Haiku"], icon: "🧠", color: "brand-orange" },
-  { id: "gemini", name: "Google Gemini", models: ["Gemini Pro", "Gemini Flash"], icon: "💎", color: "brand-blue" },
-  { id: "groq", name: "Groq", models: ["Llama 3.1 70B", "Mixtral 8x7B"], icon: "⚡", color: "brand-cyan" },
+  {
+    id: "openai", name: "OpenAI", icon: "🤖", color: "brand-green",
+    models: ["openai/gpt-5", "openai/gpt-5-mini", "openai/gpt-5-nano"],
+  },
+  {
+    id: "gemini", name: "Google Gemini", icon: "💎", color: "brand-blue",
+    models: ["google/gemini-2.5-flash", "google/gemini-2.5-pro", "google/gemini-2.5-flash-lite"],
+  },
 ];
+
+export const MODEL_LABELS: Record<string, string> = {
+  "openai/gpt-5": "GPT-5 (แม่นยำสูงสุด)",
+  "openai/gpt-5-mini": "GPT-5 mini (สมดุล)",
+  "openai/gpt-5-nano": "GPT-5 nano (เร็ว/ประหยัด)",
+  "google/gemini-2.5-flash": "Gemini 2.5 Flash (แนะนำ)",
+  "google/gemini-2.5-pro": "Gemini 2.5 Pro (วิเคราะห์ลึก)",
+  "google/gemini-2.5-flash-lite": "Gemini 2.5 Flash Lite (เร็วที่สุด)",
+};
+
+export const ALL_MODEL_IDS = LLM_MODELS.flatMap((p) => p.models);
+
 
 export interface MarketplaceTemplate {
   id: string;
@@ -33,55 +53,55 @@ export const MARKETPLACE_TEMPLATES: MarketplaceTemplate[] = [
     id: "pdf-qa", name: "📄 ตอบคำถามจาก PDF", description: "อัปโหลด PDF แล้วให้ AI ตอบคำถามจากเนื้อหา",
     previewDescription: "Agent ที่สามารถอ่านและทำความเข้าใจเอกสาร PDF ได้อย่างลึกซึ้ง รองรับการค้นหาข้อมูลแบบ semantic search ตอบคำถามได้แม่นยำพร้อมอ้างอิงหน้าที่มา เหมาะสำหรับองค์กรที่มีเอกสารจำนวนมาก",
     color: "from-primary to-brand-blue", category: "Knowledge", tags: ["RAG", "PDF", "Knowledge Base"],
-    featured: true, tools: ["web-search", "read-excel"], recommendedModel: "GPT-4o"
+    featured: true, tools: ["web-search", "read-excel"], recommendedModel: "openai/gpt-5"
   },
   {
     id: "news-summary", name: "📰 สรุปข่าวประจำวัน", description: "ค้นหาและสรุปข่าวล่าสุดจากเว็บ",
     previewDescription: "Agent สรุปข่าวอัตโนมัติที่ค้นหาข่าวจากแหล่งข่าวชั้นนำ สรุปเป็น bullet points อ่านง่าย พร้อมลิงก์ต้นฉบับ ตั้งเวลาสรุปรายวันได้",
     color: "from-brand-orange to-brand-pink", category: "Research", tags: ["News", "Summary", "Automation"],
-    featured: true, tools: ["web-search"], recommendedModel: "Claude 3.5 Sonnet"
+    featured: true, tools: ["web-search"], recommendedModel: "openai/gpt-5"
   },
   {
     id: "customer-support", name: "💬 Customer Support", description: "บอทตอบคำถามลูกค้าจากฐานความรู้",
     previewDescription: "ระบบ Customer Support อัจฉริยะที่ตอบคำถามลูกค้าได้ตลอด 24 ชั่วโมง เรียนรู้จาก FAQ และฐานความรู้ขององค์กร ส่งต่อเคสซับซ้อนให้ทีมงานอัตโนมัติ",
     color: "from-brand-green to-brand-cyan", category: "Support", tags: ["Chatbot", "Support", "FAQ"],
-    featured: true, tools: ["web-search", "email"], recommendedModel: "GPT-4o"
+    featured: true, tools: ["web-search", "email"], recommendedModel: "openai/gpt-5"
   },
   {
     id: "code-reviewer", name: "🔍 Code Reviewer", description: "ตรวจสอบและแนะนำการปรับปรุงโค้ด",
     previewDescription: "Agent ตรวจสอบโค้ดอัตโนมัติที่วิเคราะห์ code quality, security vulnerabilities, performance issues และแนะนำ best practices พร้อมตัวอย่างโค้ดที่ปรับปรุงแล้ว",
     color: "from-brand-blue to-primary", category: "Dev", tags: ["Code Review", "Dev", "Security"],
-    featured: false, tools: ["code-exec", "web-search"], recommendedModel: "GPT-4o"
+    featured: false, tools: ["code-exec", "web-search"], recommendedModel: "openai/gpt-5"
   },
   {
     id: "content-writer", name: "✍️ Content Writer", description: "เขียนบทความ SEO จากหัวข้อที่กำหนด",
     previewDescription: "Agent เขียนบทความ SEO-optimized ที่วิเคราะห์ keyword, สร้าง outline, และเขียนเนื้อหาคุณภาพสูง รองรับหลายภาษา ปรับโทนเสียงได้ตามแบรนด์",
     color: "from-accent to-brand-orange", category: "Content", tags: ["SEO", "Writing", "Marketing"],
-    featured: false, tools: ["web-search"], recommendedModel: "Claude 3.5 Sonnet"
+    featured: false, tools: ["web-search"], recommendedModel: "openai/gpt-5"
   },
   {
     id: "data-analyst", name: "📊 Data Analyst", description: "วิเคราะห์ข้อมูลจาก Excel/CSV แล้วสรุปผล",
     previewDescription: "Agent วิเคราะห์ข้อมูลที่อ่านไฟล์ Excel/CSV สร้างกราฟและ insight อัตโนมัติ รองรับ pivot table, trend analysis และ anomaly detection",
     color: "from-brand-cyan to-brand-green", category: "Analytics", tags: ["Analytics", "Excel", "Visualization"],
-    featured: false, tools: ["read-excel", "calculator", "code-exec"], recommendedModel: "GPT-4o"
+    featured: false, tools: ["read-excel", "calculator", "code-exec"], recommendedModel: "openai/gpt-5"
   },
   {
     id: "meeting-assistant", name: "🎙️ Meeting Assistant", description: "สรุปการประชุมและสร้าง action items",
     previewDescription: "Agent สรุปการประชุมที่แปลงบันทึกเสียง/ข้อความเป็นสรุปประเด็นสำคัญ action items พร้อมกำหนดผู้รับผิดชอบและ deadline อัตโนมัติ",
     color: "from-brand-pink to-primary", category: "Content", tags: ["Meeting", "Summary", "Productivity"],
-    featured: false, tools: ["email", "calculator"], recommendedModel: "Gemini Pro"
+    featured: false, tools: ["email", "calculator"], recommendedModel: "google/gemini-2.5-pro"
   },
   {
     id: "social-monitor", name: "📱 Social Media Monitor", description: "ติดตามและวิเคราะห์ sentiment บนโซเชียล",
     previewDescription: "Agent ติดตามการกล่าวถึงแบรนด์บนโซเชียลมีเดีย วิเคราะห์ sentiment แจ้งเตือนเมื่อมีวิกฤต และสร้างรายงานสรุปรายสัปดาห์อัตโนมัติ",
     color: "from-brand-orange to-brand-cyan", category: "Analytics", tags: ["Social Media", "Sentiment", "Monitoring"],
-    featured: false, tools: ["web-search", "calculator"], recommendedModel: "GPT-4o mini"
+    featured: false, tools: ["web-search", "calculator"], recommendedModel: "openai/gpt-5-mini"
   },
   {
     id: "email-responder", name: "📧 Email Auto-Responder", description: "ตอบอีเมลอัตโนมัติตามรูปแบบที่กำหนด",
     previewDescription: "Agent ตอบอีเมลอัตโนมัติที่เรียนรู้สไตล์การเขียนของคุณ จัดหมวดหมู่อีเมล ร่าง draft ให้ตรวจก่อนส่ง รองรับหลายภาษาและหลายบัญชี",
     color: "from-primary to-brand-green", category: "Support", tags: ["Email", "Automation", "Productivity"],
-    featured: false, tools: ["email", "web-search"], recommendedModel: "GPT-4o mini"
+    featured: false, tools: ["email", "web-search"], recommendedModel: "openai/gpt-5-mini"
   },
 ];
 

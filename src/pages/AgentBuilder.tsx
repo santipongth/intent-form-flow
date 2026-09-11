@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { TEMPLATES, LLM_MODELS, TOOLS_LIST, MARKETPLACE_TEMPLATES, TEMPLATE_DEFAULTS, CUSTOM_TEMPLATE_DEFAULTS } from "@/data/constants";
+import { TEMPLATES, LLM_MODELS, MODEL_LABELS, TOOLS_LIST, MARKETPLACE_TEMPLATES, TEMPLATE_DEFAULTS, CUSTOM_TEMPLATE_DEFAULTS } from "@/data/constants";
 import { ArrowLeft, ArrowRight, Sparkles, Store } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,7 +33,7 @@ export default function AgentBuilder() {
   const [objective, setObjective] = useState("");
   const [outputStyle, setOutputStyle] = useState("friendly");
   const [selectedProvider, setSelectedProvider] = useState("openai");
-  const [selectedModel, setSelectedModel] = useState("GPT-4o");
+  const [selectedModel, setSelectedModel] = useState("openai/gpt-5");
   const [files, setFiles] = useState<File[]>([]);
   const [urls, setUrls] = useState<string[]>([]);
   const [urlInput, setUrlInput] = useState("");
@@ -238,7 +238,7 @@ export default function AgentBuilder() {
                 </div>
                 <div>
                   <Label>{t("builder.selectProvider")}</Label>
-                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                   <div className="grid grid-cols-2 gap-2 mt-2">
                     {LLM_MODELS.map((m) => (
                       <Card key={m.id} className={`rounded-xl cursor-pointer transition-all border-2 ${selectedProvider === m.id ? "border-primary" : "border-transparent hover:border-border"}`} onClick={() => { setSelectedProvider(m.id); setSelectedModel(m.models[0]); }}>
                         <CardContent className="p-2.5 sm:p-3 text-center">
@@ -255,7 +255,7 @@ export default function AgentBuilder() {
                     <Select value={selectedModel} onValueChange={setSelectedModel}>
                       <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {currentProvider.models.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                        {currentProvider.models.map((m) => <SelectItem key={m} value={m}>{MODEL_LABELS[m] ?? m}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -375,7 +375,7 @@ export default function AgentBuilder() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-sm">
                     <div><span className="text-muted-foreground">Template:</span> <span className="font-medium">{selectedTemplate || "Custom"}</span></div>
                     <div><span className="text-muted-foreground">{t("detail.name")}:</span> <span className="font-medium">{name || "-"}</span></div>
-                    <div><span className="text-muted-foreground">Model:</span> <span className="font-medium">{selectedModel}</span></div>
+                    <div><span className="text-muted-foreground">Model:</span> <span className="font-medium">{MODEL_LABELS[selectedModel] ?? selectedModel}</span></div>
                     <div><span className="text-muted-foreground">{t("builder.tone")}:</span> <span className="font-medium">{outputStyle}</span></div>
                     <div><span className="text-muted-foreground">{t("builder.files")}:</span> <span className="font-medium">{files.length} {t("builder.files")}</span></div>
                     <div><span className="text-muted-foreground">URLs:</span> <span className="font-medium">{urls.length} URL</span></div>
