@@ -477,6 +477,13 @@ serve(async (req) => {
           controller.close();
 
           const respMs = Date.now() - startTime;
+          trace.record({
+            span_type: "answer",
+            name: gatewayModel,
+            output: { tool_iterations: toolIterations, stream: true },
+            duration_ms: respMs,
+          });
+          trace.flush();
           try {
             await supabase.from("agent_analytics_events").insert({
               agent_id: keyRow.agent_id,
@@ -552,6 +559,14 @@ serve(async (req) => {
       response_time_ms: responseTime,
       tokens_used: tokens,
     });
+
+    trace.record({
+      span_type: "answer",
+      name: gatewayModel,
+      output: { tokens_used: tokens, tool_iterations: toolIterations },
+      duration_ms: responseTime,
+    });
+    trace.flush();
 
     await persistMessages(lastUserText, reply, tokens, responseTime);
 
