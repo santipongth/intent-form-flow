@@ -174,6 +174,65 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_traces: {
+        Row: {
+          agent_id: string | null
+          conversation_id: string | null
+          created_at: string
+          duration_ms: number | null
+          id: string
+          input: Json | null
+          name: string
+          output: Json | null
+          run_id: string
+          source: string
+          span_type: string
+          status: string
+          step_index: number
+          user_id: string
+        }
+        Insert: {
+          agent_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          input?: Json | null
+          name: string
+          output?: Json | null
+          run_id: string
+          source?: string
+          span_type: string
+          status?: string
+          step_index?: number
+          user_id: string
+        }
+        Update: {
+          agent_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          input?: Json | null
+          name?: string
+          output?: Json | null
+          run_id?: string
+          source?: string
+          span_type?: string
+          status?: string
+          step_index?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_traces_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_webhooks: {
         Row: {
           agent_id: string
@@ -508,6 +567,57 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_chunks: {
+        Row: {
+          agent_id: string
+          chunk_index: number
+          content: string
+          created_at: string
+          embedding: string | null
+          file_id: string
+          file_name: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          chunk_index?: number
+          content: string
+          created_at?: string
+          embedding?: string | null
+          file_id: string
+          file_name: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          embedding?: string | null
+          file_id?: string
+          file_name?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_chunks_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_chunks_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_files: {
         Row: {
           agent_id: string
@@ -701,6 +811,19 @@ export type Database = {
       increment_template_clone: {
         Args: { _template_id: string }
         Returns: number
+      }
+      match_knowledge_chunks: {
+        Args: {
+          _agent_id: string
+          _match_count?: number
+          _query_embedding: string
+        }
+        Returns: {
+          content: string
+          file_name: string
+          id: string
+          similarity: number
+        }[]
       }
       move_to_dlq: {
         Args: {
