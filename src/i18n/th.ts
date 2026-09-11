@@ -282,6 +282,8 @@ export const th: Record<string, string> = {
   "monitor.tabTraces": "ขั้นตอนการทำงาน",
   "monitor.noTraces": "ยังไม่มีบันทึกการทำงานของ Agent ลองแชทกับ Agent เพื่อดูขั้นตอนที่นี่",
   "monitor.unknownAgent": "ไม่พบ Agent",
+  "monitor.searchMs": "ค้นเอกสาร",
+  "monitor.answerMs": "ตอบ",
 
   // Analytics
   "analytics.title": "Analytics",
