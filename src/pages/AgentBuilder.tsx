@@ -14,7 +14,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useCreateAgent } from "@/hooks/useAgents";
-import { useUploadKnowledgeFile } from "@/hooks/useKnowledge";
+import { useAddKnowledgeUrl, useUploadKnowledgeFile } from "@/hooks/useKnowledge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import KnowledgeStep from "@/components/agent-builder/KnowledgeStep";
 import { SkillSelector } from "@/components/SkillSelector";
@@ -106,11 +106,23 @@ export default function AgentBuilder() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleAddUrl = () => {
-    if (urlInput.trim()) { setUrls([...urls, urlInput.trim()]); setUrlInput(""); }
+    try {
+      const parsed = new URL(urlInput.trim());
+      if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error();
+      parsed.hash = "";
+      const normalized = parsed.toString();
+      if (urls.includes(normalized)) return toast.error("URL นี้ถูกเพิ่มแล้ว");
+      if (urls.length >= 10) return toast.error("เพิ่ม URL ได้สูงสุด 10 รายการ");
+      setUrls([...urls, normalized]);
+      setUrlInput("");
+    } catch {
+      toast.error("กรุณาใส่ URL แบบ http หรือ https ที่ถูกต้อง");
+    }
   };
 
   const createAgent = useCreateAgent();
   const uploadKnowledge = useUploadKnowledgeFile();
+  const addKnowledgeUrl = useAddKnowledgeUrl();
 
   const handleCreate = () => {
     // Never persist tools that are not implemented yet ("เร็ว ๆ นี้"),
@@ -140,6 +152,9 @@ export default function AgentBuilder() {
           files.forEach((file) => {
             uploadKnowledge.mutate({ file, agentId: data.id });
           });
+        }
+        if (data?.id) {
+          urls.forEach((url) => addKnowledgeUrl.mutate({ url, agentId: data.id }));
         }
         navigate("/dashboard");
       },

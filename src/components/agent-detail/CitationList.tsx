@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FileText } from "lucide-react";
+import { ExternalLink, FileText } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export type Citation = {
@@ -9,6 +9,7 @@ export type Citation = {
   chunk_index: number | null;
   similarity: number;
   excerpt: string;
+  source_url?: string | null;
 };
 
 /** Numbered sources shown under an answer, linking into the document. */
@@ -26,7 +27,7 @@ export function CitationList({ citations }: { citations: Citation[] }) {
           }`;
           const inner = (
             <span className="inline-flex items-start gap-1.5">
-              <FileText className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+              {c.source_url ? <ExternalLink className="h-3.5 w-3.5 mt-0.5 shrink-0" /> : <FileText className="h-3.5 w-3.5 mt-0.5 shrink-0" />}
               <span>
                 <span className="font-medium">{label}</span>
                 {c.excerpt && (
@@ -37,7 +38,11 @@ export function CitationList({ citations }: { citations: Citation[] }) {
           );
           return (
             <li key={`${c.index}-${c.file_id ?? c.file_name}`} className="text-[11px]">
-              {c.file_id ? (
+              {c.source_url ? (
+                <a href={c.source_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                  {inner}
+                </a>
+              ) : c.file_id ? (
                 <Link
                   to={`/knowledge/${c.file_id}?chunk=${c.chunk_index ?? 0}`}
                   className="text-primary hover:underline"

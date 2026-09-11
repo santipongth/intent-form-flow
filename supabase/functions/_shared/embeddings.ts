@@ -54,6 +54,7 @@ export interface KnowledgePassage {
   chunk_index?: number | null;
   content: string;
   similarity: number;
+  source_url?: string | null;
 }
 
 export interface RetrievalResult {
@@ -131,6 +132,7 @@ export interface Citation {
   similarity: number;
   /** short preview of the cited passage */
   excerpt: string;
+  source_url: string | null;
 }
 
 export function buildCitations(passages: KnowledgePassage[]): Citation[] {
@@ -141,6 +143,7 @@ export function buildCitations(passages: KnowledgePassage[]): Citation[] {
     chunk_index: p.chunk_index ?? null,
     similarity: Math.round((p.similarity ?? 0) * 1000) / 1000,
     excerpt: (p.content || "").replace(/\s+/g, " ").trim().slice(0, 300),
+    source_url: p.source_url ?? null,
   }));
 }
 

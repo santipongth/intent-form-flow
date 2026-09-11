@@ -829,36 +829,54 @@ export type Database = {
           agent_id: string
           content: string | null
           created_at: string
+          error_message: string | null
           file_name: string
           file_path: string
           file_size: number
           file_type: string
           id: string
+          last_crawled_at: string | null
+          source_title: string | null
+          source_type: string
+          source_url: string | null
           status: string
+          updated_at: string
           user_id: string
         }
         Insert: {
           agent_id: string
           content?: string | null
           created_at?: string
+          error_message?: string | null
           file_name: string
           file_path: string
           file_size?: number
           file_type?: string
           id?: string
+          last_crawled_at?: string | null
+          source_title?: string | null
+          source_type?: string
+          source_url?: string | null
           status?: string
+          updated_at?: string
           user_id: string
         }
         Update: {
           agent_id?: string
           content?: string | null
           created_at?: string
+          error_message?: string | null
           file_name?: string
           file_path?: string
           file_size?: number
           file_type?: string
           id?: string
+          last_crawled_at?: string | null
+          source_title?: string | null
+          source_type?: string
+          source_url?: string | null
           status?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -1041,6 +1059,7 @@ export type Database = {
           file_name: string
           id: string
           similarity: number
+          source_url: string
         }[]
       }
       move_to_dlq: {

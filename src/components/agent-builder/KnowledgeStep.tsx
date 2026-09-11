@@ -212,9 +212,10 @@ export default function KnowledgeStep({ files, setFiles, urls, setUrls, urlInput
       <div>
         <Label>{t("builder.addUrl")}</Label>
         <div className="flex gap-2 mt-1">
-          <Input placeholder="https://example.com" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} className="rounded-xl" onKeyDown={(e) => e.key === "Enter" && onAddUrl()} />
+          <Input placeholder="https://example.com" type="url" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} className="rounded-xl" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onAddUrl(); } }} />
           <Button variant="outline" className="rounded-xl" onClick={onAddUrl}><Link className="h-4 w-4" /></Button>
         </div>
+        <p className="mt-1.5 text-xs text-muted-foreground">ระบบจะอ่านเฉพาะหน้าที่ระบุและสร้างดัชนีหลังจากสร้าง Agent โดยไม่ติดตามลิงก์ไปหน้าอื่น</p>
         {urls.map((u, i) => (
           <div key={i} className="flex items-center justify-between bg-secondary rounded-xl px-4 py-2 mt-2">
             <span className="text-sm truncate">🔗 {u}</span>
