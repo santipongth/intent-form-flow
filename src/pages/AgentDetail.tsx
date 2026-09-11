@@ -30,7 +30,7 @@ import { ApiKeysSection } from "@/components/agent-detail/ApiKeysSection";
 import { WebhooksSection } from "@/components/agent-detail/WebhooksSection";
 import { ErrorLogsSection } from "@/components/agent-detail/ErrorLogsSection";
 import { z } from "zod";
-import { getUserPrompt, getSkills, withPromptAndSkills } from "@/lib/agentTools";
+import { getUserPrompt, getSkills, withPromptAndSkills, getAgentSettings, withAgentSettings, modelSupportsTemperature } from "@/lib/agentTools";
 import { SkillSelector } from "@/components/SkillSelector";
 
 // ---- Validation rules for the edit form (User Prompt + Skills) ----
@@ -441,6 +441,11 @@ export default function AgentDetail() {
   const [editUserPrompt, setEditUserPrompt] = useState("");
   const [editSkills, setEditSkills] = useState<string[]>([]);
   const [editErrors, setEditErrors] = useState<{ userPrompt?: string; skills?: string }>({});
+  const [editGreeting, setEditGreeting] = useState("");
+  const [editStarters, setEditStarters] = useState<string[]>(["", "", ""]);
+  const [editFallback, setEditFallback] = useState("");
+  const [editStrictKnowledge, setEditStrictKnowledge] = useState(false);
+  const [editToolRounds, setEditToolRounds] = useState(4);
 
   useEffect(() => {
     if (agent) {
@@ -455,6 +460,12 @@ export default function AgentDetail() {
       // the embedded fields, or contain wrong-typed items from older rows.
       setEditUserPrompt(getUserPrompt(agent.tools as any));
       setEditSkills(getSkills(agent.tools as any));
+      const st = getAgentSettings(agent.tools as any);
+      setEditGreeting(st.greeting);
+      setEditStarters([st.starters[0] ?? "", st.starters[1] ?? "", st.starters[2] ?? ""]);
+      setEditFallback(st.fallbackMessage);
+      setEditStrictKnowledge(st.strictKnowledge);
+      setEditToolRounds(st.maxToolIterations);
     }
   }, [agent]);
 
@@ -582,7 +593,16 @@ print(r.json()["reply"])`;
       system_prompt: editSystemPrompt || null,
       temperature: editTemperature[0],
       max_tokens: parseInt(editMaxTokens) || 2048,
-      tools: withPromptAndSkills(agent.tools as any, parsed.data.userPrompt, parsed.data.skills) as any,
+      tools: withAgentSettings(
+        withPromptAndSkills(agent.tools as any, parsed.data.userPrompt, parsed.data.skills) as any,
+        {
+          greeting: editGreeting,
+          starters: editStarters.map((x) => x.trim()).filter(Boolean),
+          fallbackMessage: editFallback,
+          strictKnowledge: editStrictKnowledge,
+          maxToolIterations: editToolRounds,
+        },
+      ) as any,
     }, {
       onSuccess: () => setIsEditing(false),
     });
@@ -657,8 +677,11 @@ print(r.json()["reply"])`;
                 <Input value={editProvider} onChange={(e) => setEditProvider(e.target.value)} className="rounded-xl mt-1" />
               </div>
               <div>
-                <Label>{t("detail.temperature")}: {editTemperature[0]}</Label>
-                <Slider value={editTemperature} onValueChange={setEditTemperature} max={2} step={0.1} className="mt-2" />
+                <Label>{t("detail.temperature")}: {modelSupportsTemperature(editModel) ? editTemperature[0] : "—"}</Label>
+                <Slider value={editTemperature} onValueChange={setEditTemperature} max={2} step={0.1} className="mt-2" disabled={!modelSupportsTemperature(editModel)} />
+                {!modelSupportsTemperature(editModel) && (
+                  <p className="text-xs text-muted-foreground mt-1">{t("builder.temperatureUnsupported")}</p>
+                )}
               </div>
               <div>
                 <Label>{t("detail.maxTokens")}</Label>
@@ -713,6 +736,44 @@ print(r.json()["reply"])`;
               {editErrors.skills && (
                 <p className="text-xs text-destructive mt-1">{editErrors.skills}</p>
               )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>{t("builder.greeting")}</Label>
+                <Input value={editGreeting} onChange={(e) => setEditGreeting(e.target.value)} className="rounded-xl mt-1" />
+                <p className="text-xs text-muted-foreground mt-1">{t("builder.greetingHelp")}</p>
+              </div>
+              <div>
+                <Label>{t("builder.fallback")}</Label>
+                <Input value={editFallback} onChange={(e) => setEditFallback(e.target.value)} className="rounded-xl mt-1" />
+                <p className="text-xs text-muted-foreground mt-1">{t("builder.fallbackHelp")}</p>
+              </div>
+            </div>
+            <div>
+              <Label>{t("builder.starters")}</Label>
+              <div className="space-y-2 mt-1">
+                {[0, 1, 2].map((i) => (
+                  <Input
+                    key={i}
+                    value={editStarters[i] ?? ""}
+                    onChange={(e) => setEditStarters((prev) => { const n = [...prev]; n[i] = e.target.value; return n; })}
+                    className="rounded-xl"
+                  />
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">{t("builder.startersHelp")}</p>
+            </div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{t("builder.strictKnowledge")}</p>
+                <p className="text-xs text-muted-foreground">{t("builder.strictKnowledgeHelp")}</p>
+              </div>
+              <Switch checked={editStrictKnowledge} onCheckedChange={setEditStrictKnowledge} className="shrink-0" />
+            </div>
+            <div>
+              <Label>{t("builder.toolRounds")}: {editToolRounds}</Label>
+              <Slider value={[editToolRounds]} onValueChange={(v) => setEditToolRounds(v[0])} min={1} max={8} step={1} className="mt-2" />
+              <p className="text-xs text-muted-foreground mt-1">{t("builder.toolRoundsHelp")}</p>
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="outline" className="rounded-xl" onClick={() => setIsEditing(false)}>{t("common.cancel")}</Button>

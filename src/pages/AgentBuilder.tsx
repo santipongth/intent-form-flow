@@ -17,7 +17,10 @@ import { useCreateAgent } from "@/hooks/useAgents";
 import { useAddKnowledgeUrl, useUploadKnowledgeFile } from "@/hooks/useKnowledge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import KnowledgeStep from "@/components/agent-builder/KnowledgeStep";
-import { SkillSelector } from "@/components/SkillSelector";
+import { AdvancedSettings } from "@/components/agent-builder/AdvancedSettings";
+import { PreviewChat } from "@/components/agent-builder/PreviewChat";
+import { withAgentSettings } from "@/lib/agentTools";
+import { AlertTriangle, Pencil } from "lucide-react";
 
 const STEPS_KEYS = ["Intent & Type", "Identity & Model", "Knowledge", "Tools & Memory", "Review & Create"];
 
@@ -47,6 +50,12 @@ export default function AgentBuilder() {
   const [temperature, setTemperature] = useState([0.7]);
   const [maxTokens, setMaxTokens] = useState("2048");
   const [templateFromMarketplace, setTemplateFromMarketplace] = useState<string | null>(null);
+  const [greeting, setGreeting] = useState("");
+  const [starters, setStarters] = useState<string[]>(["", "", ""]);
+  const [fallbackMessage, setFallbackMessage] = useState("");
+  const [strictKnowledge, setStrictKnowledge] = useState(false);
+  const [maxToolIterations, setMaxToolIterations] = useState(4);
+  const [draftLoaded, setDraftLoaded] = useState(false);
 
   const progress = ((step + 1) / STEPS_KEYS.length) * 100;
 
@@ -105,6 +114,77 @@ export default function AgentBuilder() {
     toast.success(t("builder.templateLoaded"), { description: `${t("builder.usingTemplate")} "${tmpl.name}" ${t("builder.fromMarketplace")}` });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ---- Draft autosave (local only) so a half-filled wizard survives a reload
+  const DRAFT_KEY = "tm.agentDraft";
+  useEffect(() => {
+    if (searchParams.get("template")) { setDraftLoaded(true); return; }
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d && typeof d === "object") {
+          setSelectedTemplate(d.selectedTemplate ?? null);
+          setName(d.name ?? "");
+          setObjective(d.objective ?? "");
+          setOutputStyle(d.outputStyle ?? "friendly");
+          setSelectedProvider(d.selectedProvider ?? "openai");
+          setSelectedModel(d.selectedModel ?? "openai/gpt-5");
+          setUrls(Array.isArray(d.urls) ? d.urls : []);
+          setTools(d.tools ?? { "web-search": true });
+          setMemoryEnabled(d.memoryEnabled ?? true);
+          setSystemPrompt(d.systemPrompt ?? "");
+          setUserPrompt(d.userPrompt ?? "");
+          setSkills(Array.isArray(d.skills) ? d.skills : []);
+          setTemperature([typeof d.temperature === "number" ? d.temperature : 0.7]);
+          setMaxTokens(d.maxTokens ?? "2048");
+          setGreeting(d.greeting ?? "");
+          setStarters(Array.isArray(d.starters) ? d.starters : ["", "", ""]);
+          setFallbackMessage(d.fallbackMessage ?? "");
+          setStrictKnowledge(!!d.strictKnowledge);
+          setMaxToolIterations(typeof d.maxToolIterations === "number" ? d.maxToolIterations : 4);
+          if (d.name || d.objective) toast.info(t("builder.draftRestored"));
+        }
+      }
+    } catch { /* ignore malformed drafts */ }
+    setDraftLoaded(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!draftLoaded) return;
+    const draft = {
+      selectedTemplate, name, objective, outputStyle, selectedProvider, selectedModel, urls,
+      tools, memoryEnabled, systemPrompt, userPrompt, skills, temperature: temperature[0], maxTokens,
+      greeting, starters, fallbackMessage, strictKnowledge, maxToolIterations,
+    };
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch { /* quota */ }
+  }, [draftLoaded, selectedTemplate, name, objective, outputStyle, selectedProvider, selectedModel, urls,
+      tools, memoryEnabled, systemPrompt, userPrompt, skills, temperature, maxTokens,
+      greeting, starters, fallbackMessage, strictKnowledge, maxToolIterations]);
+
+  // ---- Required fields per step
+  const stepError = (() => {
+    if (step === 1 && !name.trim()) return t("builder.needName");
+    if (step === 1 && !objective.trim()) return t("builder.needObjective");
+    return null;
+  })();
+
+  const goNext = () => {
+    if (stepError) { toast.error(stepError); return; }
+    setStep(step + 1);
+  };
+
+  const cleanStarters = starters.map((x) => x.trim()).filter(Boolean);
+
+  /** System prompt used by the "try it" preview, mirroring the backend composition. */
+  const previewSystemPrompt = (() => {
+    let out = systemPrompt.trim()
+      || (objective ? `You are ${name || "an assistant"}. Your objective: ${objective}. Be helpful and respond naturally.`
+        : "You are a helpful AI assistant. Keep answers clear and concise.");
+    if (userPrompt.trim()) out += `\n\n---\nUser Prompt Template (apply when responding):\n${userPrompt.trim()}\n---`;
+    if (skills.length > 0) out += `\n\n---\nSpecialised skills you must apply in every answer:\n${skills.map((x) => `- ${x}`).join("\n")}\n---`;
+    return out;
+  })();
+
   const handleAddUrl = () => {
     try {
       const parsed = new URL(urlInput.trim());
@@ -142,7 +222,10 @@ export default function AgentBuilder() {
       system_prompt: systemPrompt || null,
       temperature: temperature[0],
       max_tokens: parseInt(maxTokens) || 2048,
-      tools: { ...enabledTools, _userPrompt: userPrompt, _skills: skills } as any,
+      tools: withAgentSettings(
+        { ...enabledTools, _userPrompt: userPrompt, _skills: skills },
+        { greeting, starters: cleanStarters, fallbackMessage, strictKnowledge, maxToolIterations },
+      ) as any,
       memory_enabled: memoryEnabled,
       knowledge_urls: urls,
     }, {
@@ -156,6 +239,7 @@ export default function AgentBuilder() {
         if (data?.id) {
           urls.forEach((url) => addKnowledgeUrl.mutate({ url, agentId: data.id }));
         }
+        try { localStorage.removeItem("tm.agentDraft"); } catch { /* ignore */ }
         navigate("/dashboard");
       },
     });
@@ -233,12 +317,14 @@ export default function AgentBuilder() {
               <h2 className="font-display text-lg font-semibold">{t("builder.nameAndBrain")}</h2>
               <div className="space-y-4">
                 <div>
-                  <Label>{t("builder.agentName")}</Label>
-                  <Input placeholder="เช่น Nong Support" value={name} onChange={(e) => setName(e.target.value)} className="rounded-xl mt-1" />
+                  <Label>{t("builder.agentName")} <span className="text-destructive">*</span></Label>
+                  <Input placeholder="เช่น Nong Support" value={name} onChange={(e) => setName(e.target.value)} aria-invalid={!name.trim()} className="rounded-xl mt-1" />
+                  {!name.trim() && <p className="text-xs text-destructive mt-1">{t("builder.needName")}</p>}
                 </div>
                 <div>
-                  <Label>{t("builder.objective")}</Label>
-                  <Input placeholder="เช่น ตอบคำถามลูกค้าเกี่ยวกับสินค้า" value={objective} onChange={(e) => setObjective(e.target.value)} className="rounded-xl mt-1" />
+                  <Label>{t("builder.objective")} <span className="text-destructive">*</span></Label>
+                  <Input placeholder="เช่น ตอบคำถามลูกค้าเกี่ยวกับสินค้า" value={objective} onChange={(e) => setObjective(e.target.value)} aria-invalid={!objective.trim()} className="rounded-xl mt-1" />
+                  {!objective.trim() && <p className="text-xs text-destructive mt-1">{t("builder.needObjective")}</p>}
                 </div>
                 <div>
                   <Label>{t("builder.tone")}</Label>
@@ -346,57 +432,54 @@ export default function AgentBuilder() {
                 <Label className="text-sm">{t("builder.showAdvanced")}</Label>
               </div>
               {showAdvanced && (
-                <Card className="rounded-2xl">
-                  <CardContent className="p-5 space-y-4">
-                    <div>
-                      <Label>{t("builder.systemPrompt")}</Label>
-                      <Textarea placeholder="กำหนด System Prompt แบบละเอียด..." value={systemPrompt} onChange={(e) => setSystemPrompt(e.target.value)} className="rounded-xl mt-1 min-h-[120px]" />
-                    </div>
-                    <div>
-                      <Label>User Prompt</Label>
-                      <Textarea
-                        placeholder="พิมพ์ User Prompt ที่ต้องการ (เช่น: คำถาม: {{question}})"
-                        value={userPrompt}
-                        onChange={(e) => setUserPrompt(e.target.value)}
-                        className="rounded-xl mt-1 min-h-[100px] font-mono text-xs"
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">ใช้ <code>{"{{ตัวแปร}}"}</code> เป็น placeholder ที่จะถูกแทนค่าตอนเรียกใช้งาน Agent</p>
-                    </div>
-                    <div>
-                      <Label>Skills (ความสามารถเฉพาะทาง)</Label>
-                      <div className="mt-2">
-                        <SkillSelector
-                          value={skills}
-                          onChange={setSkills}
-                          templateSkills={templateSkills}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label>{t("builder.temperature")}: {temperature[0]}</Label>
-                      <Slider value={temperature} onValueChange={setTemperature} max={2} step={0.1} className="mt-2" />
-                      <p className="text-xs text-muted-foreground mt-1">{t("builder.temperatureDesc")}</p>
-                    </div>
-                    <div>
-                      <Label>{t("builder.maxTokens")}</Label>
-                      <Input type="number" value={maxTokens} onChange={(e) => setMaxTokens(e.target.value)} className="rounded-xl mt-1" />
-                    </div>
-                  </CardContent>
-                </Card>
+                <AdvancedSettings
+                  value={{
+                    systemPrompt, userPrompt, skills, templateSkills, temperature, maxTokens,
+                    greeting, starters, fallbackMessage, strictKnowledge, maxToolIterations,
+                    model: selectedModel,
+                  }}
+                  on={{
+                    setSystemPrompt, setUserPrompt, setSkills, setTemperature, setMaxTokens,
+                    setGreeting, setStarters, setFallbackMessage, setStrictKnowledge, setMaxToolIterations,
+                  }}
+                />
               )}
+
+              <PreviewChat systemPrompt={previewSystemPrompt} />
+
               <Card className="rounded-2xl bg-secondary/50">
                 <CardContent className="p-5 space-y-3">
                   <h3 className="font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> {t("builder.summary")}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-sm">
-                    <div><span className="text-muted-foreground">Template:</span> <span className="font-medium">{selectedTemplate || "Custom"}</span></div>
-                    <div><span className="text-muted-foreground">{t("detail.name")}:</span> <span className="font-medium">{name || "-"}</span></div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">Template:</span> <span className="font-medium">{selectedTemplate || "Custom"}</span>
+                      <button type="button" onClick={() => setStep(0)} className="text-primary hover:underline inline-flex items-center gap-0.5 text-xs" aria-label={t("builder.edit")}><Pencil className="h-3 w-3" />{t("builder.edit")}</button>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">{t("detail.name")}:</span> <span className="font-medium">{name || "-"}</span>
+                      <button type="button" onClick={() => setStep(1)} className="text-primary hover:underline inline-flex items-center gap-0.5 text-xs" aria-label={t("builder.edit")}><Pencil className="h-3 w-3" />{t("builder.edit")}</button>
+                    </div>
                     <div><span className="text-muted-foreground">Model:</span> <span className="font-medium">{MODEL_LABELS[selectedModel] ?? selectedModel}</span></div>
                     <div><span className="text-muted-foreground">{t("builder.tone")}:</span> <span className="font-medium">{outputStyle}</span></div>
-                    <div><span className="text-muted-foreground">{t("builder.files")}:</span> <span className="font-medium">{files.length} {t("builder.files")}</span></div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">{t("builder.files")}:</span> <span className="font-medium">{files.length} {t("builder.files")}</span>
+                      <button type="button" onClick={() => setStep(2)} className="text-primary hover:underline inline-flex items-center gap-0.5 text-xs" aria-label={t("builder.edit")}><Pencil className="h-3 w-3" />{t("builder.edit")}</button>
+                    </div>
                     <div><span className="text-muted-foreground">URLs:</span> <span className="font-medium">{urls.length} URL</span></div>
-                    <div><span className="text-muted-foreground">Tools:</span> <span className="font-medium">{Object.values(tools).filter(Boolean).length} {t("builder.toolsCount")}</span></div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-muted-foreground">Tools:</span> <span className="font-medium">{Object.values(tools).filter(Boolean).length} {t("builder.toolsCount")}</span>
+                      <button type="button" onClick={() => setStep(3)} className="text-primary hover:underline inline-flex items-center gap-0.5 text-xs" aria-label={t("builder.edit")}><Pencil className="h-3 w-3" />{t("builder.edit")}</button>
+                    </div>
                     <div><span className="text-muted-foreground">Memory:</span> <span className="font-medium">{memoryEnabled ? t("builder.memoryOn") : t("builder.memoryOff")}</span></div>
+                    <div><span className="text-muted-foreground">Skills:</span> <span className="font-medium">{skills.length}</span></div>
+                    <div><span className="text-muted-foreground">{t("builder.answerLength")}:</span> <span className="font-medium">{maxTokens}</span></div>
                   </div>
+                  {files.length === 0 && urls.length === 0 && (
+                    <p className="flex items-start gap-2 text-xs text-amber-600 dark:text-amber-500">
+                      <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      {t("builder.noKnowledgeWarn")}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -411,7 +494,7 @@ export default function AgentBuilder() {
           <span className="sm:hidden">{step > 0 ? t("builder.back") : "Back"}</span>
         </Button>
         {step < STEPS_KEYS.length - 1 ? (
-          <Button className="gradient-primary text-primary-foreground rounded-xl gap-1.5 sm:gap-2 text-sm" onClick={() => setStep(step + 1)}>
+          <Button className="gradient-primary text-primary-foreground rounded-xl gap-1.5 sm:gap-2 text-sm" disabled={!!stepError} title={stepError ?? undefined} onClick={goNext}>
             {t("builder.next")}
             <ArrowRight className="h-4 w-4" />
           </Button>

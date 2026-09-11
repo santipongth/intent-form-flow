@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { activeToolSchemas, runToolLoop } from "../_shared/tool-loop.ts";
 import { retrieveKnowledgeDetailed, renderKnowledgeContext, buildCitations } from "../_shared/embeddings.ts";
 import { TraceRecorder } from "../_shared/traces.ts";
-import { normalizeModel, supportsCustomTemperature, DEFAULT_MODEL } from "../_shared/models.ts";
+import { normalizeModel, supportsCustomTemperature, maxTokensParams, DEFAULT_MODEL } from "../_shared/models.ts";
+import { readAgentSettings, applyAgentSettings } from "../_shared/agent-settings.ts";
 import { loadCustomTools, makeCustomToolExecutor } from "../_shared/custom-tools.ts";
 import { loadGuardrails, checkInput, checkOutput, hardenSystemPrompt } from "../_shared/guardrails.ts";
 import { checkBudget, recordUsage, BUDGET_EXCEEDED_MESSAGE } from "../_shared/budget.ts";
@@ -132,40 +133,29 @@ serve(async (req) => {
     let systemPrompt = "You are a helpful AI assistant. Keep answers clear and concise.";
     let model = DEFAULT_MODEL;
     let temperature = 0.7;
+    let maxTokens: number | null = null;
     let memoryEnabled = true;
     let toolsEnabled: Record<string, boolean> = {};
     let citations: ReturnType<typeof buildCitations> = [];
+    let settings = readAgentSettings(null);
+    let hasKnowledge = false;
 
     if (agent_id) {
       const { data: agent } = await supabase
         .from("agents")
-        .select("system_prompt, model, temperature, name, objective, memory_enabled, tools")
+        .select("system_prompt, model, temperature, max_tokens, name, objective, memory_enabled, tools")
         .eq("id", agent_id).eq("user_id", userId).single();
       if (agent) {
         if (agent.system_prompt) systemPrompt = agent.system_prompt;
         else if (agent.objective) systemPrompt = `You are ${agent.name}. Your objective: ${agent.objective}. Be helpful and respond naturally.`;
         model = normalizeModel(agent.model);
         if (agent.temperature != null) temperature = agent.temperature;
+        if (agent.max_tokens != null) maxTokens = agent.max_tokens;
         if (agent.memory_enabled === false) memoryEnabled = false;
         if (agent.tools && typeof agent.tools === "object") toolsEnabled = agent.tools as any;
-
-        // User Prompt template (configured in the UI) reinforces the system prompt.
-        const rawPrompt = (toolsEnabled as any)._userPrompt;
-        if (typeof rawPrompt === "string" && rawPrompt.trim()) {
-          systemPrompt += `\n\n---\nUser Prompt Template (apply when responding):\n${rawPrompt.trim()}\n---`;
-        }
-
-        // Skills must actually shape behaviour, not just be labels in the UI.
-        const rawSkills = (toolsEnabled as any)._skills;
-        const skillList: string[] = Array.isArray(rawSkills)
-          ? rawSkills.filter((s: unknown) => typeof s === "string" && s.trim()).map((s: string) => s.trim()).slice(0, 20)
-          : [];
-        if (skillList.length > 0) {
-          systemPrompt += `\n\n---\nSpecialised skills you must apply in every answer:\n${
-            skillList.map((s) => `- ${s}`).join("\n")
-          }\nLead with these strengths; if a request falls outside them, say so plainly instead of guessing.\n---`;
-        }
+        settings = readAgentSettings(agent.tools);
       }
+
 
       // Knowledge: semantic retrieval first (RAG), whole-file context as fallback
       const lastUserQuestion = String(
@@ -177,6 +167,8 @@ serve(async (req) => {
       if (passages && passages.length > 0) {
         systemPrompt += renderKnowledgeContext(passages);
         citations = buildCitations(passages);
+        hasKnowledge = true;
+
         trace.record({
           span_type: "retrieval",
           name: "semantic knowledge search",
@@ -203,6 +195,7 @@ serve(async (req) => {
           }
           knowledgeContext += "---\nUse the above documents as reference to answer questions accurately.";
           systemPrompt += knowledgeContext;
+          hasKnowledge = true;
           trace.record({
             span_type: "retrieval",
             name: "full document context (not indexed yet)",
@@ -211,7 +204,12 @@ serve(async (req) => {
           });
         }
       }
+
+      // Behaviour settings (user prompt, skills, answer scope) come last so the
+      // strict-knowledge rule can reference the documents injected above.
+      systemPrompt = applyAgentSettings(systemPrompt, settings, hasKnowledge);
     }
+
 
     // ---------- Budget: hard stop when the agent hit its cap ----------
     const budget = await checkBudget(supabase, agent_id ?? null);
@@ -283,6 +281,7 @@ serve(async (req) => {
       userId,
       trace,
       logPrefix: "[chat]",
+      maxIterations: settings.maxToolIterations,
       extraExec: customExec,
     });
     baseMessages = loop.messages;
@@ -306,6 +305,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model, messages: baseMessages, stream: false,
           ...(supportsCustomTemperature(model) ? { temperature } : {}),
+          ...maxTokensParams(model, maxTokens),
           ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "none" } : {}),
         }),
       });
@@ -355,6 +355,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model, messages: baseMessages, stream: true,
         ...(supportsCustomTemperature(model) ? { temperature } : {}),
+          ...maxTokensParams(model, maxTokens),
         ...(activeTools.length > 0 ? { tools: activeTools, tool_choice: "none" } : {}),
       }),
     });
