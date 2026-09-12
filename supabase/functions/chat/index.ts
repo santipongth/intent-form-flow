@@ -208,7 +208,7 @@ serve(async (req) => {
 
       // Behaviour settings (user prompt, skills, answer scope) come last so the
       // strict-knowledge rule can reference the documents injected above.
-      systemPrompt = applyAgentSettings(systemPrompt, settings, hasKnowledge);
+      systemPrompt = applyAgentSettings(systemPrompt, settings, hasKnowledge, lastUserQuestion);
     }
 
 
@@ -252,10 +252,10 @@ serve(async (req) => {
       if (summary) {
         baseMessages.push({ role: "system", content: `Previous conversation summary (older context):\n${summary}` });
       }
-      // Append rows that are NOT already in the incoming messages.
-      // The client typically sends only the latest user message; rows contain prior assistants too.
-      const recent = rows.slice(summaryCount);
-      // Avoid duplicating the very last user message if it equals the incoming last user message
+      // The database is the single source of truth for history here; clients may
+      // also send their local transcript, so only the newest user turn is taken
+      // from the request to avoid sending every past turn twice.
+      const recent = rows.slice(summaryCount).slice(-40);
       const incomingLastUser = [...messages].reverse().find((m: any) => m.role === "user");
       let cutoff = recent.length;
       if (incomingLastUser) {
@@ -266,8 +266,10 @@ serve(async (req) => {
       for (const r of recent.slice(0, cutoff)) {
         baseMessages.push({ role: r.role, content: r.content });
       }
+      if (incomingLastUser) baseMessages.push({ role: "user", content: incomingLastUser.content });
+    } else {
+      baseMessages = baseMessages.concat(messages);
     }
-    baseMessages = baseMessages.concat(messages);
 
     const startTime = Date.now();
 

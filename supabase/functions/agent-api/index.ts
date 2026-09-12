@@ -309,6 +309,7 @@ serve(async (req) => {
       systemPrompt,
       agentSettings,
       Boolean((passages && passages.length > 0) || (knowledge && knowledge.length > 0)),
+      lastQuestion,
     );
 
 
