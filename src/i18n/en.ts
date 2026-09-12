@@ -49,10 +49,6 @@ export const en: Record<string, string> = {
   "auth.enterEmailFirst": "Please enter your email first",
   "auth.resetEmailSent": "Password reset link sent!",
   "auth.resetEmailSentDesc": "Please check your email",
-  "settings.emailConfirm": "Email confirmation on sign up",
-  "settings.emailConfirmDesc": "Toggle whether new users must confirm their email before signing in.",
-  "settings.emailConfirmManage": "Manage in dashboard",
-  "settings.emailConfirmHint": "This setting lives in Lovable Cloud → Users → Auth Settings. Toggle the \"Confirm email\" switch.",
   "auth.resetEmailError": "Failed to send email",
   "auth.signInWithGithub": "Sign in with GitHub",
 
