@@ -12,7 +12,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import tmLogo from "@/assets/tm-logo.png";
-import { lovable } from "@/integrations/lovable/index";
 
 export default function Auth() {
   const navigate = useNavigate();
