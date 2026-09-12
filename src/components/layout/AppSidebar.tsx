@@ -1,4 +1,4 @@
-import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, Settings, LogOut, FlaskConical, Sparkles } from "lucide-react";
+import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, Settings, LogOut, FlaskConical, Sparkles, Presentation } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
