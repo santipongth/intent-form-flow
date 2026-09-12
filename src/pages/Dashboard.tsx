@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Bot, MessageCircle, Zap } from "lucide-react";
+import { Plus, Bot, MessageCircle, Zap, LayoutGrid, Rows3, Rocket, PauseCircle, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAgents, useDeleteAgent } from "@/hooks/useAgents";
+import { useUpdateAgent } from "@/hooks/useUpdateAgent";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import StatsRow from "@/components/dashboard/StatsRow";
 import AgentFilters from "@/components/dashboard/AgentFilters";
 import AgentCard from "@/components/dashboard/AgentCard";
+import AgentTable from "@/components/dashboard/AgentTable";
 import { getSkills } from "@/lib/agentTools";
 
 export default function Dashboard() {
