@@ -20,6 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import tmLogo from "@/assets/tm-logo-lockup.png";
+import tmLogoMark from "@/assets/tm-logo-mark.png";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -53,7 +54,7 @@ export default function Landing() {
             aria-label="ThoughtMind"
           >
             <span className="flex h-12 w-16 items-center justify-center overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow group-hover:shadow-md sm:h-14 sm:w-20">
-              <img src={tmLogo} alt="" className="h-full w-full scale-[1.42] object-contain" />
+              <img src={tmLogoMark} alt="" className="h-full w-full object-contain" />
             </span>
             <span className="hidden font-display text-xl font-bold text-foreground sm:block">ThoughtMind</span>
           </Button>
@@ -82,7 +83,7 @@ export default function Landing() {
       </nav>
 
       <header className="relative border-b border-border/50">
-        <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-7xl flex-col justify-center px-4 pb-14 pt-14 sm:px-6 md:pt-16">
+        <section className="mx-auto flex max-w-7xl flex-col justify-center px-4 pb-14 pt-14 sm:px-6 md:pb-16 md:pt-16">
           <motion.div className="mx-auto max-w-4xl text-center" initial={reduceMotion ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.55 }}>
             <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-xs font-bold uppercase text-primary">
               <Sparkles className="h-3.5 w-3.5" />
