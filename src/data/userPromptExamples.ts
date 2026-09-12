@@ -191,6 +191,54 @@ export const USER_PROMPT_CATEGORIES: UserPromptCategory[] = [
       },
     ],
   },
+  {
+    id: "finance",
+    name: { th: "การเงิน & สรุปงบ", en: "Finance & budgets" },
+    examples: [
+      {
+        id: "finance-summary",
+        title: { th: "สรุปงบประมาณรายไตรมาส", en: "Quarterly budget summary" },
+        description: { th: "สรุปงบที่ใช้ หมวดที่เกิน/เหลือ และสิ่งที่ควรทำต่อ", en: "Spend, over/under categories, and next steps" },
+        prompt: {
+          th: "ข้อมูล/คำถามเรื่องงบ: {{question}}\n\nขั้นตอน:\n1. คำนวณทุกตัวเลขด้วยเครื่องมือคำนวณ ห้ามประมาณเอง\n2. รายงาน: งบที่ตั้งไว้ ใช้จริง คงเหลือ และเปอร์เซ็นต์\n3. ระบุหมวดที่ใช้เกินงบและต่ำกว่างบ พร้อมจำนวนเงินและเปอร์เซ็นต์\n4. อธิบายสาเหตุหลัก 2-3 ข้อจากข้อมูลที่มี\n5. เสนอสิ่งที่ควรทำต่อ 3 ข้อ เรียงตามผลกระทบ\n6. ระบุข้อจำกัดของข้อมูล เช่น รายการที่ยังไม่บันทึก\n\nใช้สกุลเงินตามข้อมูลต้นทาง และห้ามสร้างตัวเลขที่ไม่มีในข้อมูล",
+          en: "Budget data / question: {{question}}\n\nSteps:\n1. Compute every number with the calculator tool, never estimate\n2. Report budget, actual, remaining, and percentages\n3. List over-budget and under-budget categories with amounts and percentages\n4. Explain 2-3 main drivers from the data\n5. Recommend three next steps ordered by impact\n6. State data limitations such as unposted items\n\nKeep the source currency and never invent figures.",
+        },
+      },
+      {
+        id: "finance-variance",
+        title: { th: "เปรียบเทียบแผนกับผลจริง", en: "Plan vs actual variance" },
+        description: { th: "ตารางผลต่างพร้อมคำอธิบายและความเสี่ยง", en: "Variance table with drivers and risks" },
+        prompt: {
+          th: "ช่วงเวลา/ข้อมูลที่ต้องเทียบ: {{question}}\n\nรูปแบบคำตอบ:\n- ตาราง: รายการ | แผน | จริง | ผลต่าง (จำนวนเงินและ %)\n- อธิบายผลต่างเฉพาะรายการที่ต่างเกิน 5%\n- ความเสี่ยงหรือแนวโน้มของเดือน/ไตรมาสถัดไป\n\nปัดทศนิยม 2 ตำแหน่ง และระบุเสมอว่าข้อมูลมาจากช่วงเวลาใด",
+          en: "Period / data to compare: {{question}}\n\nFormat:\n- Table: line | plan | actual | variance (amount and %)\n- Explain only variances above 5%\n- Risks or trend for the next period\n\nRound to two decimals and always state the period covered.",
+        },
+      },
+    ],
+  },
+  {
+    id: "transform",
+    name: { th: "แปลงข้อมูล & จัดรูปแบบ", en: "Data transformation" },
+    examples: [
+      {
+        id: "transform-table",
+        title: { th: "แปลงข้อมูลดิบเป็นตาราง/CSV", en: "Raw data to a clean table / CSV" },
+        description: { th: "จัดรูปแบบวันที่ ตัวเลข และรายงานแถวที่แปลงไม่ได้", en: "Normalize dates and numbers, report skipped rows" },
+        prompt: {
+          th: "ข้อมูลดิบ: {{question}}\n\nสิ่งที่ต้องทำ:\n1. แปลงเป็นตาราง/CSV ตามคอลัมน์ที่ผู้ใช้กำหนด (ถ้าไม่กำหนด ให้เสนอชุดคอลัมน์ที่เหมาะสมก่อน)\n2. วันที่ใช้รูปแบบ YYYY-MM-DD จำนวนเงินตัดสัญลักษณ์และคอมมา ใช้ทศนิยม 2 ตำแหน่ง\n3. ตัดช่องว่างหน้า-หลังของข้อความทุกช่อง\n4. สรุปว่าแปลงสำเร็จกี่แถว ข้ามกี่แถว พร้อมเหตุผลของแถวที่ข้าม\n\nห้ามเติมข้อมูลที่หายไปเอง ให้ใส่ค่าว่างและแจ้งผู้ใช้แทน",
+          en: "Raw data: {{question}}\n\nDo this:\n1. Convert to a table/CSV using the columns the user specified (if none, propose a column set first)\n2. Dates as YYYY-MM-DD; amounts without symbols or commas, two decimals\n3. Trim whitespace in every text field\n4. Report how many rows converted and how many were skipped, with reasons\n\nNever fill in missing values — leave them empty and flag them.",
+        },
+      },
+      {
+        id: "transform-extract",
+        title: { th: "สกัดข้อมูลเป็น JSON", en: "Extract fields as JSON" },
+        description: { th: "ดึงข้อมูลสำคัญจากข้อความยาวเป็น JSON ที่ใช้ต่อได้", en: "Pull key fields from free text into usable JSON" },
+        prompt: {
+          th: "ข้อความต้นทาง: {{question}}\n\nสกัดเป็น JSON ที่ถูกต้องตามไวยากรณ์ โดยมีฟิลด์: company, contact_name, email, phone, request, deadline (YYYY-MM-DD), budget_thb (ตัวเลขหรือ null)\n\nกติกา:\n- ฟิลด์ที่ไม่มีข้อมูลให้ใส่ null ห้ามเดา\n- จัดรูปแบบเบอร์โทรให้เป็นมาตรฐานเดียวกัน\n- ตอบเป็น JSON ก่อน แล้วค่อยอธิบายหมายเหตุสั้น ๆ ใต้ JSON",
+          en: "Source text: {{question}}\n\nExtract valid JSON with fields: company, contact_name, email, phone, request, deadline (YYYY-MM-DD), budget_thb (number or null)\n\nRules:\n- Use null for anything not stated — never guess\n- Normalize phone numbers to one format\n- Output the JSON first, then short notes below it",
+        },
+      },
+    ],
+  },
 ];
 
 /**
