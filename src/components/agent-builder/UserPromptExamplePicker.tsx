@@ -3,6 +3,7 @@ import { Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,8 @@ export function UserPromptExamplePicker({ currentValue, onInsert }: Props) {
     [categoryId]
   );
   const selected = category.examples.find((e) => e.id === selectedId) ?? category.examples[0];
+  const sampleAnswer = USER_PROMPT_SAMPLE_ANSWERS[selected.id]?.[lang];
+  const [tab, setTab] = useState("prompt");
 
   const insert = (mode: "replace" | "append") => {
     const text = selected.prompt[lang];
@@ -102,11 +105,33 @@ export function UserPromptExamplePicker({ currentValue, onInsert }: Props) {
               <span className="text-xs font-medium">{selected.title[lang]}</span>
               <Badge variant="secondary" className="text-[10px]">{"{{question}}"}</Badge>
             </div>
-            <ScrollArea className="h-[260px]">
-              <pre className="p-3 text-xs whitespace-pre-wrap font-mono leading-relaxed">
-                {selected.prompt[lang]}
-              </pre>
-            </ScrollArea>
+            <Tabs value={tab} onValueChange={setTab}>
+              <div className="px-3 pt-2">
+                <TabsList className="h-7">
+                  <TabsTrigger value="prompt" className="text-[11px] h-6">
+                    {lang === "th" ? "คำสั่ง" : "Prompt"}
+                  </TabsTrigger>
+                  <TabsTrigger value="answer" className="text-[11px] h-6" disabled={!sampleAnswer}>
+                    {lang === "th" ? "ตัวอย่างคำตอบ" : "Sample answer"}
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              <TabsContent value="prompt" className="m-0">
+                <ScrollArea className="h-[240px]">
+                  <pre className="p-3 text-xs whitespace-pre-wrap font-mono leading-relaxed">
+                    {selected.prompt[lang]}
+                  </pre>
+                </ScrollArea>
+              </TabsContent>
+              <TabsContent value="answer" className="m-0">
+                <ScrollArea className="h-[240px]">
+                  <pre className="p-3 text-xs whitespace-pre-wrap leading-relaxed">
+                    {sampleAnswer ??
+                      (lang === "th" ? "ยังไม่มีตัวอย่างคำตอบสำหรับแบบนี้" : "No sample answer for this template yet")}
+                  </pre>
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
 
