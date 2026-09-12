@@ -192,3 +192,332 @@ export const USER_PROMPT_CATEGORIES: UserPromptCategory[] = [
     ],
   },
 ];
+
+/**
+ * ตัวอย่าง "คำตอบจริง" ของแต่ละตัวอย่าง prompt (key = example id)
+ * ใช้แสดงในหน้าตั้งค่าขั้นสูง เพื่อให้ผู้ใช้เห็นว่า Agent จะตอบออกมาหน้าตาแบบไหน
+ */
+export const USER_PROMPT_SAMPLE_ANSWERS: Record<string, Record<Locale, string>> = {
+  "knowledge-cited": {
+    th: `คำถาม: ลาพักร้อนสะสมข้ามปีได้กี่วัน
+
+- พนักงานประจำสะสมวันลาพักร้อนข้ามปีได้สูงสุด 5 วัน [1]
+- วันที่เหลือเกิน 5 วันจะถูกตัดทิ้งในวันที่ 31 ธันวาคม [1]
+- ต้องใช้วันสะสมให้หมดภายในไตรมาส 1 ของปีถัดไป [2]
+
+สรุป: สะสมได้ 5 วัน และต้องใช้ให้หมดก่อน 31 มีนาคมของปีถัดไป`,
+    en: `Question: how many vacation days carry over?
+
+- Full-time staff may carry over up to 5 days [1]
+- Anything above 5 days is forfeited on 31 December [1]
+- Carried-over days must be used within Q1 of the next year [2]
+
+Summary: 5 days carry over and must be used before 31 March.`,
+  },
+  "support-reply": {
+    th: `สวัสดีค่ะ เข้าใจว่าคุณเข้าสู่ระบบแล้วระบบแจ้งรหัสผ่านไม่ถูกต้องใช่ไหมคะ
+
+1. กด "ลืมรหัสผ่าน" ที่หน้าเข้าสู่ระบบ แล้วกรอกอีเมลที่สมัครไว้
+2. เปิดลิงก์ในอีเมลภายใน 60 นาที แล้วตั้งรหัสใหม่อย่างน้อย 8 ตัวอักษร
+3. หากไม่พบอีเมล กรุณาตรวจในกล่อง Junk/Spam
+
+รบกวนแจ้งอีเมลที่ใช้สมัครด้วยนะคะ หากยังเข้าไม่ได้ ทีมงานจะตรวจสอบให้ภายใน 1 วันทำการค่ะ`,
+    en: `Hi! I understand your login is failing with an incorrect-password error.
+
+1. Click "Forgot password" on the sign-in page and enter your registered email
+2. Open the link within 60 minutes and set a new password of at least 8 characters
+3. If the email is missing, check your Junk/Spam folder
+
+Could you share the email you signed up with? If it still fails, our team will look into it within 1 business day.`,
+  },
+  "research-brief": {
+    th: `หัวข้อ: แนวโน้มตลาด AI Agent องค์กรปี 2026
+
+1. ภาพรวม: องค์กรย้ายจาก chatbot มาสู่ agent ที่เรียกเครื่องมือได้จริง งบส่วนใหญ่ไปที่ระบบค้นข้อมูลภายใน และเริ่มมีมาตรฐานการกำกับดูแลชัดขึ้น
+
+2. ประเด็นสำคัญ
+- 62% ขององค์กรที่สำรวจมี agent ใช้งานจริงอย่างน้อย 1 ตัว (ที่มา: รายงานผู้ให้บริการคลาวด์, มี.ค. 2026)
+- ค่าใช้จ่ายต่อคำตอบลดลงราว 40% จากปีก่อน
+- ปัญหาที่พบมากที่สุดคือคุณภาพข้อมูลภายใน ไม่ใช่ตัวโมเดล
+
+3. ผลกระทบ: ทีมที่จัดระเบียบเอกสารก่อนจะได้ผลลัพธ์เร็วกว่า
+4. ที่ยังไม่ชัดเจน: มาตรฐานการตรวจสอบย้อนกลับของ agent ข้ามระบบ
+
+ข้อมูลอัปเดตถึง มี.ค. 2026`,
+    en: `Topic: enterprise AI agent trends, 2026
+
+1. Overview: companies are moving from chatbots to tool-using agents; most budget goes to internal retrieval, and governance standards are firming up.
+
+2. Key points
+- 62% of surveyed enterprises run at least one production agent (cloud vendor report, Mar 2026)
+- Cost per answer down roughly 40% year over year
+- The top blocker is internal data quality, not the model
+
+3. Impact: teams that clean up documents first ship faster
+4. Open question: cross-system agent audit standards
+
+Data current to March 2026.`,
+  },
+  "analytics-insight": {
+    th: `ไฟล์: sales_2026H1.xlsx (1,842 แถว, 9 คอลัมน์)
+
+ตัวเลขหลัก
+- ยอดขายรวม 12,480,500 บาท
+- ค่าเฉลี่ยต่อออเดอร์ 6,764 บาท
+- อัตราเติบโตเทียบครึ่งปีก่อน +18.4%
+
+แนวโน้ม: ยอดขายภาคเหนือโตต่อเนื่อง 4 เดือนติด ขณะที่ภาคใต้ลดลง 7%
+ความผิดปกติ: มี 3 ออเดอร์มูลค่าเกิน 400,000 บาท ดันค่าเฉลี่ยเดือน พ.ค. สูงผิดปกติ
+
+ข้อเสนอแนะ
+1. เพิ่มสต็อกสินค้ากลุ่ม A ในภาคเหนือก่อนไตรมาส 3
+2. ตรวจสอบสาเหตุยอดตกของภาคใต้รายตัวแทนจำหน่าย
+3. แยกรายงานลูกค้าองค์กรออกจากลูกค้าทั่วไป
+
+ข้อจำกัด: ข้อมูลเดือน มิ.ย. ขาด 2 วันทำการ`,
+    en: `File: sales_2026H1.xlsx (1,842 rows, 9 columns)
+
+Headline numbers
+- Total revenue 12,480,500 THB
+- Average order value 6,764 THB
+- Growth vs previous half: +18.4%
+
+Trend: the North region grew four months straight; the South declined 7%.
+Outlier: three orders above 400,000 THB inflate the May average.
+
+Recommendations
+1. Increase category A stock in the North before Q3
+2. Investigate the Southern decline per reseller
+3. Report enterprise and retail customers separately
+
+Limitation: June is missing two business days.`,
+  },
+  "content-seo": {
+    th: `ชื่อเรื่อง
+1. AI Agent สำหรับธุรกิจ SME: เริ่มต้นอย่างไรให้คุ้ม
+2. คู่มือสร้าง AI Agent ใช้งานจริงใน 1 สัปดาห์
+3. AI Agent คืออะไร และธุรกิจไทยใช้ทำอะไรได้บ้าง
+
+Meta description: รวมวิธีเริ่มต้นใช้ AI Agent ในธุรกิจ SME ตั้งแต่เลือกงานที่เหมาะ เตรียมข้อมูล ไปจนถึงวัดผลจริง
+
+โครงบทความ
+H2 AI Agent ต่างจากแชตบอตอย่างไร — เน้นการเรียกเครื่องมือและการทำงานหลายขั้น
+H2 งานแรกที่ควรให้ AI Agent ทำ — งานซ้ำ ปริมาณมาก ความเสี่ยงต่ำ
+H3 ตัวอย่าง 3 เคสจากธุรกิจจริง
+H2 เตรียมข้อมูลอย่างไรให้ตอบแม่น
+H2 วัดผลและควบคุมค่าใช้จ่าย
+
+FAQ: ต้องมีทีมไอทีไหม / ใช้เวลานานแค่ไหน / ข้อมูลบริษัทปลอดภัยหรือไม่`,
+    en: `Titles
+1. AI Agents for SMEs: Where to Start
+2. Build a Working AI Agent in One Week
+3. What Is an AI Agent, and What Can It Actually Do?
+
+Meta description: A practical guide to adopting AI agents in a small business — picking the right task, preparing data, and measuring results.
+
+Outline
+H2 How an agent differs from a chatbot — tool use and multi-step work
+H2 The first job to hand an agent — repetitive, high volume, low risk
+H3 Three real-world cases
+H2 Preparing data for accurate answers
+H2 Measuring results and controlling cost
+
+FAQ: Do I need an IT team? / How long does it take? / Is company data safe?`,
+  },
+  "dev-review": {
+    th: `1. บั๊กระดับ Critical (สูง)
+ฟังก์ชัน getUser() ไม่ตรวจค่า null ก่อนอ่าน .id ทำให้ล่มเมื่อ session หมดอายุ
+แก้เป็น: if (!user) return null; ก่อนบรรทัดที่อ่าน user.id
+
+2. ความปลอดภัย (สูง)
+รับ query string ไปต่อเป็นเงื่อนไขค้นหาโดยตรง ควร validate ด้วย schema และจำกัดความยาว 200 ตัวอักษร
+
+3. ประสิทธิภาพ (กลาง)
+เรียก API ในลูป 50 รอบ ควรรวมเป็น batch เดียว ลดเวลาจาก ~5s เหลือ ~0.4s
+
+4. คุณภาพโค้ด (ต่ำ)
+ตั้งชื่อ data1/data2 ไม่สื่อความหมาย และยังไม่มีเทสต์กรณี session หมดอายุ`,
+    en: `1. Critical bug (high)
+getUser() reads .id without a null check and crashes on an expired session.
+Fix: return null early when user is falsy.
+
+2. Security (high)
+The raw query string is concatenated into the search filter. Validate with a schema and cap it at 200 characters.
+
+3. Performance (medium)
+An API call inside a 50-iteration loop; batch it into one request (~5s to ~0.4s).
+
+4. Code quality (low)
+data1/data2 are meaningless names, and there is no test for the expired-session path.`,
+  },
+  "productivity-meeting": {
+    th: `สาระสำคัญ
+1. เลื่อนเปิดตัวฟีเจอร์รายงานเป็นวันที่ 30 ก.ย.
+2. ลูกค้าองค์กร 2 รายขอ SSO
+3. งบโฆษณาไตรมาส 4 คงเดิม
+
+การตัดสินใจ: เลื่อนเปิดตัว เพราะการทดสอบโหลดยังไม่ผ่านเกณฑ์
+
+Action items
+| งาน | ผู้รับผิดชอบ | กำหนดส่ง |
+| ทดสอบโหลดรอบใหม่ | ต้น | 18 ก.ย. |
+| ร่างข้อเสนอ SSO | ฝ้าย | 22 ก.ย. |
+| อัปเดตลูกค้า 2 ราย | ยังไม่ระบุ | 19 ก.ย. |
+
+ประเด็นค้าง: ราคาแพ็กเกจ SSO ยังไม่สรุป`,
+    en: `Key points
+1. Reporting feature launch moved to 30 Sep
+2. Two enterprise customers requested SSO
+3. Q4 ad budget unchanged
+
+Decision: delay the launch because load testing has not passed.
+
+Action items
+| Task | Owner | Due |
+| Re-run load tests | Ton | 18 Sep |
+| Draft SSO proposal | Fai | 22 Sep |
+| Update the two customers | not specified | 19 Sep |
+
+Open item: SSO package pricing is undecided.`,
+  },
+  "sales-qualify": {
+    th: `ขอบคุณที่สนใจครับ แพ็กเกจ Pro รองรับผู้ใช้ 20 คน และมี API ให้เชื่อมระบบภายในได้ครับ
+
+ขออนุญาตถาม 1 ข้อก่อนนะครับ: ตอนนี้งานหลักที่อยากให้ระบบช่วยคืองานอะไรครับ (เช่น ตอบลูกค้า สรุปเอกสาร หรือค้นข้อมูลภายใน)
+
+เมื่อทราบแล้ว ผมจะแนะนำแพ็กเกจที่คุ้มที่สุดพร้อมราคาตามเอกสารให้ครับ`,
+    en: `Thanks for reaching out! The Pro plan covers 20 seats and includes API access for internal systems.
+
+One question first: what is the main job you want the system to handle — customer replies, document summaries, or internal search?
+
+Once I know that, I will recommend the best-value plan with documented pricing.`,
+  },
+  "finance-summary": {
+    th: `สรุปงบประมาณ ไตรมาส 2/2026
+
+ภาพรวม
+- งบที่ตั้งไว้ 4,500,000 บาท ใช้จริง 4,118,300 บาท คงเหลือ 381,700 บาท (คิดเป็น 8.5%)
+- หมวดที่ใช้เกินงบ: การตลาด +212,000 บาท (+14%)
+- หมวดที่ใช้ต่ำกว่างบ: จัดจ้างภายนอก -430,000 บาท (-27%)
+
+สาเหตุหลัก
+1. ค่าโฆษณาเดือน พ.ค. สูงกว่าแผนจากแคมเปญเปิดตัวสินค้า
+2. โครงการจ้างภายนอก 1 โครงการเลื่อนไปไตรมาส 3
+
+สิ่งที่ควรทำต่อ
+1. ย้ายงบคงเหลือจากหมวดจัดจ้าง 200,000 บาท ไปชดเชยหมวดการตลาด
+2. ตั้งเพดานค่าโฆษณารายเดือนไว้ที่ 550,000 บาท
+3. ทบทวนแผนไตรมาส 3 ให้รวมโครงการที่เลื่อนมา
+
+ข้อจำกัด: ยังไม่รวมใบแจ้งหนี้ที่ยังไม่บันทึก 2 ใบ`,
+    en: `Budget summary — Q2 2026
+
+Overview
+- Budget 4,500,000 THB, actual 4,118,300 THB, remaining 381,700 THB (8.5%)
+- Over budget: Marketing +212,000 THB (+14%)
+- Under budget: Outsourcing -430,000 THB (-27%)
+
+Main drivers
+1. May ad spend exceeded plan due to the product launch campaign
+2. One outsourced project slipped to Q3
+
+Next steps
+1. Reallocate 200,000 THB from outsourcing to marketing
+2. Cap monthly ad spend at 550,000 THB
+3. Rebuild the Q3 plan to include the deferred project
+
+Limitation: two unposted invoices are not included.`,
+  },
+  "finance-variance": {
+    th: `เปรียบเทียบแผนกับผลจริง เดือนสิงหาคม
+
+| รายการ | แผน | จริง | ผลต่าง |
+| รายได้ | 2,000,000 | 2,180,000 | +180,000 (+9%) |
+| ต้นทุนขาย | 900,000 | 1,020,000 | +120,000 (+13%) |
+| ค่าใช้จ่ายดำเนินงาน | 620,000 | 588,000 | -32,000 (-5%) |
+| กำไรสุทธิ | 480,000 | 572,000 | +92,000 (+19%) |
+
+อธิบายผลต่างสำคัญ
+- รายได้สูงกว่าแผนจากคำสั่งซื้อลูกค้าองค์กร 2 ราย
+- ต้นทุนขายสูงขึ้นตามปริมาณ และมีค่าขนส่งเร่งด่วน 46,000 บาท
+
+ความเสี่ยงเดือนถัดไป: หากคำสั่งซื้อพิเศษไม่เกิดซ้ำ กำไรจะกลับมาใกล้แผนเดิม`,
+    en: `Plan vs actual — August
+
+| Line | Plan | Actual | Variance |
+| Revenue | 2,000,000 | 2,180,000 | +180,000 (+9%) |
+| COGS | 900,000 | 1,020,000 | +120,000 (+13%) |
+| OpEx | 620,000 | 588,000 | -32,000 (-5%) |
+| Net profit | 480,000 | 572,000 | +92,000 (+19%) |
+
+Key drivers
+- Revenue beat plan on two enterprise orders
+- COGS rose with volume plus 46,000 THB of expedited freight
+
+Next-month risk: without repeat special orders, profit returns close to plan.`,
+  },
+  "transform-table": {
+    th: `ข้อมูลนำเข้า 12 แถว แปลงสำเร็จ 11 แถว ข้าม 1 แถว
+
+ผลลัพธ์ (CSV)
+order_id,customer_name,order_date,amount_thb
+A-1001,บริษัท เอ จำกัด,2026-08-01,12500.00
+A-1002,ร้านบีสโตร์,2026-08-03,4800.50
+A-1003,คุณสมชาย ใจดี,2026-08-04,990.00
+
+การแปลงที่ทำ
+- วันที่: แปลง 01/08/2026 และ 1 ส.ค. 69 เป็นรูปแบบ YYYY-MM-DD
+- จำนวนเงิน: ตัดสัญลักษณ์ ฿ และคอมมา ใช้ทศนิยม 2 ตำแหน่ง
+- ชื่อ: ตัดช่องว่างหน้า-หลัง
+
+แถวที่ข้าม
+- แถวที่ 7: ไม่มี order_id (ต้องการข้อมูลเพิ่มก่อนแปลง)`,
+    en: `12 input rows — 11 converted, 1 skipped
+
+Output (CSV)
+order_id,customer_name,order_date,amount_thb
+A-1001,Company A Ltd,2026-08-01,12500.00
+A-1002,Bee Store,2026-08-03,4800.50
+A-1003,Somchai Jaidee,2026-08-04,990.00
+
+Transformations applied
+- Dates: 01/08/2026 and "1 Aug 69" normalized to YYYY-MM-DD
+- Amounts: stripped ฿ and commas, fixed to 2 decimals
+- Names: trimmed whitespace
+
+Skipped
+- Row 7: missing order_id (needs clarification before conversion)`,
+  },
+  "transform-extract": {
+    th: `สกัดข้อมูลจากอีเมล 1 ฉบับ
+
+{
+  "company": "บริษัท ทองดี จำกัด",
+  "contact_name": "คุณมาลี",
+  "email": "malee@thongdee.co.th",
+  "phone": "02-123-4567",
+  "request": "ขอใบเสนอราคาแพ็กเกจ 30 ผู้ใช้",
+  "deadline": "2026-09-20",
+  "budget_thb": null
+}
+
+หมายเหตุ
+- budget_thb เป็น null เพราะอีเมลไม่ได้ระบุงบประมาณ (ไม่เดาค่า)
+- เบอร์โทรจัดรูปแบบเป็นมาตรฐานเดียวกันแล้ว`,
+    en: `Extracted from one email
+
+{
+  "company": "Thongdee Co., Ltd.",
+  "contact_name": "Malee",
+  "email": "malee@thongdee.co.th",
+  "phone": "02-123-4567",
+  "request": "Quote for a 30-seat package",
+  "deadline": "2026-09-20",
+  "budget_thb": null
+}
+
+Notes
+- budget_thb is null because the email gives no budget (never guessed)
+- The phone number was normalized to a single format`,
+  },
+};
