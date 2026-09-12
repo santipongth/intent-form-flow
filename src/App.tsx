@@ -29,6 +29,7 @@ import NotFound from "./pages/NotFound";
 import WidgetPreview from "./pages/WidgetPreview";
 import Skills from "./pages/Skills";
 import Showcase from "./pages/Showcase";
+import Compare from "./pages/Compare";
 import KnowledgeFile from "./pages/KnowledgeFile";
 
 import DocsApi from "./pages/DocsApi";
@@ -61,6 +62,7 @@ const App = () => (
                 <Route path="/chat/:conversationId" element={<ProtectedRoute><AppLayout><ChatConsole /></AppLayout></ProtectedRoute>} />
                 <Route path="/monitor" element={<ProtectedRoute><AppLayout><Monitor /></AppLayout></ProtectedRoute>} />
                 <Route path="/analytics" element={<ProtectedRoute><AppLayout><Analytics /></AppLayout></ProtectedRoute>} />
+                <Route path="/compare" element={<ProtectedRoute><AppLayout><Compare /></AppLayout></ProtectedRoute>} />
                 <Route path="/ab-testing" element={<ProtectedRoute><AppLayout><ABTesting /></AppLayout></ProtectedRoute>} />
                 <Route path="/ab-testing/results" element={<ProtectedRoute><AppLayout><ABTestResults /></AppLayout></ProtectedRoute>} />
                 <Route path="/ab-testing/:id" element={<ProtectedRoute><AppLayout><ABTestDetail /></AppLayout></ProtectedRoute>} />
