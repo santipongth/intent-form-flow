@@ -55,17 +55,6 @@ export default function Auth() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast.error(t("auth.signInError"), { description: result.error.message });
-      return;
-    }
-    if (result.redirected) return;
-    navigate("/dashboard");
-  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden">
