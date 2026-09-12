@@ -1,13 +1,26 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { TEMPLATES } from "@/data/constants";
-import { ArrowRight, Globe, Sun, Moon, Bot, BookOpen, Rocket } from "lucide-react";
+import {
+  ArrowRight,
+  Globe,
+  Sun,
+  Moon,
+  Bot,
+  BookOpen,
+  Rocket,
+  Check,
+  Sparkles,
+  Database,
+  WandSparkles,
+  Play,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import tmLogo from "@/assets/tm-logo.png";
+import tmLogo from "@/assets/tm-logo-lockup.png";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -17,36 +30,33 @@ export default function Landing() {
   const dashTarget = user ? "/dashboard" : "/auth";
 
   const steps = [
-    { icon: Bot, title: t("landing.step1Title"), desc: t("landing.step1Desc"), color: "bg-primary/10 text-primary" },
-    { icon: BookOpen, title: t("landing.step2Title"), desc: t("landing.step2Desc"), color: "bg-brand-orange/10 text-brand-orange" },
-    { icon: Rocket, title: t("landing.step3Title"), desc: t("landing.step3Desc"), color: "bg-brand-green/10 text-brand-green" },
+    { icon: Bot, title: t("landing.step1Title"), desc: t("landing.step1Desc"), color: "text-primary" },
+    { icon: BookOpen, title: t("landing.step2Title"), desc: t("landing.step2Desc"), color: "text-brand-orange" },
+    { icon: Rocket, title: t("landing.step3Title"), desc: t("landing.step3Desc"), color: "text-brand-green" },
   ];
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Hero */}
-      <header className="relative overflow-hidden">
-        <div className="absolute inset-0 gradient-hero opacity-5" />
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <motion.div
-            className="absolute top-20 right-20 w-72 h-72 rounded-full bg-primary/10 blur-3xl"
-            animate={{ scale: [1, 1.2, 1], x: [0, 30, 0], y: [0, -20, 0] }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div
-            className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-accent/10 blur-3xl"
-            animate={{ scale: [1, 1.1, 1], x: [0, -20, 0], y: [0, 15, 0] }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </div>
+  const scrollToTemplates = () => {
+    document.getElementById("templates")?.scrollIntoView({ behavior: "smooth" });
+  };
 
-        {/* Nav */}
-        <nav className="relative z-10 flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <img src={tmLogo} alt="ThoughtMind" className="w-10 h-10 object-contain rounded-xl shadow-md" />
-            <span className="font-display font-bold text-xl gradient-text text-inherit">ThoughtMind</span>
-          </div>
-          <div className="flex items-center gap-2">
+  return (
+    <div className="min-h-screen overflow-x-hidden bg-background selection:bg-primary/15">
+      <header className="relative border-b border-border/50 bg-background">
+        <nav className="sticky top-0 z-40 border-b border-border/60 bg-background/90 backdrop-blur-xl" aria-label={t("landing.mainNav")}>
+          <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6">
+            <button className="group flex items-center gap-3" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} aria-label="ThoughtMind">
+              <span className="flex h-12 w-16 items-center justify-center overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-shadow group-hover:shadow-md sm:h-14 sm:w-20">
+                <img src={tmLogo} alt="" className="h-full w-full scale-[1.42] object-contain" />
+              </span>
+              <span className="hidden font-display text-xl font-bold sm:block">ThoughtMind</span>
+            </button>
+
+            <div className="hidden items-center gap-8 text-sm font-semibold text-muted-foreground md:flex">
+              <a href="#how-it-works" className="transition-colors hover:text-foreground">{t("landing.navHow")}</a>
+              <a href="#templates" className="transition-colors hover:text-foreground">{t("landing.navTemplates")}</a>
+            </div>
+
+            <div className="flex items-center gap-1.5 sm:gap-2">
             <Button variant="ghost" size="sm" className="rounded-xl gap-1.5 text-xs font-medium" onClick={() => setLocale(locale === "th" ? "en" : "th")}>
               <Globe className="h-4 w-4" />
               {locale === "th" ? "TH" : "EN"}
@@ -54,16 +64,23 @@ export default function Landing() {
             <Button variant="ghost" size="icon" className="rounded-xl" onClick={toggleTheme} aria-label="Toggle theme">
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <Button onClick={() => navigate(dashTarget)} variant="outline" className="rounded-xl">
+            <Button onClick={() => navigate(dashTarget)} variant="outline" className="hidden rounded-lg sm:inline-flex">
               {user ? t("landing.enterDashboard") : t("landing.signIn")}
             </Button>
+            <Button onClick={() => navigate(user ? "/agents/new" : "/auth")} className="hidden rounded-lg lg:inline-flex">
+              {t("landing.navTry")}
+            </Button>
+            </div>
           </div>
         </nav>
 
-        {/* Hero content */}
-        <section className="relative z-10 max-w-3xl mx-auto text-center px-6 pt-24 pb-28">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <h1 className="font-display text-5xl md:text-6xl font-bold mb-6 leading-tight tracking-tight">
+        <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-7xl flex-col justify-center px-4 pb-14 pt-16 sm:px-6 md:pt-20">
+          <motion.div className="mx-auto max-w-4xl text-center" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }}>
+            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-xs font-bold uppercase text-primary">
+              <Sparkles className="h-3.5 w-3.5" />
+              {t("landing.tagline")}
+            </div>
+            <h1 className="mb-6 font-display text-4xl font-extrabold leading-[1.08] sm:text-6xl md:text-7xl">
               {t("landing.heroTitle1")}{" "}
               <span className="gradient-text">{t("landing.heroTitle2")}</span>
               <br />
