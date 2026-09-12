@@ -77,11 +77,27 @@ export function readAgentSettings(tools: unknown): AgentSettings {
   };
 }
 
+/** Replaces the `{{question}}` placeholder with the user's latest message. */
+export function fillUserPromptPlaceholders(template: string, lastUserMessage = ""): string {
+  const q = lastUserMessage.trim();
+  return template.replace(
+    /\{\{\s*question\s*\}\}/gi,
+    q || "(see the user's latest message in this conversation)",
+  );
+}
+
 /** Appends the prompt/skills/answer-scope instructions to a system prompt. */
-export function applyAgentSettings(systemPrompt: string, s: AgentSettings, hasKnowledge: boolean): string {
+export function applyAgentSettings(
+  systemPrompt: string,
+  s: AgentSettings,
+  hasKnowledge: boolean,
+  lastUserMessage = "",
+): string {
   let out = systemPrompt;
   if (s.userPrompt) {
-    out += `\n\n---\nUser Prompt Template (apply when responding):\n${s.userPrompt}\n---`;
+    out += `\n\n---\nUser Prompt (apply when responding):\n${
+      fillUserPromptPlaceholders(s.userPrompt, lastUserMessage)
+    }\n---`;
   }
   if (s.skills.length > 0) {
     const body = s.skills
