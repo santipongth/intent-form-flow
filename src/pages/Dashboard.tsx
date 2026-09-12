@@ -179,6 +179,41 @@ export default function Dashboard() {
           clearFilters={clearFilters}
         />
 
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="inline-flex rounded-xl border border-border p-0.5">
+            <Button size="sm" variant={view === "cards" ? "secondary" : "ghost"} className="rounded-lg gap-1.5" onClick={() => setView("cards")}>
+              <LayoutGrid className="h-4 w-4" /> {t("dashboard.viewCards")}
+            </Button>
+            <Button size="sm" variant={view === "table" ? "secondary" : "ghost"} className="rounded-lg gap-1.5" onClick={() => setView("table")}>
+              <Rows3 className="h-4 w-4" /> {t("dashboard.viewTable")}
+            </Button>
+          </div>
+          {view === "table" && selectedIds.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">{selectedIds.length} {t("dashboard.selected")}</span>
+              <Button size="sm" variant="outline" className="rounded-lg gap-1.5" onClick={() => {
+                selectedIds.forEach((id) => updateAgent.mutate({ id, status: "published" }));
+                setSelectedIds([]);
+              }}>
+                <Rocket className="h-3.5 w-3.5" /> {t("dashboard.bulkPublish")}
+              </Button>
+              <Button size="sm" variant="outline" className="rounded-lg gap-1.5" onClick={() => {
+                selectedIds.forEach((id) => updateAgent.mutate({ id, status: "draft" }));
+                setSelectedIds([]);
+              }}>
+                <PauseCircle className="h-3.5 w-3.5" /> {t("dashboard.bulkPause")}
+              </Button>
+              <Button size="sm" variant="outline" className="rounded-lg gap-1.5 text-destructive" onClick={() => {
+                if (!window.confirm(t("dashboard.bulkDeleteConfirm"))) return;
+                selectedIds.forEach((id) => deleteAgent.mutate(id));
+                setSelectedIds([]);
+              }}>
+                <Trash2 className="h-3.5 w-3.5" /> {t("dashboard.bulkDelete")}
+              </Button>
+            </div>
+          )}
+        </div>
+
         <div className="mt-4">
           {isLoading ? (
             <div className="grid sm:grid-cols-2 gap-4">
@@ -193,17 +228,28 @@ export default function Dashboard() {
               ))}
             </div>
           ) : filteredAgents.length > 0 ? (
-            <div className="grid sm:grid-cols-2 gap-4">
-              {filteredAgents.map((agent, i) => (
-                <AgentCard
-                  key={agent.id}
-                  agent={agent}
-                  index={i}
-                  knowledgeStats={knowledgeStats?.[agent.id]}
-                  onDelete={(id) => deleteAgent.mutate(id)}
-                />
-              ))}
-            </div>
+            view === "table" ? (
+              <AgentTable
+                agents={filteredAgents}
+                knowledgeStats={knowledgeStats}
+                selected={selectedIds}
+                onToggle={(id) => setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])}
+                onToggleAll={(checked) => setSelectedIds(checked ? filteredAgents.map((a) => a.id) : [])}
+                onDelete={(id) => deleteAgent.mutate(id)}
+              />
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-4">
+                {filteredAgents.map((agent, i) => (
+                  <AgentCard
+                    key={agent.id}
+                    agent={agent}
+                    index={i}
+                    knowledgeStats={knowledgeStats?.[agent.id]}
+                    onDelete={(id) => deleteAgent.mutate(id)}
+                  />
+                ))}
+              </div>
+            )
           ) : (
             <Card className="rounded-2xl">
               <CardContent className="p-10 text-center">
