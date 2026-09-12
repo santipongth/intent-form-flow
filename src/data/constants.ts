@@ -360,3 +360,180 @@ export const CUSTOM_TEMPLATE_DEFAULTS: TemplateDefaults = {
   temperature: 0.7,
   maxTokens: 2048,
 };
+
+/* ------------------------------------------------------------------ */
+/* หมวดงาน (work categories) — ใช้จัดกลุ่มตัวอย่าง Agent ให้คนทั่วไปเข้าใจ   */
+/* ------------------------------------------------------------------ */
+
+export interface WorkCategory {
+  id: string;
+  icon: string;
+  /** หมวดตัวอย่าง prompt ที่เกี่ยวข้อง (จาก userPromptExamples) */
+  promptCategoryId: string;
+  name: { th: string; en: string };
+  description: { th: string; en: string };
+  /** Agent ทำงานอย่างไร — 4 ขั้นตอน */
+  howItWorks: { th: string; en: string }[];
+  templateIds: string[];
+  sampleQuestions: { th: string; en: string }[];
+}
+
+const STEP_ASK = { th: "รับคำถามจากผู้ใช้", en: "Receive the question" };
+const STEP_ANSWER = { th: "เรียบเรียงคำตอบตามรูปแบบที่ตั้งไว้", en: "Compose the answer in the configured format" };
+const STEP_CITE = { th: "แนบแหล่งอ้างอิงและตรวจสอบความถูกต้อง", en: "Attach sources and verify the answer" };
+
+export const WORK_CATEGORIES: WorkCategory[] = [
+  {
+    id: "finance",
+    icon: "💰",
+    promptCategoryId: "finance",
+    name: { th: "สรุปงบและการเงิน", en: "Finance & budget summaries" },
+    description: {
+      th: "อ่านงบประมาณ รายงานยอดขาย หรือไฟล์บัญชี แล้วสรุปตัวเลขสำคัญและส่วนต่างให้อ่านง่าย",
+      en: "Read budgets, sales reports or accounting files and summarise the key numbers and variances",
+    },
+    howItWorks: [
+      STEP_ASK,
+      { th: "อ่านไฟล์ Excel/CSV ในคลังความรู้ แล้วคำนวณด้วยเครื่องมือคำนวณ", en: "Read Excel/CSV files from the knowledge base and run the calculator tool" },
+      STEP_ANSWER,
+      STEP_CITE,
+    ],
+    templateIds: ["data-analyst"],
+    sampleQuestions: [
+      { th: "สรุปรายรับรายจ่ายเดือนล่าสุด พร้อมส่วนต่างจากงบที่ตั้งไว้", en: "Summarise last month's income and expenses versus budget" },
+      { th: "หมวดไหนใช้งบเกินมากที่สุด 3 อันดับแรก", en: "Which three categories overspent the most?" },
+    ],
+  },
+  {
+    id: "transform",
+    icon: "🔄",
+    promptCategoryId: "transform",
+    name: { th: "แปลงข้อมูล", en: "Data transformation" },
+    description: {
+      th: "เปลี่ยนข้อความหรือตารางดิบให้เป็นรูปแบบที่ใช้งานต่อได้ เช่น ตาราง JSON หรือรายการที่จัดหมวดแล้ว",
+      en: "Turn raw text or tables into usable formats such as tables, JSON or categorised lists",
+    },
+    howItWorks: [
+      STEP_ASK,
+      { th: "ดึงข้อมูลที่ต้องการออกมาทีละฟิลด์ตามโครงสร้างที่กำหนด", en: "Extract each required field following the given structure" },
+      { th: "ตรวจความครบถ้วน และทำเครื่องหมายช่องที่ไม่พบข้อมูล", en: "Check completeness and mark fields that were not found" },
+      STEP_ANSWER,
+    ],
+    templateIds: ["data-analyst", "meeting-assistant"],
+    sampleQuestions: [
+      { th: "แปลงรายการนี้เป็นตารางที่มีคอลัมน์ ชื่อ อีเมล และบริษัท", en: "Turn this list into a table with name, email and company columns" },
+      { th: "ดึงวันที่ ยอดเงิน และเลขที่เอกสารออกมาเป็น JSON", en: "Extract date, amount and document number as JSON" },
+    ],
+  },
+  {
+    id: "support",
+    icon: "💬",
+    promptCategoryId: "support",
+    name: { th: "ตอบลูกค้า", en: "Customer support" },
+    description: {
+      th: "ตอบคำถามลูกค้าจากคลังความรู้ขององค์กร ด้วยโทนสุภาพ พร้อมขั้นตอนแก้ปัญหาและการส่งต่อทีมงาน",
+      en: "Answer customer questions from your knowledge base with a polite tone, clear steps and an escalation path",
+    },
+    howItWorks: [
+      { th: "รับข้อความจากลูกค้าและสรุปปัญหาเพื่อยืนยันความเข้าใจ", en: "Receive the message and restate the issue to confirm understanding" },
+      { th: "ค้นคำตอบจาก FAQ และเอกสารในคลังความรู้", en: "Search the FAQ and documents in the knowledge base" },
+      { th: "ตอบเป็นขั้นตอนที่ทำตามได้ทันที", en: "Reply with steps the customer can follow immediately" },
+      { th: "ถ้าเกินขอบเขต แจ้งส่งต่อทีมงานพร้อมสรุปเคส", en: "If out of scope, escalate with a case summary" },
+    ],
+    templateIds: ["customer-support", "email-responder"],
+    sampleQuestions: [
+      { th: "ลูกค้าเข้าสู่ระบบไม่ได้ ต้องทำอย่างไร", en: "A customer cannot sign in — what should they do?" },
+      { th: "นโยบายคืนสินค้าภายในกี่วัน และมีเงื่อนไขอะไรบ้าง", en: "What is the return window and its conditions?" },
+    ],
+  },
+  {
+    id: "knowledge",
+    icon: "📄",
+    promptCategoryId: "knowledge",
+    name: { th: "ตอบจากเอกสาร", en: "Answer from documents" },
+    description: {
+      th: "ถามอะไรก็ตอบจากไฟล์ที่คุณอัปโหลด พร้อมอ้างอิงจุดที่นำข้อมูลมาใช้",
+      en: "Ask anything and get answers from your uploaded files, with references to the exact passages used",
+    },
+    howItWorks: [
+      STEP_ASK,
+      { th: "ค้นหาข้อความที่ใกล้เคียงที่สุดในเอกสารที่อัปโหลด", en: "Search the uploaded documents for the closest passages" },
+      STEP_ANSWER,
+      { th: "ใส่หมายเลขอ้างอิง [1] [2] และบอกเมื่อไม่พบข้อมูล", en: "Add [1] [2] reference markers and say so when nothing is found" },
+    ],
+    templateIds: ["pdf-qa"],
+    sampleQuestions: [
+      { th: "สรุปสาระสำคัญของเอกสารนี้ให้หน่อย", en: "Summarise the key points of this document" },
+      { th: "เงื่อนไขการลาพักร้อนในระเบียบนี้เป็นอย่างไร", en: "What are the vacation leave conditions in this policy?" },
+    ],
+  },
+  {
+    id: "research",
+    icon: "🔎",
+    promptCategoryId: "research",
+    name: { th: "ค้นคว้าและสรุปข่าว", en: "Research & news summaries" },
+    description: {
+      th: "ค้นข้อมูลจากเว็บหลายแหล่ง เทียบความสอดคล้อง แล้วสรุปให้อ่านจบใน 1 นาที",
+      en: "Search multiple sources on the web, cross-check them and summarise in a one-minute read",
+    },
+    howItWorks: [
+      STEP_ASK,
+      { th: "ค้นหาเว็บจากหลายแหล่งและคัดแหล่งที่น่าเชื่อถือ", en: "Search the web and keep only trustworthy sources" },
+      { th: "เทียบข้อมูลข้ามแหล่ง ถ้าขัดแย้งจะระบุไว้", en: "Cross-check sources and flag contradictions" },
+      { th: "สรุปเป็นหัวข้อสั้นพร้อมลิงก์ต้นฉบับ", en: "Summarise as short bullets with original links" },
+    ],
+    templateIds: ["news-summary", "social-monitor"],
+    sampleQuestions: [
+      { th: "สรุปข่าวเทคโนโลยีสำคัญของสัปดาห์นี้", en: "Summarise this week's key technology news" },
+      { th: "เปรียบเทียบข้อดีข้อเสียของสองทางเลือกนี้", en: "Compare the pros and cons of these two options" },
+    ],
+  },
+  {
+    id: "content",
+    icon: "✍️",
+    promptCategoryId: "content",
+    name: { th: "เขียนเนื้อหา", en: "Content writing" },
+    description: {
+      th: "ร่างบทความ โพสต์โซเชียล หรือสรุปการประชุม ตามโทนและความยาวที่คุณกำหนด",
+      en: "Draft articles, social posts or meeting summaries in the tone and length you choose",
+    },
+    howItWorks: [
+      { th: "รับหัวข้อ กลุ่มเป้าหมาย และโทนที่ต้องการ", en: "Receive the topic, audience and tone" },
+      { th: "วางโครงเรื่องก่อนเขียนจริง", en: "Build an outline before writing" },
+      { th: "เขียนเนื้อหาตามโครง พร้อมหัวข้อย่อยที่อ่านง่าย", en: "Write the content with readable sub-headings" },
+      { th: "เสนอชื่อเรื่องและคำโปรยให้เลือก", en: "Suggest titles and meta descriptions to choose from" },
+    ],
+    templateIds: ["content-writer", "meeting-assistant"],
+    sampleQuestions: [
+      { th: "เขียนบทความสั้นแนะนำบริการของเราให้ลูกค้าใหม่", en: "Write a short article introducing our service to new customers" },
+      { th: "สรุปการประชุมนี้เป็นสิ่งที่ต้องทำต่อพร้อมผู้รับผิดชอบ", en: "Summarise this meeting into action items with owners" },
+    ],
+  },
+  {
+    id: "dev",
+    icon: "🧑‍💻",
+    promptCategoryId: "dev",
+    name: { th: "ช่วยงานพัฒนา", en: "Engineering help" },
+    description: {
+      th: "ตรวจโค้ด หาจุดเสี่ยงด้านความปลอดภัย และเสนอวิธีแก้พร้อมตัวอย่าง",
+      en: "Review code, spot security risks and propose fixes with examples",
+    },
+    howItWorks: [
+      { th: "รับโค้ดและบริบทของระบบ", en: "Receive the code and its context" },
+      { th: "ตรวจความถูกต้อง ความปลอดภัย และประสิทธิภาพ", en: "Check correctness, security and performance" },
+      { th: "จัดลำดับปัญหาตามความรุนแรง", en: "Rank findings by severity" },
+      { th: "เสนอโค้ดก่อน/หลังการแก้ไข", en: "Show before/after code for each fix" },
+    ],
+    templateIds: ["code-reviewer"],
+    sampleQuestions: [
+      { th: "ตรวจโค้ดนี้ว่ามีช่องโหว่ด้านความปลอดภัยไหม", en: "Review this code for security vulnerabilities" },
+      { th: "ทำไมฟังก์ชันนี้ถึงช้า และควรแก้อย่างไร", en: "Why is this function slow and how should I fix it?" },
+    ],
+  },
+];
+
+/** หา work category ของ template หนึ่ง ๆ (ตัวแรกที่ match) */
+export function workCategoryOfTemplate(templateId: string | null | undefined): WorkCategory | undefined {
+  if (!templateId) return undefined;
+  return WORK_CATEGORIES.find((c) => c.templateIds.includes(templateId));
+}
