@@ -21,8 +21,11 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { data: agents, isLoading } = useAgents();
   const deleteAgent = useDeleteAgent();
+  const updateAgent = useUpdateAgent();
   const { t } = useLanguage();
   const { user } = useAuth();
+  const [view, setView] = useState<"cards" | "table">("cards");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const { data: knowledgeStats } = useQuery({
     queryKey: ["knowledge_stats", user?.id],
