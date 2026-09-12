@@ -54,7 +54,6 @@ export const th: Record<string, string> = {
   "settings.emailConfirmManage": "จัดการในแผงควบคุม",
   "settings.emailConfirmHint": "ตั้งค่านี้อยู่ในแผงควบคุม Lovable Cloud → Users → Auth Settings โดยเปิด/ปิดสวิตช์ \"Confirm email\"",
   "auth.resetEmailError": "ส่งอีเมลไม่สำเร็จ",
-  "auth.signInWithGoogle": "Sign in with Google",
   "auth.signInWithGithub": "Sign in with GitHub",
 
   // Reset Password

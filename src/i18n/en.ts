@@ -54,7 +54,6 @@ export const en: Record<string, string> = {
   "settings.emailConfirmManage": "Manage in dashboard",
   "settings.emailConfirmHint": "This setting lives in Lovable Cloud → Users → Auth Settings. Toggle the \"Confirm email\" switch.",
   "auth.resetEmailError": "Failed to send email",
-  "auth.signInWithGoogle": "Sign in with Google",
   "auth.signInWithGithub": "Sign in with GitHub",
 
   // Reset Password
