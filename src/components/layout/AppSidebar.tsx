@@ -1,4 +1,4 @@
-import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, Settings, LogOut, FlaskConical, Sparkles } from "lucide-react";
+import { LayoutDashboard, Bot, Store, MessageCircle, Activity, BarChart3, Settings, LogOut, FlaskConical, Sparkles, Presentation } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
@@ -24,6 +24,7 @@ const menuKeys = [
 { key: "sidebar.dashboard", url: "/dashboard", icon: LayoutDashboard },
 { key: "sidebar.agents", url: "/agents/new", icon: Bot },
 { key: "sidebar.marketplace", url: "/marketplace", icon: Store },
+{ key: "sidebar.showcase", url: "/showcase", icon: Presentation },
 { key: "sidebar.chat", url: "/chat", icon: MessageCircle },
 { key: "sidebar.monitor", url: "/monitor", icon: Activity },
 { key: "sidebar.analytics", url: "/analytics", icon: BarChart3 },

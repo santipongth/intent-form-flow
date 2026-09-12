@@ -28,6 +28,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import WidgetPreview from "./pages/WidgetPreview";
 import Skills from "./pages/Skills";
+import Showcase from "./pages/Showcase";
 import KnowledgeFile from "./pages/KnowledgeFile";
 
 import DocsApi from "./pages/DocsApi";
@@ -54,6 +55,7 @@ const App = () => (
                 <Route path="/dashboard" element={<ProtectedRoute><AppLayout><Dashboard /></AppLayout></ProtectedRoute>} />
                 <Route path="/agents/new" element={<ProtectedRoute><AppLayout><AgentBuilder /></AppLayout></ProtectedRoute>} />
                 <Route path="/agents/:id" element={<ProtectedRoute><AppLayout><AgentDetail /></AppLayout></ProtectedRoute>} />
+                <Route path="/showcase" element={<ProtectedRoute><AppLayout><Showcase /></AppLayout></ProtectedRoute>} />
                 <Route path="/marketplace" element={<ProtectedRoute><AppLayout><Marketplace /></AppLayout></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><AppLayout><ChatConsole /></AppLayout></ProtectedRoute>} />
                 <Route path="/chat/:conversationId" element={<ProtectedRoute><AppLayout><ChatConsole /></AppLayout></ProtectedRoute>} />
