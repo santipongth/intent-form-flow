@@ -208,7 +208,7 @@ serve(async (req) => {
 
       // Behaviour settings (user prompt, skills, answer scope) come last so the
       // strict-knowledge rule can reference the documents injected above.
-      systemPrompt = applyAgentSettings(systemPrompt, settings, hasKnowledge);
+      systemPrompt = applyAgentSettings(systemPrompt, settings, hasKnowledge, lastUserQuestion);
     }
 
 
