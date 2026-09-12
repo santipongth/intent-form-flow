@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { USER_PROMPT_CATEGORIES } from "@/data/userPromptExamples";
+import { USER_PROMPT_CATEGORIES, USER_PROMPT_SAMPLE_ANSWERS } from "@/data/userPromptExamples";
 
 interface Props {
   currentValue: string;
